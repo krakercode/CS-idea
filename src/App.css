@@ -1,0 +1,275 @@
+:root {
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color: #0f0f0f;
+  background-color: #f6f6f6;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 860px;
+  padding: 2rem 1.5rem 3rem;
+}
+
+.app-header h1 {
+  margin-bottom: 0.25rem;
+}
+
+.muted {
+  color: #6b6b6b;
+  font-size: 0.9rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+input,
+button {
+  border-radius: 8px;
+  border: 1px solid #d8d8d8;
+  padding: 0.6em 1em;
+  font-size: 1em;
+  font-family: inherit;
+  color: #0f0f0f;
+  background-color: #ffffff;
+}
+
+input {
+  flex: 1;
+}
+
+button {
+  cursor: pointer;
+  border-color: transparent;
+  background-color: #396cd8;
+  color: #fff;
+  font-weight: 500;
+  transition: filter 0.15s;
+}
+
+button:hover {
+  filter: brightness(1.1);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.player-search {
+  margin: 1.5rem 0;
+}
+
+.recent-players {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.chip {
+  background: #eef1f8;
+  color: #1f2a4d;
+  border: none;
+  padding: 0.25em 0.7em;
+  font-size: 0.85rem;
+  border-radius: 999px;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin: 1.2rem 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tab {
+  background: none;
+  border: none;
+  color: #6b6b6b;
+  border-radius: 0;
+  padding: 0.5em 0.9em;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+  color: #396cd8;
+  border-bottom: 2px solid #396cd8;
+  font-weight: 600;
+}
+
+.stat-cards .player-name {
+  margin-bottom: 0.75rem;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  text-transform: capitalize;
+  color: #6b6b6b;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.match-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.match-table th,
+.match-table td {
+  text-align: left;
+  padding: 0.5em 0.7em;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.result-win {
+  color: #2f9e44;
+  font-weight: 600;
+}
+
+.result-loss {
+  color: #d1444a;
+  font-weight: 600;
+}
+
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.suggestion-card {
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+}
+
+.suggestion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+}
+
+.suggestion-title {
+  font-weight: 600;
+}
+
+.suggestion-score {
+  font-size: 0.8rem;
+  color: #6b6b6b;
+}
+
+.settings-panel {
+  max-width: 480px;
+}
+
+.settings-panel label {
+  font-weight: 600;
+}
+
+.status-ok {
+  color: #2f9e44;
+}
+
+.status-error {
+  color: #d1444a;
+}
+
+.attribution {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e6e6e6;
+  font-size: 0.8rem;
+  color: #6b6b6b;
+}
+
+.attribution a {
+  color: inherit;
+  font-weight: 600;
+}
+
+.attribution-disclaimer {
+  opacity: 0.8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f0f0f0;
+    background-color: #1e1e1e;
+  }
+
+  input,
+  button {
+    color: #f0f0f0;
+    background-color: #2b2b2b;
+    border-color: #444;
+  }
+
+  button {
+    background-color: #4d7ce0;
+  }
+
+  .chip {
+    background: #2a355c;
+    color: #dfe6ff;
+  }
+
+  .tabs {
+    border-bottom-color: #3a3a3a;
+  }
+
+  .stat-card,
+  .suggestion-card {
+    background: #262626;
+    border-color: #3a3a3a;
+  }
+
+  .match-table th,
+  .match-table td {
+    border-bottom-color: #333;
+  }
+
+  .attribution {
+    border-top-color: #3a3a3a;
+  }
+}
