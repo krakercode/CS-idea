@@ -7,6 +7,7 @@ import {
   type WidgetUserSettings,
 } from "./dashboardSettingsStore";
 import { ThemeSettings } from "./ThemeSettings";
+import { UpdateSettings } from "./UpdateSettings";
 import "./DashboardSettings.css";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -46,6 +47,11 @@ export function DashboardSettings({ settings, onChange, onClose }: Props) {
           <div className="dashboard-settings__row">
             <div className="dashboard-settings__widget-name">Appearance</div>
             <ThemeSettings />
+          </div>
+
+          <div className="dashboard-settings__row">
+            <div className="dashboard-settings__widget-name">Software update</div>
+            <UpdateSettings />
           </div>
 
           {WIDGETS.map((widget) => {

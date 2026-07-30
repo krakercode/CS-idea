@@ -60,6 +60,82 @@ Before packaging a real build, replace the placeholder icon
 > logic itself *is* verified, via unit tests against embedded fixture
 > data (`cargo test`).
 
+## Releasing & auto-updates
+
+Installers are built and published automatically by
+`.github/workflows/release.yml` (via
+[tauri-action](https://github.com/tauri-apps/tauri-action)), and installed
+apps check for and apply new versions themselves via Tauri's
+[updater plugin](https://v2.tauri.app/plugin/updater/) (Settings -> Software
+update, or automatically - nothing currently triggers a background check on
+launch, so today it's a manual "Check for updates" click).
+
+### Cutting a release
+
+1. Bump the version in **both** `package.json` and `src-tauri/tauri.conf.json`
+   (they should match).
+2. Tag and push:
+   ```sh
+   git tag app-v0.2.0
+   git push origin app-v0.2.0
+   ```
+3. The workflow builds a Windows installer (.msi/.exe), macOS installers
+   (.dmg, both Intel and Apple Silicon), and Linux packages
+   (.deb/.rpm/.AppImage), and opens a **draft** GitHub Release with all of
+   them attached plus a signed `latest.json` update manifest.
+4. Review the draft, then publish it. Existing installs pick up the new
+   version the next time they check - the updater endpoint always points at
+   this repo's *latest published* release.
+
+### One-time setup: the signing key
+
+Update packages are cryptographically signed so an installed app can verify
+one actually came from this repo before installing it - this is separate
+from OS code-signing (see below). A keypair has already been generated for
+this project; its **public** half is committed in
+`src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). For the release
+workflow to actually sign builds, add these two repository secrets
+(repo Settings -> Secrets and variables -> Actions -> New repository
+secret) - the private half is deliberately never committed to the repo, so
+get the values from whoever generated the keypair:
+
+- `TAURI_SIGNING_PRIVATE_KEY`
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+
+To generate your own keypair instead (e.g. if you want to rotate it):
+`npx tauri signer generate -w ~/.tauri/jesspr-east.key`, then replace
+`pubkey` in `tauri.conf.json` with the new public key and use the new
+private key/password for the secrets above. Losing the private key means
+existing installs can no longer verify (and therefore won't install) future
+updates signed with a different one - they'd need reinstalling from a fresh
+installer instead.
+
+### What this doesn't cover
+
+- **OS code-signing/notarization** is unrelated to the update-signing above
+  and isn't set up - unsigned Windows/macOS builds still show a SmartScreen
+  or Gatekeeper warning on first install (see below). That needs a paid
+  code-signing certificate (Windows) or an Apple Developer account (macOS
+  notarization); tauri-action supports both once you have them.
+- Auto-update covers Windows, macOS, and the Linux `.AppImage` target.
+  `.deb`/`.rpm` installs are expected to be updated via the distro's own
+  package manager instead.
+
+### How installing this looks on a PC
+
+- **Windows**: run the `.msi` or `.exe` (NSIS) installer like any other app.
+  Since it isn't code-signed, SmartScreen shows an "unrecognized app"
+  warning the first time - click "More info" -> "Run anyway".
+- **macOS**: open the `.dmg` and drag the app to Applications. Since it
+  isn't notarized, Gatekeeper blocks the first launch - right-click the
+  app -> Open, then confirm.
+- **Linux**: install the `.deb`/`.rpm` with your package manager, or make
+  the `.AppImage` executable and run it directly.
+
+No separate runtime to install on any platform - Tauri uses the OS's
+built-in webview (WebView2/WKWebView/WebKitGTK) instead of bundling
+Chromium, so these installers stay small (typically 5-15 MB).
+
 ## Architecture
 
 ```
@@ -71,6 +147,8 @@ src/
     DashboardSettings.tsx     - the settings panel (opened via the ⚙ button)
     themeStore.ts             - active theme (preset or custom), persisted to localStorage
     ThemeSettings.tsx         - preset picker + custom color editor, shown in DashboardSettings
+    updateService.ts         - wraps the Tauri updater plugin (check/download/install)
+    UpdateSettings.tsx        - version display + "check for updates" UI, shown in DashboardSettings
   styles/
     theme.css       - the default (Dark) CSS custom properties every widget's CSS uses
     themes.ts       - preset palettes + the field list that drives the custom color editor

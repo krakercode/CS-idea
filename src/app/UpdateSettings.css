@@ -1,0 +1,36 @@
+.update-settings {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.update-settings__version {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.update-settings__status {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.update-settings__status--error {
+  color: var(--color-negative);
+}
+
+.update-settings__available {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.update-settings__notes {
+  font-size: 12px;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  margin: 0;
+  max-width: 40ch;
+}

@@ -160,6 +160,8 @@ async fn fetch_quotes(state: tauri::State<'_, HttpState>, symbols: Vec<String>) 
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let data_dir = app
                 .path()
