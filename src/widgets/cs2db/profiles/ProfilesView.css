@@ -1,0 +1,47 @@
+.cs2-profiles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cs2-profiles__controls {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.cs2-profiles__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.cs2-profiles__field select {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 12px;
+}
+
+.cs2-profiles__section {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.cs2-profiles__section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.cs2-profiles__heading {
+  margin: 0 0 var(--space-2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}

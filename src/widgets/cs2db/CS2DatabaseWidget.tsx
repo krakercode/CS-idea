@@ -3,6 +3,8 @@ import { WidgetShell } from "../../shared/WidgetShell";
 import { ViewSwitcher } from "../../shared/ViewSwitcher";
 import { useWidgetViews } from "../../shared/useWidgetViews";
 import { getCs2Repository } from "./cs2Service";
+import { LineupList } from "./LineupList";
+import { ProfilesView } from "./profiles/ProfilesView";
 import type { Cs2Map, GrenadeType, NadeLineup, ProPlay } from "./types";
 import "./CS2DatabaseWidget.css";
 
@@ -13,8 +15,11 @@ const GRENADE_TYPES: GrenadeType[] = ["smoke", "flash", "molotov", "he"];
 const VIEWS = [
   { id: "lineups", label: "Lineups" },
   { id: "proplays", label: "Pro Plays" },
+  { id: "profiles", label: "Profiles" },
   { id: "analysis", label: "Analysis" },
 ];
+
+const SELF_MANAGED_VIEWS = new Set(["analysis", "profiles"]);
 
 export function CS2DatabaseWidget() {
   const repo = getCs2Repository();
@@ -31,7 +36,7 @@ export function CS2DatabaseWidget() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (activeId === "analysis") return;
+    if (SELF_MANAGED_VIEWS.has(activeId)) return;
     let cancelled = false;
     setLoading(true);
 
@@ -59,8 +64,8 @@ export function CS2DatabaseWidget() {
   return (
     <WidgetShell
       title="CS2 Database"
-      loading={activeId !== "analysis" && loading}
-      error={activeId !== "analysis" ? error : null}
+      loading={!SELF_MANAGED_VIEWS.has(activeId) && loading}
+      error={!SELF_MANAGED_VIEWS.has(activeId) ? error : null}
       headerActions={headerActions}
     >
       {(activeId === "lineups" || activeId === "proplays") && (
@@ -93,23 +98,7 @@ export function CS2DatabaseWidget() {
         </div>
       )}
 
-      {activeId === "lineups" && (
-        <ul className="cs2-widget__list">
-          {lineups.length === 0 && <p className="cs2-widget__empty">No lineups match.</p>}
-          {lineups.map((lineup) => (
-            <li key={lineup.id} className="cs2-widget__card">
-              <div className="cs2-widget__card-header">
-                <span className="cs2-widget__card-title">{lineup.name}</span>
-                <span className={`cs2-widget__badge cs2-widget__badge--${lineup.grenadeType}`}>{lineup.grenadeType}</span>
-              </div>
-              <div className="cs2-widget__card-meta">
-                {lineup.map} · {lineup.from} → {lineup.to} · {lineup.technique}
-              </div>
-              <p className="cs2-widget__card-description">{lineup.description}</p>
-            </li>
-          ))}
-        </ul>
-      )}
+      {activeId === "lineups" && <LineupList lineups={lineups} />}
 
       {activeId === "proplays" && (
         <ul className="cs2-widget__list">
@@ -137,6 +126,8 @@ export function CS2DatabaseWidget() {
           ))}
         </ul>
       )}
+
+      {activeId === "profiles" && <ProfilesView />}
 
       {activeId === "analysis" && (
         <Suspense fallback={<p className="cs2-widget__empty">Loading analysis…</p>}>

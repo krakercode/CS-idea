@@ -1,8 +1,9 @@
 import { delay } from "../../shared/mock";
 import { CS2_MAPS } from "./data/maps";
+import { MAP_POSITIONS } from "./data/positions";
 import { SAMPLE_LINEUPS } from "./data/lineups";
 import { SAMPLE_PRO_PLAYS } from "./data/proPlays";
-import type { Cs2Map, Cs2Repository, LineupFilter, NadeLineup, ProPlay, ProPlayFilter } from "./types";
+import type { Cs2Map, Cs2Repository, LineupFilter, MapPosition, NadeLineup, ProPlay, ProPlayFilter } from "./types";
 
 function matchesSearch(haystack: string[], search: string | undefined): boolean {
   if (!search) return true;
@@ -21,12 +22,18 @@ class LocalCs2Repository implements Cs2Repository {
     return CS2_MAPS;
   }
 
+  listPositions(map: Cs2Map): MapPosition[] {
+    return MAP_POSITIONS.filter((p) => p.map === map);
+  }
+
   async fetchLineups(filter: LineupFilter): Promise<NadeLineup[]> {
     await delay(100);
     return SAMPLE_LINEUPS.filter(
       (lineup) =>
         (!filter.map || lineup.map === filter.map) &&
         (!filter.grenadeType || lineup.grenadeType === filter.grenadeType) &&
+        (!filter.side || lineup.side === filter.side) &&
+        (!filter.positionId || (lineup.positions?.includes(filter.positionId) ?? false)) &&
         matchesSearch([lineup.name, lineup.map, lineup.from, lineup.to, lineup.description], filter.search),
     );
   }

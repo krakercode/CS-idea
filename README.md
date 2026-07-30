@@ -106,11 +106,23 @@ builds itself:
   random-walks a price per symbol so polling has something to show.
 - **Calendar** - sample esports/sports fixtures, filterable by category.
   Real version needs a schedule source per league/competition you care about.
-- **CS2 Database** - three views, cycled with `useWidgetViews`/`ViewSwitcher`:
+- **CS2 Database** - four views, cycled with `useWidgetViews`/`ViewSwitcher`:
   - *Lineups* and *Pro Plays* - searchable/filterable by map, sample data in
     `widgets/cs2db/data/`, meant to be replaced/expanded (lineup positions
     can shift between patches, and the pro-play entries are placeholder
-    fixtures - fake names/dates, not real match records).
+    fixtures - fake names/dates, not real match records). Lineups are
+    tagged `side: "T" | "CT"`, and CT lineups additionally carry
+    `positions: string[]` referencing `data/positions.ts` - the named CT
+    holding spots per map (Mirage's "Jungle", Inferno's "Banana", etc.)
+    that Profiles is built on.
+  - *Profiles* - pick the CT position you usually hold on a map
+    (persisted locally per map via `profiles/profileStore.ts`,
+    `localStorage`) and see that position's CT lineups together with every
+    T-side lineup for the same map, in one screen - so there's nothing to
+    go dig up when your team switches sides at halftime. Adding more
+    positions/CT lineups is just adding entries to `data/positions.ts` and
+    `data/lineups.ts`; the shared `<LineupList>` card renderer is reused
+    from the Lineups view.
   - *Analysis* - a real (not mock) integration: look up a Leetify profile by
     Steam64/profile ID for its rank/rating breakdown, recent matches, local
     rating-trend charts (built from a snapshot taken on each lookup), and
