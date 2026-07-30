@@ -20,6 +20,8 @@ thiserror = "2"
 sysinfo = "0.38.4"
 feed-rs = "2.4.0"
 futures = "0.3.33"
+tauri-plugin-updater = "2.10.1"
+tauri-plugin-process = "2.3.1"
 
 [profile.release]
 # Keep the always-running background footprint small.
