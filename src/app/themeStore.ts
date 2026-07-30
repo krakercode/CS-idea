@@ -1,9 +1,12 @@
 import { DEFAULT_PRESET_ID, THEME_COLOR_FIELDS, THEME_PRESETS, type ThemeColors } from "../styles/themes";
+import { DEFAULT_FONT_ID, FONT_OPTIONS } from "../styles/fonts";
 
 export interface ThemeState {
   /** A THEME_PRESETS id, or "custom" to use customColors instead. */
   presetId: string;
   customColors: ThemeColors;
+  /** A FONT_OPTIONS id. */
+  fontId: string;
 }
 
 const STORAGE_KEY = "dashboard-theme";
@@ -16,14 +19,15 @@ function defaultPresetColors(): ThemeColors {
 export function getThemeState(): ThemeState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { presetId: DEFAULT_PRESET_ID, customColors: defaultPresetColors() };
+    if (!raw) return { presetId: DEFAULT_PRESET_ID, customColors: defaultPresetColors(), fontId: DEFAULT_FONT_ID };
     const parsed = JSON.parse(raw) as Partial<ThemeState>;
     return {
       presetId: parsed.presetId ?? DEFAULT_PRESET_ID,
       customColors: { ...defaultPresetColors(), ...parsed.customColors },
+      fontId: parsed.fontId ?? DEFAULT_FONT_ID,
     };
   } catch {
-    return { presetId: DEFAULT_PRESET_ID, customColors: defaultPresetColors() };
+    return { presetId: DEFAULT_PRESET_ID, customColors: defaultPresetColors(), fontId: DEFAULT_FONT_ID };
   }
 }
 
@@ -41,18 +45,23 @@ export function resolveActivePalette(state: ThemeState): ThemeColors {
   return THEME_PRESETS.find((p) => p.id === state.presetId)?.colors ?? defaultPresetColors();
 }
 
-/** Writes the active palette onto :root as inline style, which wins over
- * theme.css's :root block by cascade specificity - no per-theme CSS
- * classes needed for color. Also stamps `data-theme-style` with the preset
- * id so theme-flair.css can layer on non-color UI treatment (fonts,
- * border shape, texture) for specific presets - e.g. the game-inspired
- * ones - without affecting Custom or the plain presets. */
+function resolveFontCssValue(fontId: string): string {
+  return FONT_OPTIONS.find((f) => f.id === fontId)?.cssValue ?? FONT_OPTIONS[0].cssValue;
+}
+
+/** Writes the active palette and font onto :root as inline style, which
+ * wins over theme.css's :root block by cascade specificity - no per-theme
+ * CSS classes needed for color. Also stamps `data-theme-style` with the
+ * preset id so theme-flair.css can layer on non-color UI treatment (border
+ * shape, texture, per-theme title fonts) for specific presets - e.g. the
+ * game-inspired ones - without affecting Custom or the plain presets. */
 export function applyTheme(state: ThemeState): void {
   const palette = resolveActivePalette(state);
   const root = document.documentElement.style;
   for (const field of THEME_COLOR_FIELDS) {
     root.setProperty(field.cssVar, palette[field.key]);
   }
+  root.setProperty("--font-sans", resolveFontCssValue(state.fontId));
   document.documentElement.setAttribute("data-theme-style", state.presetId);
 }
 
@@ -63,8 +72,8 @@ export function setPreset(presetId: string): ThemeState {
   // instead of an arbitrary default.
   const next: ThemeState =
     presetId === "custom"
-      ? { presetId, customColors: resolveActivePalette(current) }
-      : { presetId, customColors: current.customColors };
+      ? { ...current, presetId, customColors: resolveActivePalette(current) }
+      : { ...current, presetId };
   saveThemeState(next);
   applyTheme(next);
   return next;
@@ -72,7 +81,14 @@ export function setPreset(presetId: string): ThemeState {
 
 export function setCustomColor(key: keyof ThemeColors, value: string): ThemeState {
   const current = getThemeState();
-  const next: ThemeState = { presetId: "custom", customColors: { ...current.customColors, [key]: value } };
+  const next: ThemeState = { ...current, presetId: "custom", customColors: { ...current.customColors, [key]: value } };
+  saveThemeState(next);
+  applyTheme(next);
+  return next;
+}
+
+export function setFont(fontId: string): ThemeState {
+  const next: ThemeState = { ...getThemeState(), fontId };
   saveThemeState(next);
   applyTheme(next);
   return next;

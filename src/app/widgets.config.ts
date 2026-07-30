@@ -81,7 +81,9 @@ export function getDefaultSettings(): Record<string, WidgetUserSettings> {
   for (const widget of WIDGETS) {
     defaults[widget.id] = {
       visibility: "always",
-      schedule: DEFAULT_SCHEDULE,
+      // Each widget needs its own schedule object - sharing DEFAULT_SCHEDULE
+      // directly would mean every widget's default aliases the same array.
+      schedule: { ...DEFAULT_SCHEDULE, days: [...DEFAULT_SCHEDULE.days] },
       colSpan: widget.defaultColSpan,
       rowSpan: widget.defaultRowSpan,
     };

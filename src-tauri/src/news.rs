@@ -14,8 +14,7 @@ pub enum NewsSourceRequest {
 impl NewsSourceRequest {
     fn topic(&self) -> &str {
         match self {
-            NewsSourceRequest::Keyword { topic, .. } => topic,
-            NewsSourceRequest::Feed { topic, .. } => topic,
+            NewsSourceRequest::Keyword { topic, .. } | NewsSourceRequest::Feed { topic, .. } => topic,
         }
     }
 
@@ -57,15 +56,11 @@ const MAX_ARTICLES_PER_FEED: usize = 5;
 /// arbitrary outbound hosts, so the HTTP path itself isn't testable here -
 /// see README).
 fn parse_feed(topic: &str, bytes: &[u8]) -> Vec<NewsArticle> {
-    let feed = match feed_rs::parser::parse(bytes) {
-        Ok(f) => f,
-        Err(_) => return Vec::new(),
+    let Ok(feed) = feed_rs::parser::parse(bytes) else {
+        return Vec::new();
     };
 
-    let source = feed
-        .title
-        .map(|t| t.content)
-        .unwrap_or_else(|| topic.to_string());
+    let source = feed.title.map_or_else(|| topic.to_string(), |t| t.content);
 
     feed.entries
         .into_iter()
@@ -76,8 +71,7 @@ fn parse_feed(topic: &str, bytes: &[u8]) -> Vec<NewsArticle> {
             let published_at = entry
                 .published
                 .or(entry.updated)
-                .map(|dt| dt.to_rfc3339())
-                .unwrap_or_else(|| chrono::Utc::now().to_rfc3339());
+                .map_or_else(|| chrono::Utc::now().to_rfc3339(), |dt| dt.to_rfc3339());
             let id = if entry.id.is_empty() { url.clone() } else { entry.id };
 
             Some(NewsArticle {
@@ -158,11 +152,14 @@ mod tests {
 
     #[test]
     fn caps_articles_per_feed() {
+        use std::fmt::Write as _;
+
         let mut items = String::new();
         for i in 0..10 {
-            items.push_str(&format!(
+            let _ = write!(
+                items,
                 "<item><title>Item {i}</title><link>https://example.com/{i}</link><guid>https://example.com/{i}</guid></item>"
-            ));
+            );
         }
         let rss = format!(
             r#"<rss version="2.0"><channel><title>Many</title><link>https://example.com</link><description>d</description>{items}</channel></rss>"#

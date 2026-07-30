@@ -52,12 +52,14 @@ fn quote_from_response(body: &str) -> Option<Quote> {
     let price = meta.regular_market_price?;
     let previous_close = meta.previous_close.or(meta.chart_previous_close).unwrap_or(price);
     let change = price - previous_close;
-    let change_percent = if previous_close != 0.0 { (change / previous_close) * 100.0 } else { 0.0 };
+    // Exact-zero guard against division by zero, not a general float
+    // equality check - an epsilon comparison would be wrong here.
+    #[allow(clippy::float_cmp)]
+    let change_percent = if previous_close == 0.0 { 0.0 } else { (change / previous_close) * 100.0 };
     let updated_at = meta
         .regular_market_time
         .and_then(|t| chrono::DateTime::from_timestamp(t, 0))
-        .map(|dt| dt.to_rfc3339())
-        .unwrap_or_else(|| chrono::Utc::now().to_rfc3339());
+        .map_or_else(|| chrono::Utc::now().to_rfc3339(), |dt| dt.to_rfc3339());
 
     Some(Quote {
         symbol: meta.symbol,

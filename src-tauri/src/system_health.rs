@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::sync::Mutex;
-use sysinfo::{Components, Disks, System};
+use sysinfo::{Components, Cpu, Disks, System};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuInfo {
@@ -63,7 +63,7 @@ pub fn collect(state: &SystemHealthState) -> SystemHealth {
         brand: sys.cpus().first().map(|c| c.brand().to_string()).unwrap_or_default(),
         core_count: sys.cpus().len(),
         overall_usage_percent: sys.global_cpu_usage(),
-        per_core_usage_percent: sys.cpus().iter().map(|c| c.cpu_usage()).collect(),
+        per_core_usage_percent: sys.cpus().iter().map(Cpu::cpu_usage).collect(),
     };
 
     let memory = MemoryInfo {
@@ -113,7 +113,7 @@ mod tests {
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         let second = collect(&state);
 
-        println!("{:#?}", second);
+        println!("{second:#?}");
 
         assert!(second.cpu.core_count > 0, "expected at least one CPU core");
         assert_eq!(second.cpu.per_core_usage_percent.len(), second.cpu.core_count);
