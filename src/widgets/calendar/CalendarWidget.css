@@ -39,6 +39,16 @@
   border-bottom: none;
 }
 
+.calendar-widget__link {
+  display: contents;
+  color: inherit;
+  text-decoration: none;
+}
+
+.calendar-widget__link:hover .calendar-widget__title {
+  text-decoration: underline;
+}
+
 .calendar-widget__time {
   font-family: var(--font-mono);
   font-size: 12px;

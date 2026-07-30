@@ -1,6 +1,7 @@
 // Prevents an additional console window from appearing on Windows in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod calendar;
 mod db;
 mod leetify_client;
 mod news;
@@ -159,6 +160,11 @@ async fn fetch_quotes(state: tauri::State<'_, HttpState>, symbols: Vec<String>) 
 }
 
 #[tauri::command]
+async fn fetch_calendar(state: tauri::State<'_, HttpState>) -> Result<Vec<calendar::CalendarEvent>, ()> {
+    Ok(calendar::fetch_all(&state.client).await)
+}
+
+#[tauri::command]
 async fn spotify_login(app: tauri::AppHandle, state: tauri::State<'_, HttpState>) -> Result<(), String> {
     spotify::login(&app, &state.client).await
 }
@@ -211,6 +217,7 @@ fn main() {
             get_system_health,
             fetch_news,
             fetch_quotes,
+            fetch_calendar,
             spotify_login,
             spotify_logout,
             spotify_is_connected,

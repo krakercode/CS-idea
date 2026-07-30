@@ -44,22 +44,42 @@ export function CalendarWidget() {
     <WidgetShell title="Calendar" loading={loading} error={error} onRefresh={refresh} headerActions={headerActions}>
       {events.length === 0 && <p className="calendar-widget__empty">Nothing upcoming.</p>}
       <ul className="calendar-widget__list">
-        {events.map((event) => (
-          <li key={event.id} className="calendar-widget__row">
-            <span className="calendar-widget__time">{dateFormatter.format(new Date(event.startTime))}</span>
-            <div className="calendar-widget__details">
-              <span className="calendar-widget__title">
-                {event.teams ? event.teams.join(" vs ") : event.title}
+        {events.map((event) => {
+          const row = (
+            <>
+              <span className="calendar-widget__time">{dateFormatter.format(new Date(event.start_time))}</span>
+              <div className="calendar-widget__details">
+                <span className="calendar-widget__title">
+                  {event.teams && event.teams.length === 2 ? event.teams.join(" vs ") : event.title}
+                </span>
+                <span className="calendar-widget__competition">
+                  {event.competition} · {event.title}
+                </span>
+              </div>
+              <span className={`calendar-widget__badge calendar-widget__badge--${event.category}`}>
+                {event.category}
               </span>
-              <span className="calendar-widget__competition">
-                {event.competition} · {event.title}
-              </span>
-            </div>
-            <span className={`calendar-widget__badge calendar-widget__badge--${event.category}`}>
-              {event.category}
-            </span>
-          </li>
-        ))}
+            </>
+          );
+
+          return event.link_url ? (
+            <li key={event.id} className="calendar-widget__row">
+              <a
+                className="calendar-widget__link"
+                href={event.link_url}
+                target="_blank"
+                rel="noreferrer"
+                title="Open match page / find a stream"
+              >
+                {row}
+              </a>
+            </li>
+          ) : (
+            <li key={event.id} className="calendar-widget__row">
+              {row}
+            </li>
+          );
+        })}
       </ul>
     </WidgetShell>
   );

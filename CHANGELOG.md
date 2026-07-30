@@ -28,12 +28,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   on the dashboard (a resize handle bottom-right, a move handle top-left)
   instead of Width/Height dropdowns in Settings, which are gone -
   Visibility/Scheduled are still there, untouched.
+- Calendar: real match data (`calendar.rs`) - TheSportsDB for general
+  sports, an unofficial HLTV scraper for CS2/esports (no official HLTV API
+  exists), fetched concurrently so one source failing doesn't affect the
+  other. Each event links out on click - the match's own HLTV page for
+  esports, a search query for general sports.
 
 ### In progress
 
-- Calendar: real match data - TheSportsDB for general sports, an
-  unofficial HLTV scraper for CS2/esports (no official HLTV API exists),
-  linking through to official streams where available.
 - New "___ of the Day" widget: Wikipedia featured article, Wikimedia
   picture of the day, and a personalized song of the day via Spotify.
 

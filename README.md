@@ -7,10 +7,9 @@ React/TypeScript frontend, chosen specifically to stay light enough to run
 continuously without eating a monitor's worth of RAM the way an
 Electron app would.
 
-News, Stocks, Analysis (CS2 Database's fourth view), and System Health all
-run on real data now - no API keys required for any of them. Calendar and
-Spotify are still mock/local (see their widget notes below for why, and
-what's needed to make them real).
+News, Stocks, Calendar, Analysis (CS2 Database's fourth view), System Health,
+and Spotify all run on real data now - no API keys required for any of them
+except Spotify (see its widget notes below).
 
 ## Stack
 
@@ -300,12 +299,24 @@ anything.
   via the 📈/📉 button in the header if you'd rather keep it text-only.
   Polls every 60s (deliberately not faster, since it's an unauthenticated
   endpoint). A symbol that fails to resolve is dropped, not fatal.
-- **Calendar** - still mock/sample data, by choice: there's no good
-  free/keyless API for esports schedules (HLTV has no official one, and
-  scraping their site would violate their ToS), and general-sports-only
-  felt like the wrong tradeoff for an app centered on CS2. Real esports
-  data would need something like PandaScore (requires signing up for a free
-  API key) wired into `calendarService.ts`.
+- **Calendar** - real data from two independent sources
+  (`src-tauri/src/calendar.rs`), fetched concurrently and merged so one
+  failing doesn't take down the other:
+  - *General sports* - [TheSportsDB](https://www.thesportsdb.com/), using
+    their long-documented shared free/test key (`"3"`, no signup). A
+    small hard-coded set of leagues for now (Premier League, NBA).
+  - *CS2/esports* - there's no official HLTV API, so this scrapes their
+    public matches listing page instead. This is inherently fragile:
+    HLTV can change their markup without notice, which would silently
+    stop esports matches from showing up until someone updates the
+    selectors in `calendar.rs`. If that happens, compare hltv.org/matches'
+    current markup to the `Selector::parse(...)` calls near the top of
+    `parse_hltv_html` and adjust them - the rest of the pipeline doesn't
+    need to change.
+  - Each event links out on click - to the match's own HLTV page for
+    esports (which shows the official stream once live), or a search
+    query for general sports, since there's no reliable single source for
+    those. Neither is a scraped/rehosted stream link.
 - **CS2 Database** - four views, cycled with `useWidgetViews`/`ViewSwitcher`:
   - *Lineups* and *Pro Plays* - searchable/filterable by map, sample data in
     `widgets/cs2db/data/`, meant to be replaced/expanded (lineup positions
