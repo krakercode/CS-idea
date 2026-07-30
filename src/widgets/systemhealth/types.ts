@@ -28,6 +28,14 @@ export interface ComponentInfo {
   temperature_celsius: number | null;
 }
 
+export interface GpuInfo {
+  name: string;
+  usage_percent: number;
+  memory_used_bytes: number;
+  memory_total_bytes: number;
+  temperature_celsius: number | null;
+}
+
 export interface SystemHealth {
   hostname: string | null;
   os_name: string | null;
@@ -35,4 +43,7 @@ export interface SystemHealth {
   memory: MemoryInfo;
   disks: DiskInfo[];
   components: ComponentInfo[];
+  // Empty on machines without an NVIDIA GPU/driver - AMD/Intel aren't
+  // supported yet (see system_health.rs).
+  gpus: GpuInfo[];
 }

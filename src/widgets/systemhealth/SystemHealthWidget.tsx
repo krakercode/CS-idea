@@ -52,6 +52,24 @@ export function SystemHealthWidget() {
             </div>
           </section>
 
+          {data.gpus.map((gpu) => (
+            <section key={gpu.name} className="sys-health__section">
+              <div className="sys-health__row-header">
+                <span className="sys-health__label">{gpu.name}</span>
+                <span className="sys-health__value">{gpu.usage_percent.toFixed(0)}%</span>
+              </div>
+              <UsageBar percent={gpu.usage_percent} />
+              <div className="sys-health__row-header sys-health__row-header--sub">
+                <span className="sys-health__muted">
+                  {formatBytes(gpu.memory_used_bytes)} / {formatBytes(gpu.memory_total_bytes)} VRAM
+                </span>
+                {gpu.temperature_celsius != null && (
+                  <span className="sys-health__muted">{gpu.temperature_celsius.toFixed(0)}°C</span>
+                )}
+              </div>
+            </section>
+          ))}
+
           <section className="sys-health__section">
             <div className="sys-health__row-header">
               <span className="sys-health__label">Memory</span>

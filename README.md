@@ -381,6 +381,16 @@ crate behind one command, `get_system_health`. Implementation notes:
   un-renamed) and `src/widgets/systemhealth/types.ts` mirrors them exactly
   rather than converting case - there's no real API contract to abstract
   away here, so a 1:1 mirror is simpler than adding a mapping layer.
+- **GPU usage/memory/temperature is NVIDIA-only** (via
+  [`nvml-wrapper`](https://docs.rs/nvml-wrapper), initialized once in
+  `SystemHealthState::new()`). On a machine without an NVIDIA GPU or driver,
+  `Nvml::init()` fails gracefully and `gpus` is just an empty array - the
+  widget shows nothing rather than an error. AMD/Intel GPUs aren't
+  supported yet; there's no cross-vendor equivalent of NVML without
+  significantly more platform-specific work (e.g. Windows performance
+  counters), so this was scoped to the common case first. This container
+  has no GPU at all, so the NVIDIA path itself is unverified on real
+  hardware - confirm the values look sane on an actual NVIDIA machine.
 
 ## News & Stocks backends
 
