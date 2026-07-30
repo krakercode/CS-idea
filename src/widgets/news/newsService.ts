@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { NEWS_KEYWORDS, NEWS_FEEDS } from "./newsSources";
+import { NEWS_FEEDS } from "./newsSources";
+import { getKeywords } from "./newsKeywordsStore";
 import type { NewsArticle } from "./types";
 
 // Mirrors src-tauri/src/news.rs's NewsSourceRequest (serde tag = "kind").
@@ -9,7 +10,7 @@ type NewsSourceRequest =
 
 function buildSources(): NewsSourceRequest[] {
   return [
-    ...NEWS_KEYWORDS.map((keyword): NewsSourceRequest => ({ kind: "keyword", topic: keyword, query: keyword })),
+    ...getKeywords().map((keyword): NewsSourceRequest => ({ kind: "keyword", topic: keyword, query: keyword })),
     ...NEWS_FEEDS.map((feed): NewsSourceRequest => ({ kind: "feed", topic: feed.topic, url: feed.url })),
   ];
 }

@@ -263,20 +263,28 @@ you've touched its settings.
 
 ### Widget notes
 
-- **News** - real news, configured with plain keywords (`widgets/news/newsSources.ts`'s
-  `NEWS_KEYWORDS` - "Counter-Strike 2", a ticker like "AAPL", a team name,
-  whatever you want to follow). No RSS knowledge needed: each keyword is
-  turned into a Google News search under the hood
-  (`src-tauri/src/news.rs::NewsSourceRequest::resolve_url`) and fetched the
-  same way as any other feed. If you *do* know a specific feed URL you'd
-  rather follow directly, `NEWS_FEEDS` in the same file is the advanced,
-  empty-by-default option for that. Either way, a source that's unreachable
-  or fails to parse is dropped rather than failing the whole widget.
+- **News** - real news, configured with plain keywords - edit the tag chips
+  right in the widget (add one, click × to remove one; capped at 10, see
+  `newsKeywordsStore.ts`) rather than needing to touch code. No RSS
+  knowledge needed: each keyword is turned into a Google News search under
+  the hood (`src-tauri/src/news.rs::NewsSourceRequest::resolve_url`) and
+  fetched the same way as any other feed. `NEWS_KEYWORDS` in
+  `newsSources.ts` is just the first-run default now, before the user has
+  customized anything. If you *do* know a specific feed URL you'd rather
+  follow directly, `NEWS_FEEDS` in the same file is the advanced,
+  empty-by-default, code-only option for that. Either way, a source that's
+  unreachable or fails to parse is dropped rather than failing the whole
+  widget.
 - **Stocks** - real quotes from Yahoo Finance's unofficial chart endpoint
   (`src-tauri/src/stocks.rs`) - no API key, but also undocumented and could
   change without notice; see "CS2 Analysis backend" for the same tradeoff
-  Leetify's API has. Tickers live in `widgets/stocks/watchlist.ts`. Polls
-  every 60s (deliberately not faster, since it's an unauthenticated
+  Leetify's API has. The watchlist is editable in the widget itself (same
+  tag-chip pattern as News, capped at 12, see `watchlistStore.ts`) -
+  `watchlist.ts`'s `STOCK_WATCHLIST` is just the first-run default. Each
+  quote also carries a month of daily closes for a per-row sparkline
+  (color-coded with the same green/red as the change figure), toggleable
+  via the 📈/📉 button in the header if you'd rather keep it text-only.
+  Polls every 60s (deliberately not faster, since it's an unauthenticated
   endpoint). A symbol that fails to resolve is dropped, not fatal.
 - **Calendar** - still mock/sample data, by choice: there's no good
   free/keyless API for esports schedules (HLTV has no official one, and
@@ -428,10 +436,11 @@ no OAuth.
   malformed XML) are swallowed and that source is just dropped from the
   results - one flaky source shouldn't blank the whole widget. Capped at 5
   articles per source, merged and sorted by published date.
-- **Stocks** hits `query1.finance.yahoo.com/v8/finance/chart/{symbol}` per
-  ticker, concurrently, and reads only the `meta` block (price, previous
-  close, currency, timestamp) out of a much larger response. Same
-  per-symbol failure tolerance as News.
+- **Stocks** hits `query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=1mo&interval=1d`
+  per ticker, concurrently, reading the `meta` block (price, previous
+  close, currency, timestamp) plus `indicators.quote[0].close` (a month of
+  daily closes, nulls dropped) for the sparkline - the rest of the response
+  is still ignored. Same per-symbol failure tolerance as News.
 - Both modules split the "parse a response" logic from the "make the HTTP
   request" logic specifically so the parsing can be unit-tested against an
   embedded fixture (`cargo test`) without a live connection - see the note

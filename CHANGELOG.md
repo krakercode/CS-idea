@@ -17,6 +17,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   tokens live on the Rust side only, refreshed automatically, replacing
   the previous connect-stub. Shows currently playing track/artist/album
   and progress; read-only, can't control playback.
+- News: the keyword list is now editable right in the widget (add/remove
+  tag chips, capped at 10, persisted) instead of only via
+  `newsSources.ts`.
+- Stocks: the watchlist is now editable right in the widget (same
+  tag-chip pattern, capped at 12, persisted) instead of only via
+  `watchlist.ts`. Each quote also carries a month of daily closes for a
+  per-row sparkline, color-coded up/down, toggleable from the header.
 
 ### In progress
 
@@ -25,12 +32,8 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Calendar: real match data - TheSportsDB for general sports, an
   unofficial HLTV scraper for CS2/esports (no official HLTV API exists),
   linking through to official streams where available.
-- News: in-app editable keyword/tag list (currently a code-only list in
-  `newsSources.ts`).
-- Stocks: in-app editable watchlist plus historical price charts.
 - New "___ of the Day" widget: Wikipedia featured article, Wikimedia
-  picture of the day, and (once Spotify's connected) a personalized
-  song of the day.
+  picture of the day, and a personalized song of the day via Spotify.
 
 ## [0.1.0] - first installable release
 
