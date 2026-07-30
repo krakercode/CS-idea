@@ -27,6 +27,13 @@ export interface NadeLineup {
   side: Side;
   /** CT-side lineups only: which MapPosition id(s) this is relevant to. */
   positions?: string[];
+  /** A specific page (csnades.gg, a YouTube guide, etc.) showing this exact
+   * lineup - set this once you've found/verified one. We link out to
+   * sources like this rather than downloading and rehosting their images,
+   * since those aren't ours to redistribute. Falls back to a search query
+   * (see LineupList) when unset, so every card still has somewhere to go
+   * look for a visual reference. */
+  sourceUrl?: string;
   imageUrl?: string;
   videoUrl?: string;
 }

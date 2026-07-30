@@ -300,7 +300,10 @@ you've touched its settings.
     go dig up when your team switches sides at halftime. Adding more
     positions/CT lineups is just adding entries to `data/positions.ts` and
     `data/lineups.ts`; the shared `<LineupList>` card renderer is reused
-    from the Lineups view.
+    from the Lineups view. Every card links out to a reference for the
+    lineup - a specific `sourceUrl` if you've set one on that entry,
+    otherwise a search query for it - rather than downloading and
+    rehosting images from lineup sites, which isn't ours to redistribute.
   - *Analysis* - a real (not mock) integration: look up a Leetify profile by
     Steam64/profile ID for its rank/rating breakdown, recent matches, local
     rating-trend charts (built from a snapshot taken on each lookup), and

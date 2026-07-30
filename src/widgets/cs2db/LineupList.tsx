@@ -5,6 +5,16 @@ interface Props {
   emptyMessage?: string;
 }
 
+/** Where to send someone looking for a visual reference for this lineup.
+ * We never scrape or rehost images from lineup sites - only link out to
+ * them - so an unverified entry falls back to a search query instead of a
+ * dead or fabricated link. */
+function referenceUrl(lineup: NadeLineup): string {
+  if (lineup.sourceUrl) return lineup.sourceUrl;
+  const query = `${lineup.name} ${lineup.map} csnades lineup`;
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+}
+
 /** Shared lineup card list - used by the Lineups view and by Profiles
  * (which shows two of these side by side: your position + T-side). */
 export function LineupList({ lineups, emptyMessage = "No lineups match." }: Props) {
@@ -24,6 +34,9 @@ export function LineupList({ lineups, emptyMessage = "No lineups match." }: Prop
             {lineup.map} · {lineup.from} → {lineup.to} · {lineup.technique}
           </div>
           <p className="cs2-widget__card-description">{lineup.description}</p>
+          <a href={referenceUrl(lineup)} className="cs2-widget__card-source" target="_blank" rel="noreferrer">
+            {lineup.sourceUrl ? "View lineup ↗" : "Find a visual reference ↗"}
+          </a>
         </li>
       ))}
     </ul>
