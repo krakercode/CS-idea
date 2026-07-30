@@ -34,7 +34,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQzMDNDMDJERjRBQkExODUKUldTRm9hdjBMY0FEMHpBdGgyejZITnNrMFJmcGpsaGpEN0NzV01LOUE1K0hJdXd0Yi9kUUVvUWIK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY2N0QyRkRCQ0E4NjlFREIKUldUYm5vYksyeTk5OXY1N05tQklMYkFKcWZETm1wTGJDNlZEd2RpOGE3OVk1RzIxWkpPYzZ6TnMK",
       "endpoints": [
         "https://github.com/krakercode/CS-idea/releases/latest/download/latest.json"
       ]
