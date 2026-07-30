@@ -252,14 +252,28 @@ Per widget, you can set:
   crosses the boundary - no reload needed. An overnight window like
   22:00-02:00 works too (`isWidgetVisibleNow` in `dashboardSettingsStore.ts`
   handles the wraparound).
-- **Width / Height** - Small/Medium/Large (grid column span) and
-  Normal/Tall (grid row span).
 
-All of this is per-device, persisted to `localStorage` (key
-`dashboard-widget-settings`) - there's no sync or account system, matching
-everything else in this app being local-first. `widgets.config.ts`'s
-`defaultColSpan`/`defaultRowSpan` are just what a widget starts at before
-you've touched its settings.
+Size and position aren't in the settings panel - they're mouse-driven,
+directly on the dashboard (`WidgetCell.tsx`):
+
+- **Resize**: hover a widget, grab the ⌟ handle that appears in its
+  bottom-right corner, and drag. Self-calibrating against the cell's own
+  current rendered size (rather than assuming a fixed column width/row
+  height, which isn't constant - rows are `minmax(260px, 1fr)`), clamped to
+  1-3 columns and 1-2 rows, live-previewed as you drag and only written to
+  `localStorage` on release.
+- **Reposition**: grab the ⠿ handle that appears top-left, drag onto
+  another widget, and drop - it's inserted right before whatever you
+  dropped it on. Plain native HTML5 drag-and-drop, so it plays fine with
+  the rest of each widget staying normally interactive (links, buttons,
+  text selection) - only that small handle initiates a drag.
+
+All of this is per-device, persisted to `localStorage` (`dashboard-widget-settings`
+for size, `dashboard-widget-order` for position) - there's no sync or
+account system, matching everything else in this app being local-first.
+`widgets.config.ts`'s `defaultColSpan`/`defaultRowSpan` and the widget
+list's own order are just the starting point before you've touched
+anything.
 
 ### Widget notes
 

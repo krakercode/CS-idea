@@ -18,8 +18,10 @@ interface Props {
   onClose: () => void;
 }
 
-/** Per-widget visibility (always / scheduled / hidden), schedule, and size -
- * the runtime counterpart to widgets.config.ts's static defaults. */
+/** Per-widget visibility (always / scheduled / hidden) and schedule - the
+ * runtime counterpart to widgets.config.ts's static defaults. Size and
+ * position are drag-driven on the dashboard itself (see WidgetCell.tsx)
+ * rather than settings here. */
 export function DashboardSettings({ settings, onChange, onClose }: Props) {
   const defaults = getDefaultSettings();
 
@@ -72,29 +74,6 @@ export function DashboardSettings({ settings, onChange, onClose }: Props) {
                       <option value="always">Always shown</option>
                       <option value="scheduled">Scheduled</option>
                       <option value="hidden">Hidden</option>
-                    </select>
-                  </label>
-
-                  <label className="dashboard-settings__field">
-                    Width
-                    <select
-                      value={s.colSpan}
-                      onChange={(e) => patch(widget.id, { colSpan: Number(e.target.value) as 1 | 2 | 3 })}
-                    >
-                      <option value={1}>Small</option>
-                      <option value={2}>Medium</option>
-                      <option value={3}>Large</option>
-                    </select>
-                  </label>
-
-                  <label className="dashboard-settings__field">
-                    Height
-                    <select
-                      value={s.rowSpan}
-                      onChange={(e) => patch(widget.id, { rowSpan: Number(e.target.value) as 1 | 2 })}
-                    >
-                      <option value={1}>Normal</option>
-                      <option value={2}>Tall</option>
                     </select>
                   </label>
                 </div>

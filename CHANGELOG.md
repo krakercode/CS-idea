@@ -24,11 +24,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   tag-chip pattern, capped at 12, persisted) instead of only via
   `watchlist.ts`. Each quote also carries a month of daily closes for a
   per-row sparkline, color-coded up/down, toggleable from the header.
+- Dashboard: widgets are now resized and repositioned by dragging directly
+  on the dashboard (a resize handle bottom-right, a move handle top-left)
+  instead of Width/Height dropdowns in Settings, which are gone -
+  Visibility/Scheduled are still there, untouched.
 
 ### In progress
 
-- Mouse drag-to-resize/reposition for dashboard widgets, alongside the
-  existing visibility/scheduling settings (not replacing them).
 - Calendar: real match data - TheSportsDB for general sports, an
   unofficial HLTV scraper for CS2/esports (no official HLTV API exists),
   linking through to official streams where available.
