@@ -312,11 +312,25 @@ you've touched its settings.
     which otherwise never touches the main bundle) and backed by Rust
     (`src-tauri/src/leetify_client.rs`, `db.rs`, `suggestions.rs`) - see
     below.
-- **Spotify** - "Connect" is currently a stub (flips a local flag; no real
-  OAuth). The real integration is noted in `spotifyService.ts`: Spotify's
-  Authorization Code + PKCE flow suits a desktop app well (no client secret
-  to embed), using Tauri's shell/opener plugin to launch the system browser
-  and a loopback redirect (or a custom URL scheme) to catch the callback.
+- **Spotify** - real integration, entirely on the Rust side
+  (`src-tauri/src/spotify.rs`) so the access/refresh tokens never touch the
+  frontend. Uses Spotify's Authorization Code + PKCE flow (the right fit
+  for a desktop app - no client secret to embed): "Connect" opens the
+  system browser to Spotify's login page (via `tauri-plugin-opener`), a
+  one-shot local server (`tauri-plugin-oauth`, pinned to port 14700)
+  catches the redirect, and the code is exchanged for tokens which get
+  stored via `tauri-plugin-store` (plaintext JSON in the app data dir -
+  same tradeoff as the Leetify API key, not a real OS keychain). Access
+  tokens are refreshed automatically when they're close to expiry.
+  - **One-time setup for a fork/new Client ID**: create an app at
+    [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard),
+    add `http://127.0.0.1:14700/callback` as a Redirect URI, and put the
+    Client ID (not the secret - PKCE doesn't use one) in `CLIENT_ID` at the
+    top of `spotify.rs`. Client IDs aren't secret, but they are
+    per-developer-account, so a fork needs its own.
+  - Only reads what's needed to show "now playing"
+    (`user-read-currently-playing`, `user-read-playback-state`) - it
+    can't control playback.
 - **System Health** - the other real (not mock) widget, for the same reason
   as Analysis: there's no meaningful mock for "this machine's actual CPU/
   memory/disk load." CPU name + overall/per-core usage, RAM (and swap, if

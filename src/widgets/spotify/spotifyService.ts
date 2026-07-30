@@ -1,55 +1,33 @@
-import { delay } from "../../shared/mock";
+import { invoke } from "@tauri-apps/api/core";
 import type { NowPlaying, SpotifyProvider } from "./types";
 
-const MOCK_TRACK: Omit<NowPlaying, "progressMs" | "isPlaying"> = {
-  trackName: "Sample Track",
-  artist: "Sample Artist",
-  albumName: "Sample Album",
-  durationMs: 210_000,
-};
-
 /**
- * Placeholder provider - "connect" just flips a local flag instead of doing
- * real OAuth, and playback progress is simulated from a timestamp.
- *
- * Real integration later: Spotify's Authorization Code + PKCE flow is the
- * right fit for a desktop app (no client secret to embed). The rough shape:
- *   1. Open the system browser to Spotify's /authorize URL
- *      (via the Tauri opener plugin), with a PKCE code_challenge.
- *   2. Catch the redirect - either a loopback HTTP server on localhost, or
- *      a registered custom URL scheme deep link back into the app.
- *   3. Exchange the code for an access/refresh token and implement this
- *      same SpotifyProvider interface against the Web API
- *      (GET /me/player/currently-playing, etc).
- * The widget only depends on this interface, so none of it changes.
+ * Real integration - Spotify's Authorization Code + PKCE flow, run entirely
+ * on the Rust side (src-tauri/src/spotify.rs) so the access/refresh tokens
+ * never touch the frontend. `connect()` opens the system browser to
+ * Spotify's login page and resolves once the redirect's been caught and
+ * tokens saved; `getNowPlaying()` refreshes the access token first if it's
+ * close to expiry.
  */
-class MockSpotifyProvider implements SpotifyProvider {
-  private connected = false;
-  private connectedAt = 0;
-
+class RealSpotifyProvider implements SpotifyProvider {
   async isConnected(): Promise<boolean> {
-    return this.connected;
+    return invoke<boolean>("spotify_is_connected");
   }
 
   async connect(): Promise<void> {
-    await delay(300);
-    this.connected = true;
-    this.connectedAt = Date.now();
+    await invoke("spotify_login");
   }
 
   async disconnect(): Promise<void> {
-    this.connected = false;
+    await invoke("spotify_logout");
   }
 
   async getNowPlaying(): Promise<NowPlaying | null> {
-    if (!this.connected) return null;
-    const elapsed = Date.now() - this.connectedAt;
-    const progressMs = elapsed % MOCK_TRACK.durationMs;
-    return { ...MOCK_TRACK, isPlaying: true, progressMs };
+    return invoke<NowPlaying | null>("spotify_now_playing");
   }
 }
 
-let provider: SpotifyProvider = new MockSpotifyProvider();
+let provider: SpotifyProvider = new RealSpotifyProvider();
 
 export function getSpotifyProvider(): SpotifyProvider {
   return provider;

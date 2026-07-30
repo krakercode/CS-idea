@@ -13,11 +13,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CS2 Database: every lineup card now links out to a reference for that
   setup (a specific source once verified and added, otherwise a search
   query) instead of downloading/rehosting images from lineup sites.
+- Spotify: real Authorization Code + PKCE integration (`spotify.rs`) -
+  tokens live on the Rust side only, refreshed automatically, replacing
+  the previous connect-stub. Shows currently playing track/artist/album
+  and progress; read-only, can't control playback.
 
 ### In progress
 
-- Real Spotify integration (Authorization Code + PKCE) using a
-  user-provided Client ID, replacing the current connect-stub.
 - Mouse drag-to-resize/reposition for dashboard widgets, alongside the
   existing visibility/scheduling settings (not replacing them).
 - Calendar: real match data - TheSportsDB for general sports, an

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { usePolling } from "../../shared/hooks/usePolling";
 import { WidgetShell } from "../../shared/WidgetShell";
 import { getSpotifyProvider } from "./spotifyService";
@@ -27,10 +28,24 @@ function formatMs(ms: number): string {
 
 export function SpotifyWidget() {
   const { data, loading, error, refresh } = usePolling(fetchSpotifyState, REFRESH_INTERVAL_MS);
+  // Separate from the polling error: connect() waits on the user approving
+  // in their browser (up to 5 minutes), so it needs its own pending/error
+  // state rather than borrowing usePolling's, which is about the periodic
+  // now-playing fetch.
+  const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
 
   const handleConnect = async () => {
-    await getSpotifyProvider().connect();
-    refresh();
+    setConnecting(true);
+    setConnectError(null);
+    try {
+      await getSpotifyProvider().connect();
+      refresh();
+    } catch (err) {
+      setConnectError(err instanceof Error ? err.message : "Couldn't connect to Spotify.");
+    } finally {
+      setConnecting(false);
+    }
   };
 
   const handleDisconnect = async () => {
@@ -43,9 +58,10 @@ export function SpotifyWidget() {
       {data && !data.connected && (
         <div className="spotify-widget__disconnected">
           <p>Not connected.</p>
-          <button type="button" className="spotify-widget__connect" onClick={handleConnect}>
-            Connect Spotify
+          <button type="button" className="spotify-widget__connect" onClick={handleConnect} disabled={connecting}>
+            {connecting ? "Waiting for approval in your browser…" : "Connect Spotify"}
           </button>
+          {connectError && <p className="spotify-widget__error">{connectError}</p>}
         </div>
       )}
 
@@ -58,13 +74,22 @@ export function SpotifyWidget() {
           <div className="spotify-widget__progress-bar">
             <div
               className="spotify-widget__progress-fill"
-              style={{ width: `${(data.nowPlaying.progressMs / data.nowPlaying.durationMs) * 100}%` }}
+              style={{ width: `${Math.min(100, (data.nowPlaying.progressMs / (data.nowPlaying.durationMs || 1)) * 100)}%` }}
             />
           </div>
           <div className="spotify-widget__times">
             <span>{formatMs(data.nowPlaying.progressMs)}</span>
             <span>{formatMs(data.nowPlaying.durationMs)}</span>
           </div>
+          <button type="button" className="spotify-widget__disconnect" onClick={handleDisconnect}>
+            Disconnect
+          </button>
+        </div>
+      )}
+
+      {data?.connected && !data.nowPlaying && (
+        <div className="spotify-widget__idle">
+          <p>Connected - nothing playing right now.</p>
           <button type="button" className="spotify-widget__disconnect" onClick={handleDisconnect}>
             Disconnect
           </button>
