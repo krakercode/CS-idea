@@ -1,4 +1,4 @@
-# CS Idea Dashboard
+# JESSPR-EAST
 
 An always-on second-monitor dashboard: news, stocks, a sports/esports calendar,
 a CS2 nade lineup + pro-play database, and Spotify. Built on

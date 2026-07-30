@@ -1,5 +1,5 @@
 [package]
-name = "cs-idea-dashboard"
+name = "jesspr-east"
 version = "0.1.0"
 description = "Always-on second-monitor dashboard: news, stocks, sports/esports calendar, CS2 nade/pro-play database, Spotify."
 edition = "2021"

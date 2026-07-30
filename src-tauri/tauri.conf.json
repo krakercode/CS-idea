@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "CS Idea Dashboard",
+  "productName": "JESSPR-EAST",
   "version": "0.1.0",
-  "identifier": "dev.csidea.dashboard",
+  "identifier": "dev.jesspreast.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "CS Idea Dashboard",
+        "title": "JESSPR-EAST",
         "width": 1280,
         "height": 900,
         "minWidth": 400,
