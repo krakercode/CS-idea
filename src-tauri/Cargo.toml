@@ -18,6 +18,8 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2"
 sysinfo = "0.38.4"
+feed-rs = "2.4.0"
+futures = "0.3.33"
 
 [profile.release]
 # Keep the always-running background footprint small.

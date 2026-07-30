@@ -7,14 +7,10 @@ React/TypeScript frontend, chosen specifically to stay light enough to run
 continuously without eating a monitor's worth of RAM the way an
 Electron app would.
 
-Most widgets currently run on mock/local data - there are no real API keys or
-network calls to configure for those yet. The goal of this pass was the base
-structure: a clean widget architecture that's easy to extend, with each
-widget's "swap this for a real data source" seam clearly marked. Two widgets
-are the exception, because they have no meaningful mock to begin with:
-Analysis (CS2 Database's fourth view) is a real, working integration against
-Leetify's public CS2 stats API, and System Health reads this machine's
-actual CPU/memory/disk stats via the Rust side.
+News, Stocks, Analysis (CS2 Database's fourth view), and System Health all
+run on real data now - no API keys required for any of them. Calendar and
+Spotify are still mock/local (see their widget notes below for why, and
+what's needed to make them real).
 
 ## Stack
 
@@ -50,6 +46,19 @@ Before packaging a real build, replace the placeholder icon
 > `npm run tauri dev`/`build` re-verified once - see the
 > [Tauri prerequisites](https://tauri.app/start/prerequisites/) for what's
 > required on a real desktop machine (already standard there).
+>
+> One thing this environment genuinely can't verify: outbound network here
+> is allowlisted to package registries and a few other known hosts, so News
+> (RSS) and Stocks (Yahoo Finance) can't actually reach the internet from
+> this container - `hltv.org`, `bbci.co.uk`, and `query1.finance.yahoo.com`
+> are all blocked at the network policy level, confirmed via
+> `$HTTPS_PROXY/__agentproxy/status`. Both widgets are built to degrade
+> gracefully when a fetch fails (see below), which was confirmed - they show
+> a clean empty state rather than erroring or crashing - but the "does the
+> real request actually succeed and return real articles/quotes" question
+> is only testable on a machine with normal internet access. The parsing
+> logic itself *is* verified, via unit tests against embedded fixture
+> data (`cargo test`).
 
 ## Architecture
 
@@ -126,13 +135,23 @@ you've touched its settings.
 
 ### Widget notes
 
-- **News** - topics list lives in `widgets/news/userInterests.ts`; edit that
-  array to change what it follows. No real source wired up yet (plan: RSS
-  and/or a news API).
-- **Stocks** - tickers live in `widgets/stocks/watchlist.ts`. Mock provider
-  random-walks a price per symbol so polling has something to show.
-- **Calendar** - sample esports/sports fixtures, filterable by category.
-  Real version needs a schedule source per league/competition you care about.
+- **News** - real RSS/Atom feeds, fetched and parsed on the Rust side
+  (`src-tauri/src/news.rs`, using `feed-rs`). Feed list lives in
+  `widgets/news/newsFeeds.ts` - edit that array (any RSS/Atom URL works) to
+  change what it follows. A feed that's unreachable or fails to parse is
+  dropped rather than failing the whole widget.
+- **Stocks** - real quotes from Yahoo Finance's unofficial chart endpoint
+  (`src-tauri/src/stocks.rs`) - no API key, but also undocumented and could
+  change without notice; see "CS2 Analysis backend" for the same tradeoff
+  Leetify's API has. Tickers live in `widgets/stocks/watchlist.ts`. Polls
+  every 60s (deliberately not faster, since it's an unauthenticated
+  endpoint). A symbol that fails to resolve is dropped, not fatal.
+- **Calendar** - still mock/sample data, by choice: there's no good
+  free/keyless API for esports schedules (HLTV has no official one, and
+  scraping their site would violate their ToS), and general-sports-only
+  felt like the wrong tradeoff for an app centered on CS2. Real esports
+  data would need something like PandaScore (requires signing up for a free
+  API key) wired into `calendarService.ts`.
 - **CS2 Database** - four views, cycled with `useWidgetViews`/`ViewSwitcher`:
   - *Lineups* and *Pro Plays* - searchable/filterable by map, sample data in
     `widgets/cs2db/data/`, meant to be replaced/expanded (lineup positions
@@ -222,6 +241,29 @@ crate behind one command, `get_system_health`. Implementation notes:
   un-renamed) and `src/widgets/systemhealth/types.ts` mirrors them exactly
   rather than converting case - there's no real API contract to abstract
   away here, so a 1:1 mirror is simpler than adding a mapping layer.
+
+## News & Stocks backends
+
+Both follow the same shape: a small Rust module (`src-tauri/src/news.rs`,
+`stocks.rs`) that fetches over HTTP via a shared `reqwest::Client` (managed
+in `HttpState`, with a browser-like `User-Agent` since some unofficial
+endpoints reject the default one) and hands back plain JSON - no API keys,
+no OAuth.
+
+- **News** fetches every configured feed *concurrently*
+  (`futures::future::join_all`) and parses each with `feed-rs`, which
+  handles both RSS and Atom. Per-feed failures (unreachable, malformed XML)
+  are swallowed and that feed is just dropped from the results - one flaky
+  source shouldn't blank the whole widget. Capped at 5 articles per feed,
+  merged and sorted by published date.
+- **Stocks** hits `query1.finance.yahoo.com/v8/finance/chart/{symbol}` per
+  ticker, concurrently, and reads only the `meta` block (price, previous
+  close, currency, timestamp) out of a much larger response. Same
+  per-symbol failure tolerance as News.
+- Both modules split the "parse a response" logic from the "make the HTTP
+  request" logic specifically so the parsing can be unit-tested against an
+  embedded fixture (`cargo test`) without a live connection - see the note
+  above on why that split mattered while building this.
 
 ## Design choices worth knowing about
 

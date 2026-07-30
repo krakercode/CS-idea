@@ -1,12 +1,10 @@
+// Field names are snake_case to match the JSON serde emits from
+// src-tauri/src/stocks.rs verbatim - no transformation layer needed.
 export interface Quote {
   symbol: string;
   price: number;
   change: number;
-  changePercent: number;
+  change_percent: number;
   currency: string;
-  updatedAt: string; // ISO timestamp
-}
-
-export interface StockProvider {
-  fetchQuotes(symbols: string[]): Promise<Quote[]>;
+  updated_at: string; // RFC3339
 }
