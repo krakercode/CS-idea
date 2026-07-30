@@ -72,8 +72,9 @@ src/
     themeStore.ts             - active theme (preset or custom), persisted to localStorage
     ThemeSettings.tsx         - preset picker + custom color editor, shown in DashboardSettings
   styles/
-    theme.css   - the default (Dark) CSS custom properties every widget's CSS uses
-    themes.ts   - preset palettes + the field list that drives the custom color editor
+    theme.css       - the default (Dark) CSS custom properties every widget's CSS uses
+    themes.ts       - preset palettes + the field list that drives the custom color editor
+    theme-flair.css - non-color UI touches for specific presets (fonts, borders, texture)
   shared/
     WidgetShell.tsx       - common card chrome: title bar, refresh, expand, loading/error
     Overlay.tsx            - generic centered modal (portal + Escape + backdrop-click), used by
@@ -142,6 +143,27 @@ values onto `:root` via `element.style.setProperty`, and the cascade does
 the rest. Applied on startup before the first render (see `main.tsx`) so
 there's no flash of the default theme before your saved one loads.
 Persisted to `localStorage` (key `dashboard-theme`).
+
+The three game-inspired presets go a step further than color: `applyTheme`
+also stamps `data-theme-style="<preset id>"` on `<html>`, and
+`src/styles/theme-flair.css` uses that to layer on non-color UI touches
+scoped to just those three presets (Dark/Light/Midnight/High
+Contrast/Custom are untouched by this file - pure color, as before):
+
+- **Disco Elysium** - a double border, italic serif titles, a small ◆
+  before each widget name, and a subtle painterly vignette texture.
+- **Marathon** - clipped corner notches (a sci-fi HUD panel shape),
+  monospace uppercase titles with a red/green chromatic-aberration
+  text-shadow (the "glitch" look), and a scanline texture.
+- **Ultrakill** - diagonal hazard-stripe accents on the header bar, a bold
+  red left-border stripe on every widget, and heavy uppercase sans titles.
+
+This is a best-effort approximation from research (search results, art
+direction interviews), not a pixel-accurate recreation of any game's real
+UI - if you want closer fidelity, reference screenshots would help a lot
+more than another round of guessing from search snippets. Everything here
+targets `.widget-shell`, so any future theme can add its own flair the same
+way just by adding a new `[data-theme-style="..."]` block.
 
 Per widget, you can set:
 

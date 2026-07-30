@@ -43,13 +43,17 @@ export function resolveActivePalette(state: ThemeState): ThemeColors {
 
 /** Writes the active palette onto :root as inline style, which wins over
  * theme.css's :root block by cascade specificity - no per-theme CSS
- * classes or [data-theme] selectors needed. */
+ * classes needed for color. Also stamps `data-theme-style` with the preset
+ * id so theme-flair.css can layer on non-color UI treatment (fonts,
+ * border shape, texture) for specific presets - e.g. the game-inspired
+ * ones - without affecting Custom or the plain presets. */
 export function applyTheme(state: ThemeState): void {
   const palette = resolveActivePalette(state);
   const root = document.documentElement.style;
   for (const field of THEME_COLOR_FIELDS) {
     root.setProperty(field.cssVar, palette[field.key]);
   }
+  document.documentElement.setAttribute("data-theme-style", state.presetId);
 }
 
 export function setPreset(presetId: string): ThemeState {
