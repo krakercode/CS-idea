@@ -18,3 +18,13 @@ export function formatSignedPercent(value: number): string {
   const sign = value > 0 ? "+" : "";
   return `${sign}${value.toFixed(2)}%`;
 }
+
+const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"];
+
+/** Formats a byte count as a human-readable size ("1.2 GB"). */
+export function formatBytes(bytes: number): string {
+  if (bytes <= 0) return "0 B";
+  const exponent = Math.min(Math.floor(Math.log2(bytes) / 10), BYTE_UNITS.length - 1);
+  const value = bytes / 1024 ** exponent;
+  return `${value.toFixed(exponent === 0 ? 0 : 1)} ${BYTE_UNITS[exponent]}`;
+}

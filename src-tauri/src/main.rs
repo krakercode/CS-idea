@@ -4,6 +4,7 @@
 mod db;
 mod leetify_client;
 mod suggestions;
+mod system_health;
 
 use db::Db;
 use leetify_client::{LeetifyClient, LeetifyError};
@@ -117,6 +118,11 @@ async fn validate_api_key(
     Ok(state.leetify.validate_api_key(&api_key).await?)
 }
 
+#[tauri::command]
+fn get_system_health(state: tauri::State<'_, system_health::SystemHealthState>) -> system_health::SystemHealth {
+    system_health::collect(&state)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -130,6 +136,7 @@ fn main() {
                 leetify: LeetifyClient::new(),
                 db,
             });
+            app.manage(system_health::SystemHealthState::new());
             Ok(())
         })
         // Register new #[tauri::command] functions here as native features get added.
@@ -138,7 +145,8 @@ fn main() {
             fetch_match_history,
             get_trend,
             get_suggestions,
-            validate_api_key
+            validate_api_key,
+            get_system_health
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

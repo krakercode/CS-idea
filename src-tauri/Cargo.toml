@@ -17,6 +17,7 @@ tokio = { version = "1", features = ["rt-multi-thread"] }
 rusqlite = { version = "0.32", features = ["bundled"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2"
+sysinfo = "0.38.4"
 
 [profile.release]
 # Keep the always-running background footprint small.

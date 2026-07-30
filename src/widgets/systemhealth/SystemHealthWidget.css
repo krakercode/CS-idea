@@ -1,0 +1,124 @@
+.sys-health {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sys-health__subtitle {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: -4px;
+}
+
+.sys-health__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sys-health__row-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 12px;
+}
+
+.sys-health__label {
+  font-weight: 500;
+}
+
+.sys-health__label--heading {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sys-health__muted {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.sys-health__value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.sys-health__bar-track {
+  height: 6px;
+  background: var(--color-surface-raised);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.sys-health__bar-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.sys-health__bar-fill--low {
+  background: var(--color-positive);
+}
+
+.sys-health__bar-fill--medium {
+  background: var(--color-warning);
+}
+
+.sys-health__bar-fill--high {
+  background: var(--color-negative);
+}
+
+.sys-health__cores {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 20px;
+  margin-top: 2px;
+}
+
+.sys-health__core {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  background: var(--color-surface-raised);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sys-health__core-fill {
+  width: 100%;
+}
+
+.sys-health__core-fill--low {
+  background: var(--color-positive);
+}
+
+.sys-health__core-fill--medium {
+  background: var(--color-warning);
+}
+
+.sys-health__core-fill--high {
+  background: var(--color-negative);
+}
+
+.sys-health__temps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sys-health__temp-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}

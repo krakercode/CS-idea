@@ -58,6 +58,15 @@ export const WIDGETS: WidgetDefinition[] = [
     defaultRowSpan: 1,
     Component: lazy(() => import("../widgets/spotify/SpotifyWidget").then((m) => ({ default: m.SpotifyWidget }))),
   },
+  {
+    id: "systemhealth",
+    label: "System Health",
+    defaultColSpan: 1,
+    defaultRowSpan: 1,
+    Component: lazy(() =>
+      import("../widgets/systemhealth/SystemHealthWidget").then((m) => ({ default: m.SystemHealthWidget })),
+    ),
+  },
 ];
 
 export function getDefaultSettings(): Record<string, WidgetUserSettings> {

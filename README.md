@@ -1,18 +1,20 @@
 # JESSPR-EAST
 
 An always-on second-monitor dashboard: news, stocks, a sports/esports calendar,
-a CS2 nade lineup + pro-play database, and Spotify. Built on
-[Tauri](https://tauri.app/) (Rust shell + native webview) with a
+a CS2 nade lineup + pro-play database, Spotify, and a system health monitor.
+Built on [Tauri](https://tauri.app/) (Rust shell + native webview) with a
 React/TypeScript frontend, chosen specifically to stay light enough to run
 continuously without eating a monitor's worth of RAM the way an
 Electron app would.
 
-Everything except the CS2 Database's Analysis view currently runs on
-mock/local data - there are no real API keys or network calls to configure
-for those yet. The goal of this pass was the base structure: a clean widget
-architecture that's easy to extend, with each widget's "swap this for a real
-data source" seam clearly marked. Analysis is the exception: it's a real,
-working integration against Leetify's public CS2 stats API.
+Most widgets currently run on mock/local data - there are no real API keys or
+network calls to configure for those yet. The goal of this pass was the base
+structure: a clean widget architecture that's easy to extend, with each
+widget's "swap this for a real data source" seam clearly marked. Two widgets
+are the exception, because they have no meaningful mock to begin with:
+Analysis (CS2 Database's fourth view) is a real, working integration against
+Leetify's public CS2 stats API, and System Health reads this machine's
+actual CPU/memory/disk stats via the Rust side.
 
 ## Stack
 
@@ -67,7 +69,7 @@ src/
     hooks/usePolling.ts    - fetch-once-then-poll hook every widget's data uses
     mock.ts, format.ts     - small helpers used by the mock providers/widgets
   widgets/
-    news/       stocks/       calendar/       cs2db/        spotify/
+    news/       stocks/       calendar/       cs2db/        spotify/       systemhealth/
 ```
 
 Each widget follows the same shape:
@@ -161,6 +163,14 @@ you've touched its settings.
   Authorization Code + PKCE flow suits a desktop app well (no client secret
   to embed), using Tauri's shell/opener plugin to launch the system browser
   and a loopback redirect (or a custom URL scheme) to catch the callback.
+- **System Health** - the other real (not mock) widget, for the same reason
+  as Analysis: there's no meaningful mock for "this machine's actual CPU/
+  memory/disk load." CPU name + overall/per-core usage, RAM (and swap, if
+  any is configured), free space per mounted disk, and temperature sensors
+  where the OS exposes them (often empty in VMs/containers - that's
+  expected, not a bug). Polls every 3s via `get_system_health`
+  (`src-tauri/src/system_health.rs`, using the `sysinfo` crate). Color
+  thresholds (green/yellow/red at 70%/90%) are in `SystemHealthWidget.tsx`.
 
 ## CS2 Analysis backend (Leetify)
 
@@ -187,6 +197,31 @@ Optionally grab a Leetify API key at https://leetify.com/app/developer and
 paste it into Analysis's Settings tab - it works without one, just at
 stricter rate limits. Data provided by Leetify; this project isn't
 affiliated with or endorsed by them.
+
+## System Health backend
+
+`src-tauri/src/system_health.rs` wraps the [`sysinfo`](https://docs.rs/sysinfo)
+crate behind one command, `get_system_health`. Implementation notes:
+
+- A `System` instance lives in managed app state and is refreshed (not
+  recreated) on every call. CPU usage is a delta between refreshes, so the
+  *first* poll after launch can read low/zero - `sysinfo` needs two samples
+  apart in time (it recommends `MINIMUM_CPU_UPDATE_INTERVAL`, ~200ms) for an
+  accurate number, and the widget's own 3s poll interval comfortably clears
+  that bar from the second reading on.
+- Disks and temperature components are re-listed each call
+  (`Disks::new_with_refreshed_list()` / `Components::new_with_refreshed_list()`)
+  since, unlike CPU/memory, drives and sensors can appear/disappear (USB
+  drives, etc.).
+- There's a unit test (`cargo test --bin jesspr-east system_health -- --nocapture`)
+  that asserts the values are plausible (non-zero memory, used ≤ total, at
+  least one disk) - useful as a quick sanity check on a new machine, since
+  this is the one widget where "does the underlying library actually work
+  here" varies by OS/hardware.
+- JSON field names are snake_case (Rust's default `Serialize` output,
+  un-renamed) and `src/widgets/systemhealth/types.ts` mirrors them exactly
+  rather than converting case - there's no real API contract to abstract
+  away here, so a 1:1 mirror is simpler than adding a mapping layer.
 
 ## Design choices worth knowing about
 
