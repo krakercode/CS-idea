@@ -7,15 +7,20 @@ name: Release
 # installs can auto-update to this release once it's published.
 #
 # Trigger by pushing a tag like `app-v0.2.0`, or manually via
-# Actions -> Release -> Run workflow. Bump the version in
-# src-tauri/tauri.conf.json (and package.json, to keep them in sync) before
-# tagging - the updater compares against that version.
+# Actions -> Release -> Run workflow (fill in the same tag name there).
+# Bump the version in src-tauri/tauri.conf.json (and package.json, to keep
+# them in sync) before releasing - the updater compares against that version.
 
 on:
   push:
     tags:
       - "app-v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create (e.g. app-v0.1.0)"
+        required: true
+        default: "app-v0.1.0"
 
 jobs:
   release:
@@ -58,6 +63,19 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Resolve release tag
+        id: release_tag
+        shell: bash
+        # A real tag push already names the ref correctly; a manual dispatch
+        # run isn't triggered from a tag ref at all, so it takes the tag name
+        # from the workflow_dispatch input instead.
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and release
         uses: tauri-apps/tauri-action@v0
         env:
@@ -65,8 +83,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "JESSPR-EAST ${{ github.ref_name }}"
+          tagName: ${{ steps.release_tag.outputs.tag }}
+          releaseName: "JESSPR-EAST ${{ steps.release_tag.outputs.tag }}"
           releaseBody: "See the assets below to download and install this version."
           releaseDraft: true
           prerelease: false
