@@ -1,22 +1,3 @@
-.cs2-widget__tabs {
-  display: flex;
-  gap: var(--space-1);
-}
-
-.cs2-widget__tab {
-  background: none;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  border-radius: var(--radius-sm);
-  padding: 2px var(--space-2);
-  font-size: 11px;
-}
-
-.cs2-widget__tab--active {
-  color: var(--color-text);
-  border-color: var(--color-accent);
-}
-
 .cs2-widget__filters {
   display: flex;
   gap: var(--space-2);

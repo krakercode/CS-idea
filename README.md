@@ -7,10 +7,12 @@ React/TypeScript frontend, chosen specifically to stay light enough to run
 continuously without eating a monitor's worth of RAM the way an
 Electron app would.
 
-Everything currently runs on mock/local data - there are no real API keys or
-network calls to configure yet. The goal of this pass was the base
-structure: a clean widget architecture that's easy to extend, with each
-widget's "swap this for a real data source" seam clearly marked.
+Everything except the CS2 Database's Analysis view currently runs on
+mock/local data - there are no real API keys or network calls to configure
+for those yet. The goal of this pass was the base structure: a clean widget
+architecture that's easy to extend, with each widget's "swap this for a real
+data source" seam clearly marked. Analysis is the exception: it's a real,
+working integration against Leetify's public CS2 stats API.
 
 ## Stack
 
@@ -37,13 +39,15 @@ Before packaging a real build, replace the placeholder icon
 (`src-tauri/icons/icon.png`) with your own artwork and run
 `npm run tauri icon path/to/your-icon.png` to generate the full icon set.
 
-> **Note on this dev environment:** this scaffold was built and verified
-> (TypeScript, Vite build, and the rendered UI via a headless browser) inside
-> a container that has no GUI libraries (no `webkit2gtk`), so the Rust/Tauri
-> side (`npm run tauri dev`/`build`) could not be compiled or run here. It's
-> written to the standard Tauri v2 conventions and should build normally on
-> a desktop machine with the [Tauri prerequisites](https://tauri.app/start/prerequisites/)
-> installed - just hasn't been exercised end-to-end yet.
+> **Note on this dev environment:** verified end-to-end in this container,
+> including the Rust/Tauri side - `cargo check`/`cargo build` both pass, and
+> `npm run tauri dev` was launched under a virtual X server (Xvfb) and ran
+> without panicking. The GUI libraries (`webkit2gtk`, `gtk3`, etc.) needed
+> for that aren't present by default here and were installed for this
+> session only, so a fresh container may need
+> `npm run tauri dev`/`build` re-verified once - see the
+> [Tauri prerequisites](https://tauri.app/start/prerequisites/) for what's
+> required on a real desktop machine (already standard there).
 
 ## Architecture
 
@@ -53,7 +57,9 @@ src/
     Dashboard.tsx        - lays out enabled widgets in a CSS grid
     widgets.config.ts    - the list of widgets on the dashboard (add one here)
   shared/
-    WidgetShell.tsx       - common card chrome: title bar, refresh, loading/error
+    WidgetShell.tsx       - common card chrome: title bar, refresh, expand, loading/error
+    useWidgetViews.ts      - generic "multiple internal views" state (id, next/prev/select)
+    ViewSwitcher.tsx        - tab + cycle-arrow UI for a widget's views, pairs with the hook above
     hooks/usePolling.ts    - fetch-once-then-poll hook every widget's data uses
     mock.ts, format.ts     - small helpers used by the mock providers/widgets
   widgets/
@@ -75,6 +81,22 @@ Each widget follows the same shape:
 one entry to `app/widgets.config.ts`. It's lazy-loaded automatically, so it
 costs nothing in bundle size until it's enabled.
 
+**Every widget can be expanded and can have multiple internal views** - both
+are properties of `WidgetShell`/`useWidgetViews`, not something each widget
+builds itself:
+
+- **Expand** is built into `WidgetShell` directly: every widget gets a ⤢
+  button in its header for free, which portals the widget into a large
+  centered overlay (`Escape` or clicking the backdrop closes it). Nothing
+  extra is required to opt in.
+- **Multiple views** (tabs a single widget can cycle between, as opposed to
+  separate widgets) are opt-in: call `useWidgetViews([{id, label}, ...])` for
+  the active-view state and `next`/`prev`/`setActiveId`, pass a
+  `<ViewSwitcher>` as `WidgetShell`'s `headerActions`, and render each
+  view's content based on `activeId`. CS2 Database is the current example
+  (Lineups / Pro Plays / Analysis, with ‹ › arrows to cycle and tabs to jump
+  directly); any widget can adopt the same pattern later.
+
 ### Widget notes
 
 - **News** - topics list lives in `widgets/news/userInterests.ts`; edit that
@@ -84,19 +106,50 @@ costs nothing in bundle size until it's enabled.
   random-walks a price per symbol so polling has something to show.
 - **Calendar** - sample esports/sports fixtures, filterable by category.
   Real version needs a schedule source per league/competition you care about.
-- **CS2 Database** - the standout feature: nade lineups and notable pro
-  plays, searchable/filterable by map. Sample data lives in
-  `widgets/cs2db/data/` and is meant to be replaced/expanded - lineup
-  positions can shift between patches, and the pro-play entries are
-  placeholder fixtures (fake names/dates), not real match records. This is
-  local data (not fetched from anywhere), so it's the one widget that could
-  reasonably grow into its own small local database (e.g. via Tauri's SQL
-  plugin) rather than a remote API.
+- **CS2 Database** - three views, cycled with `useWidgetViews`/`ViewSwitcher`:
+  - *Lineups* and *Pro Plays* - searchable/filterable by map, sample data in
+    `widgets/cs2db/data/`, meant to be replaced/expanded (lineup positions
+    can shift between patches, and the pro-play entries are placeholder
+    fixtures - fake names/dates, not real match records).
+  - *Analysis* - a real (not mock) integration: look up a Leetify profile by
+    Steam64/profile ID for its rank/rating breakdown, recent matches, local
+    rating-trend charts (built from a snapshot taken on each lookup), and
+    rules-based training suggestions from the weakest rating dimensions.
+    Lives in `widgets/cs2db/analysis/`, lazy-loaded (it pulls in `recharts`,
+    which otherwise never touches the main bundle) and backed by Rust
+    (`src-tauri/src/leetify_client.rs`, `db.rs`, `suggestions.rs`) - see
+    below.
 - **Spotify** - "Connect" is currently a stub (flips a local flag; no real
   OAuth). The real integration is noted in `spotifyService.ts`: Spotify's
   Authorization Code + PKCE flow suits a desktop app well (no client secret
   to embed), using Tauri's shell/opener plugin to launch the system browser
   and a loopback redirect (or a custom URL scheme) to catch the callback.
+
+## CS2 Analysis backend (Leetify)
+
+Unlike the rest of the app, the Analysis view talks to a real external API
+and keeps a local database:
+
+- `src-tauri/src/leetify_client.rs` - HTTP client for Leetify's public API
+  (`api-public.cs-prod.leetify.com`). The exact response schema wasn't
+  directly verifiable while building this (the docs page returned 403 from
+  this environment), so it passes through raw JSON and the frontend
+  (`widgets/cs2db/analysis/analysisService.ts`) reads fields defensively. If
+  Leetify's response shape differs from what's assumed, adjust the field
+  lookups there and in `db.rs`/`suggestions.rs`.
+- `src-tauri/src/db.rs` - a local SQLite database (via `rusqlite`, bundled -
+  no system SQLite dependency) storing a rating snapshot on every profile
+  lookup, which is what powers the trend chart.
+- `src-tauri/src/suggestions.rs` - a small rules engine (not a Leetify
+  feature) that ranks rating dimensions weakest-first and pairs each with a
+  hand-written tip and drills.
+- Settings (API key, recent players) persist via `@tauri-apps/plugin-store`
+  / `tauri-plugin-store`, scoped under `widgets/cs2db/analysis/settingsStore.ts`.
+
+Optionally grab a Leetify API key at https://leetify.com/app/developer and
+paste it into Analysis's Settings tab - it works without one, just at
+stricter rate limits. Data provided by Leetify; this project isn't
+affiliated with or endorsed by them.
 
 ## Design choices worth knowing about
 
@@ -109,4 +162,9 @@ costs nothing in bundle size until it's enabled.
   blanking the widget.
 - **Per-widget code splitting** via `React.lazy` in `widgets.config.ts`,
   so the dashboard's JS payload scales with how many widgets are actually
-  enabled.
+  enabled - Analysis takes this further and lazy-loads itself as a *view
+  within* CS2 Database, so `recharts` only loads if that tab is opened.
+- **Expand and multi-view as shell properties, not per-widget code** - see
+  "Every widget can be expanded..." above. The intent is that this keeps
+  paying off as more widgets grow multiple views instead of each one
+  reinventing tabs/cycling/maximize.

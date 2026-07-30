@@ -34,7 +34,7 @@
   gap: var(--space-2);
 }
 
-.widget-shell__refresh {
+.widget-shell__icon-button {
   background: none;
   border: none;
   color: var(--color-text-muted);
@@ -44,9 +44,56 @@
   border-radius: var(--radius-sm);
 }
 
-.widget-shell__refresh:hover {
+.widget-shell__icon-button:hover {
   color: var(--color-text);
   background: var(--color-surface-raised);
+}
+
+.widget-shell--placeholder {
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+
+.widget-shell__restore {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  font-size: 12px;
+}
+
+.widget-shell__restore:hover {
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+.widget-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  z-index: 100;
+}
+
+.widget-overlay__panel {
+  width: min(1100px, 100%);
+  height: min(800px, 100%);
+}
+
+.widget-shell--expanded {
+  height: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.widget-shell--expanded .widget-shell__body {
+  font-size: 14px;
 }
 
 .widget-shell__error {

@@ -1,18 +1,26 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { WidgetShell } from "../../shared/WidgetShell";
+import { ViewSwitcher } from "../../shared/ViewSwitcher";
+import { useWidgetViews } from "../../shared/useWidgetViews";
 import { getCs2Repository } from "./cs2Service";
 import type { Cs2Map, GrenadeType, NadeLineup, ProPlay } from "./types";
 import "./CS2DatabaseWidget.css";
 
-type Tab = "lineups" | "proplays";
+const AnalysisView = lazy(() => import("./analysis/AnalysisView").then((m) => ({ default: m.AnalysisView })));
 
 const GRENADE_TYPES: GrenadeType[] = ["smoke", "flash", "molotov", "he"];
+
+const VIEWS = [
+  { id: "lineups", label: "Lineups" },
+  { id: "proplays", label: "Pro Plays" },
+  { id: "analysis", label: "Analysis" },
+];
 
 export function CS2DatabaseWidget() {
   const repo = getCs2Repository();
   const maps = repo.listMaps();
 
-  const [tab, setTab] = useState<Tab>("lineups");
+  const { activeId, setActiveId, next, prev } = useWidgetViews(VIEWS);
   const [search, setSearch] = useState("");
   const [mapFilter, setMapFilter] = useState<Cs2Map | "">("");
   const [grenadeFilter, setGrenadeFilter] = useState<GrenadeType | "">("");
@@ -23,11 +31,12 @@ export function CS2DatabaseWidget() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (activeId === "analysis") return;
     let cancelled = false;
     setLoading(true);
 
     const load =
-      tab === "lineups"
+      activeId === "lineups"
         ? repo
             .fetchLineups({ map: mapFilter || undefined, grenadeType: grenadeFilter || undefined, search })
             .then((result) => !cancelled && setLineups(result))
@@ -41,58 +50,50 @@ export function CS2DatabaseWidget() {
     return () => {
       cancelled = true;
     };
-  }, [tab, search, mapFilter, grenadeFilter, repo]);
+  }, [activeId, search, mapFilter, grenadeFilter, repo]);
 
   const headerActions = (
-    <div className="cs2-widget__tabs">
-      <button
-        type="button"
-        className={`cs2-widget__tab ${tab === "lineups" ? "cs2-widget__tab--active" : ""}`}
-        onClick={() => setTab("lineups")}
-      >
-        Lineups
-      </button>
-      <button
-        type="button"
-        className={`cs2-widget__tab ${tab === "proplays" ? "cs2-widget__tab--active" : ""}`}
-        onClick={() => setTab("proplays")}
-      >
-        Pro Plays
-      </button>
-    </div>
+    <ViewSwitcher views={VIEWS} activeId={activeId} onSelect={setActiveId} onNext={next} onPrev={prev} />
   );
 
   return (
-    <WidgetShell title="CS2 Database" loading={loading} error={error} headerActions={headerActions}>
-      <div className="cs2-widget__filters">
-        <input
-          type="text"
-          placeholder="Search…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="cs2-widget__search"
-        />
-        <select value={mapFilter} onChange={(e) => setMapFilter(e.target.value as Cs2Map | "")}>
-          <option value="">All maps</option>
-          {maps.map((map) => (
-            <option key={map} value={map}>
-              {map}
-            </option>
-          ))}
-        </select>
-        {tab === "lineups" && (
-          <select value={grenadeFilter} onChange={(e) => setGrenadeFilter(e.target.value as GrenadeType | "")}>
-            <option value="">All nades</option>
-            {GRENADE_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
+    <WidgetShell
+      title="CS2 Database"
+      loading={activeId !== "analysis" && loading}
+      error={activeId !== "analysis" ? error : null}
+      headerActions={headerActions}
+    >
+      {(activeId === "lineups" || activeId === "proplays") && (
+        <div className="cs2-widget__filters">
+          <input
+            type="text"
+            placeholder="Search…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="cs2-widget__search"
+          />
+          <select value={mapFilter} onChange={(e) => setMapFilter(e.target.value as Cs2Map | "")}>
+            <option value="">All maps</option>
+            {maps.map((map) => (
+              <option key={map} value={map}>
+                {map}
               </option>
             ))}
           </select>
-        )}
-      </div>
+          {activeId === "lineups" && (
+            <select value={grenadeFilter} onChange={(e) => setGrenadeFilter(e.target.value as GrenadeType | "")}>
+              <option value="">All nades</option>
+              {GRENADE_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
 
-      {tab === "lineups" ? (
+      {activeId === "lineups" && (
         <ul className="cs2-widget__list">
           {lineups.length === 0 && <p className="cs2-widget__empty">No lineups match.</p>}
           {lineups.map((lineup) => (
@@ -108,7 +109,9 @@ export function CS2DatabaseWidget() {
             </li>
           ))}
         </ul>
-      ) : (
+      )}
+
+      {activeId === "proplays" && (
         <ul className="cs2-widget__list">
           {proPlays.length === 0 && <p className="cs2-widget__empty">No plays match.</p>}
           {proPlays.map((play) => (
@@ -133,6 +136,12 @@ export function CS2DatabaseWidget() {
             </li>
           ))}
         </ul>
+      )}
+
+      {activeId === "analysis" && (
+        <Suspense fallback={<p className="cs2-widget__empty">Loading analysis…</p>}>
+          <AnalysisView />
+        </Suspense>
       )}
     </WidgetShell>
   );
