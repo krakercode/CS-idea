@@ -69,6 +69,11 @@ src/
     widgets.config.ts         - the list of widgets on the dashboard (add one here)
     dashboardSettingsStore.ts - per-widget visibility/schedule/size, persisted to localStorage
     DashboardSettings.tsx     - the settings panel (opened via the ⚙ button)
+    themeStore.ts             - active theme (preset or custom), persisted to localStorage
+    ThemeSettings.tsx         - preset picker + custom color editor, shown in DashboardSettings
+  styles/
+    theme.css   - the default (Dark) CSS custom properties every widget's CSS uses
+    themes.ts   - preset palettes + the field list that drives the custom color editor
   shared/
     WidgetShell.tsx       - common card chrome: title bar, refresh, expand, loading/error
     Overlay.tsx            - generic centered modal (portal + Escape + backdrop-click), used by
@@ -114,8 +119,27 @@ builds itself:
 
 ### Customizing the dashboard
 
-Click the ⚙ button (fixed top-right) to open the settings panel. Per widget,
-you can set:
+Click the ⚙ button (fixed top-right) to open the settings panel.
+
+**Appearance** (top of the panel) - pick a theme, or build your own:
+
+- **Presets**: Dark (default), Light, Midnight (true black, OLED-friendly),
+  High Contrast.
+- **Custom**: picking it reveals a color picker for each of the 10 themeable
+  roles (background, surface, border, text, accent, positive/negative/
+  warning, etc.) - see `THEME_COLOR_FIELDS` in `src/styles/themes.ts` for
+  the full list. It starts from whatever preset was active when you
+  switched, so you're tweaking rather than starting blank.
+
+Every widget's CSS is already built entirely on the same 10 CSS custom
+properties (`src/styles/theme.css`), so switching or customizing a theme
+needs no per-widget work - `themeStore.ts`'s `applyTheme` just writes new
+values onto `:root` via `element.style.setProperty`, and the cascade does
+the rest. Applied on startup before the first render (see `main.tsx`) so
+there's no flash of the default theme before your saved one loads.
+Persisted to `localStorage` (key `dashboard-theme`).
+
+Per widget, you can set:
 
 - **Visibility** - *Always shown*, *Hidden*, or *Scheduled*. Scheduled adds a
   day-of-week picker (tap a letter to toggle that day) and a start/end time

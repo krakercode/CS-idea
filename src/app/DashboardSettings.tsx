@@ -6,6 +6,7 @@ import {
   type VisibilityMode,
   type WidgetUserSettings,
 } from "./dashboardSettingsStore";
+import { ThemeSettings } from "./ThemeSettings";
 import "./DashboardSettings.css";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -42,6 +43,11 @@ export function DashboardSettings({ settings, onChange, onClose }: Props) {
         </header>
 
         <div className="dashboard-settings__body">
+          <div className="dashboard-settings__row">
+            <div className="dashboard-settings__widget-name">Appearance</div>
+            <ThemeSettings />
+          </div>
+
           {WIDGETS.map((widget) => {
             const s = settings[widget.id];
             if (!s) return null;
