@@ -103,4 +103,63 @@ export const THEME_PRESETS: ThemePreset[] = [
       warning: "#ffaa00",
     },
   },
+  // Three "for testing" themes riffing on specific games' visual identities -
+  // not official palettes, just researched approximations.
+  {
+    id: "disco-elysium",
+    label: "Disco Elysium",
+    colors: {
+      // Muted, painterly, sepia-toned melancholy with a deep maroon accent
+      // (the game's own color direction: dark blues/grays for the
+      // protagonist's internal state, earth tones throughout, splashes of
+      // vibrant color for emotional emphasis).
+      bg: "#1a1512",
+      surface: "#241d18",
+      surfaceRaised: "#2e251e",
+      border: "#4a3c30",
+      text: "#e8dcc8",
+      textMuted: "#a89a82",
+      accent: "#a83c3c",
+      positive: "#7a9471",
+      negative: "#b3503f",
+      warning: "#c9a227",
+    },
+  },
+  {
+    id: "marathon",
+    label: "Marathon",
+    colors: {
+      // Bungie's 2025 reboot: "hyper-saturated pinks and neon yellows pop
+      // among the cold steely blues and latex blacks" - strong, saturated,
+      // contrasting colors with little gradient/blending.
+      bg: "#0a0e14",
+      surface: "#12181f",
+      surfaceRaised: "#1a222b",
+      border: "#2a3844",
+      text: "#e8f0f5",
+      textMuted: "#7c93a3",
+      accent: "#ff3ec9",
+      positive: "#3effc0",
+      negative: "#ff3e5e",
+      warning: "#e8ff3e",
+    },
+  },
+  {
+    id: "ultrakill",
+    label: "Ultrakill",
+    colors: {
+      // Blood red / stark white / black / gold - V1's own color scheme,
+      // high contrast, metal-album-cover energy.
+      bg: "#0a0a0a",
+      surface: "#141414",
+      surfaceRaised: "#1e1e1e",
+      border: "#3a3a3a",
+      text: "#f5f5f5",
+      textMuted: "#999999",
+      accent: "#e0102a",
+      positive: "#d4af37",
+      negative: "#ff1744",
+      warning: "#ffd700",
+    },
+  },
 ];

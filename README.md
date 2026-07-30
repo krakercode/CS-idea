@@ -83,7 +83,7 @@ src/
     hooks/usePolling.ts    - fetch-once-then-poll hook every widget's data uses
     mock.ts, format.ts     - small helpers used by the mock providers/widgets
   widgets/
-    news/       stocks/       calendar/       cs2db/        spotify/       systemhealth/
+    news/       stocks/       calendar/       cs2db/        spotify/       systemhealth/    quotes/
 ```
 
 Each widget follows the same shape:
@@ -124,7 +124,11 @@ Click the ⚙ button (fixed top-right) to open the settings panel.
 **Appearance** (top of the panel) - pick a theme, or build your own:
 
 - **Presets**: Dark (default), Light, Midnight (true black, OLED-friendly),
-  High Contrast.
+  High Contrast, plus three "for testing" themes riffing on specific games'
+  visual identities (researched, not official palettes) - **Disco Elysium**
+  (muted, painterly sepia with a deep maroon accent), **Marathon** (Bungie's
+  2025 reboot - steely dark blue/black with neon pink and yellow), and
+  **Ultrakill** (black/white/blood-red/gold, high contrast).
 - **Custom**: picking it reveals a color picker for each of the 10 themeable
   roles (background, surface, border, text, accent, positive/negative/
   warning, etc.) - see `THEME_COLOR_FIELDS` in `src/styles/themes.ts` for
@@ -218,6 +222,14 @@ you've touched its settings.
   expected, not a bug). Polls every 3s via `get_system_health`
   (`src-tauri/src/system_health.rs`, using the `sysinfo` crate). Color
   thresholds (green/yellow/red at 70%/90%) are in `SystemHealthWidget.tsx`.
+- **Quotes** - a small local, curated set (`widgets/quotes/data/quotes.ts`),
+  currently three sources: Napoleon Bonaparte, Vladimir Lenin, and Volition
+  (a skill/inner voice from Disco Elysium, ZA/UM 2019 - fictional, and
+  labeled as such in the UI so it's never presented as a historical
+  quote). Filter chips (one per speaker) narrow which pool it draws from;
+  the shell's ⟳ button and a 10-minute auto-rotate both just pick a new
+  random quote from that pool - see "Sourcing the quotes" below for how
+  these were chosen and verified.
 
 ## CS2 Analysis backend (Leetify)
 
@@ -297,6 +309,34 @@ no OAuth.
   request" logic specifically so the parsing can be unit-tested against an
   embedded fixture (`cargo test`) without a live connection - see the note
   above on why that split mattered while building this.
+
+## Sourcing the quotes
+
+The Quotes widget was built to a specific bar: verified, attributable
+quotes only, each with context on when/why it was said - not the usual
+internet "famous quotes" grab-bag, where a large fraction of what
+circulates for figures like Napoleon is misattributed or has no real
+primary source (several widely-repeated ones were deliberately left out of
+this list for exactly that reason).
+
+- Every historical quote (Napoleon, Lenin) was checked via live web search
+  against multiple independent sources before being included - not pulled
+  from memory alone. `sourceUrl` on each entry points to where you can
+  verify it yourself. That said: translations vary (both are working from
+  French/Russian originals) and secondary sources can still be wrong, so
+  treat this as a solid starting point, not a guarantee - a real citation
+  check before quoting these anywhere serious is still worth doing.
+- Volition's lines are exact dialogue from Disco Elysium (ZA/UM, 2019),
+  cross-checked against community-maintained transcripts and multiple
+  independent quote compilations. It's fiction, not history - every
+  Volition entry is tagged `speakerType: "fictional"` in
+  `widgets/quotes/data/quotes.ts`, and the widget always renders a visible
+  "(fictional)" label next to its name so it's never confused for a real
+  attributed quote.
+- Adding a source: `Quote` (`widgets/quotes/types.ts`) is `text`, `speaker`,
+  `speakerType`, `work`, `context`, and an optional `sourceUrl`. Append to
+  the array in `data/quotes.ts` - the widget's filter chips and rotation
+  pick up any new speaker automatically.
 
 ## Design choices worth knowing about
 

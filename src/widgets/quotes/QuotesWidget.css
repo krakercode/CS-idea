@@ -1,0 +1,70 @@
+.quotes-widget__filters {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.quotes-widget__filter {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+  font-size: 11px;
+}
+
+.quotes-widget__filter--active {
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+.quotes-widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+}
+
+.quotes-widget__text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--color-text);
+}
+
+.quotes-widget__attribution {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.quotes-widget__speaker {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.quotes-widget__speaker--fictional::after {
+  content: " (fictional)";
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.quotes-widget__work {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.quotes-widget__context {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.quotes-widget__source {
+  font-size: 11px;
+  align-self: flex-start;
+}
