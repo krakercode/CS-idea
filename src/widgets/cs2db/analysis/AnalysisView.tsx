@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AttributionBadge } from "./components/AttributionBadge";
 import { PlayerSearch } from "./components/PlayerSearch";
 import { StatCards } from "./components/StatCards";
@@ -44,6 +44,11 @@ export function AnalysisView() {
   const [trend, setTrend] = useState<Snapshot[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
+  // Guards against overlapping searches (e.g. a recent-player chip clicked
+  // while a lookup is in flight) - only the latest search's results get
+  // applied, so a slower stale response can't clobber a newer one.
+  const requestIdRef = useRef(0);
+
   useEffect(() => {
     // Best-effort: local settings persistence needs a real Tauri runtime
     // (the store plugin), so fail quietly outside of one (e.g. `vite dev`
@@ -57,6 +62,9 @@ export function AnalysisView() {
   }, []);
 
   async function handleSearch(playerId: string) {
+    const requestId = ++requestIdRef.current;
+    const isStale = () => requestId !== requestIdRef.current;
+
     setLoading(true);
     setError(null);
     setProfile(null);
@@ -66,26 +74,30 @@ export function AnalysisView() {
 
     try {
       const p = await fetchProfile(playerId, apiKey || null);
+      if (isStale()) return;
       setProfile(p);
-      setRecentPlayers(await addRecentPlayer(playerId));
+      const recents = await addRecentPlayer(playerId);
+      if (!isStale()) setRecentPlayers(recents);
 
       try {
         const history = await fetchMatchHistory(playerId, apiKey || null);
-        setMatches(asMatchList(history));
+        if (!isStale()) setMatches(asMatchList(history));
       } catch {
         // Match history is secondary - profile is still shown if this fails.
       }
 
       try {
-        setTrend(await getTrend(playerId));
-        setSuggestions(await getSuggestions(playerId));
+        const trendResult = await getTrend(playerId);
+        if (!isStale()) setTrend(trendResult);
+        const suggestionsResult = await getSuggestions(playerId);
+        if (!isStale()) setSuggestions(suggestionsResult);
       } catch {
         // Local cache reads shouldn't normally fail; ignore if they do.
       }
     } catch (err) {
-      setError(friendlyError(err));
+      if (!isStale()) setError(friendlyError(err));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }
 

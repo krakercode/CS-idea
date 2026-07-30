@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { THEME_COLOR_FIELDS, THEME_PRESETS } from "../styles/themes";
-import { getThemeState, setCustomColor, setPreset, type ThemeState } from "./themeStore";
+import { FONT_OPTIONS } from "../styles/fonts";
+import { getThemeState, setCustomColor, setFont, setPreset, type ThemeState } from "./themeStore";
 import "./ThemeSettings.css";
 
 /** Preset picker + (when "Custom" is selected) a per-color editor. Changes
@@ -48,6 +49,17 @@ export function ThemeSettings() {
           ))}
         </div>
       )}
+
+      <label className="theme-settings__font-field">
+        Font
+        <select value={theme.fontId} onChange={(e) => setTheme(setFont(e.target.value))}>
+          {FONT_OPTIONS.map((font) => (
+            <option key={font.id} value={font.id}>
+              {font.label}
+            </option>
+          ))}
+        </select>
+      </label>
     </div>
   );
 }

@@ -35,6 +35,7 @@ export function PlayerSearch({ recentPlayers, loading, onSearch }: Props) {
               key={id}
               type="button"
               className="analysis__chip"
+              disabled={loading}
               onClick={() => {
                 setValue(id);
                 onSearch(id);

@@ -96,10 +96,10 @@ const DIMENSIONS: &[DimensionInfo] = &[
     },
 ];
 
-/// Given a Leetify `rating` object (aim/positioning/utility/clutch/opening/ct_leetify/t_leetify
-/// scores), returns the weakest dimensions first, each paired with a curated tip. This is a
-/// heuristic we built ourselves — Leetify's own "how to improve" coaching is not exposed via
-/// the public API.
+/// Given a Leetify `rating` object (`aim`/`positioning`/`utility`/`clutch`/`opening`/
+/// `ct_leetify`/`t_leetify` scores), returns the weakest dimensions first, each paired with a
+/// curated tip. This is a heuristic we built ourselves — Leetify's own "how to improve" coaching
+/// is not exposed via the public API.
 pub fn suggest(rating: &Value, limit: usize) -> Vec<Suggestion> {
     let mut scored: Vec<(f64, &DimensionInfo)> = DIMENSIONS
         .iter()
@@ -119,7 +119,7 @@ pub fn suggest(rating: &Value, limit: usize) -> Vec<Suggestion> {
             score,
             title: dim.title.to_string(),
             tip: dim.tip.to_string(),
-            drills: dim.drills.iter().map(|s| s.to_string()).collect(),
+            drills: dim.drills.iter().map(ToString::to_string).collect(),
         })
         .collect()
 }

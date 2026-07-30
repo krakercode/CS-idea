@@ -1,0 +1,83 @@
+/**
+ * Non-color UI treatment for specific theme presets - fonts, border shape,
+ * texture. Scoped to [data-theme-style="<preset id>"] (set by
+ * app/themeStore.ts's applyTheme) so this only affects the presets it
+ * targets; Dark/Light/Midnight/High Contrast/Custom stay exactly as their
+ * color palette alone defines them. Everything here targets .widget-shell
+ * since every widget renders through it - one place, every widget picks
+ * it up for free.
+ *
+ * These are a best-effort approximation from research (search + published
+ * art-direction interviews), not a pixel-accurate recreation of any game's
+ * actual UI - closer fidelity would need real reference screenshots.
+ */
+
+/* ---------- Disco Elysium: painterly, literary, a little worn ---------- */
+
+[data-theme-style="disco-elysium"] .widget-shell {
+  border-width: 3px;
+  border-style: double;
+  background-image: radial-gradient(circle at 15% 10%, rgba(255, 255, 255, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(0, 0, 0, 0.15) 0%, transparent 45%);
+}
+
+[data-theme-style="disco-elysium"] .widget-shell__title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+[data-theme-style="disco-elysium"] .widget-shell__title::before {
+  content: "\25C6  "; /* ◆ - a small nod to the Thought Cabinet's slot icons */
+  color: var(--color-accent);
+  font-style: normal;
+}
+
+/* ---------- Marathon: glitchy graphic-realism HUD ---------- */
+
+[data-theme-style="marathon"] .widget-shell {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.025) 0px,
+    rgba(255, 255, 255, 0.025) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+[data-theme-style="marathon"] .widget-shell__header {
+  border-bottom: 2px solid var(--color-accent);
+}
+
+[data-theme-style="marathon"] .widget-shell__title {
+  font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
+  letter-spacing: 0.14em;
+  text-shadow: 1px 0 var(--color-negative), -1px 0 var(--color-positive);
+}
+
+/* ---------- Ultrakill: blunt, high-contrast, metal poster ---------- */
+
+[data-theme-style="ultrakill"] .widget-shell {
+  border-radius: 0;
+  border-width: 2px;
+  border-left: 6px solid var(--color-accent);
+}
+
+[data-theme-style="ultrakill"] .widget-shell__header {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0px,
+    transparent 8px,
+    rgba(224, 16, 42, 0.1) 8px,
+    rgba(224, 16, 42, 0.1) 16px
+  );
+}
+
+[data-theme-style="ultrakill"] .widget-shell__title {
+  font-family: "Arial Black", Impact, sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}

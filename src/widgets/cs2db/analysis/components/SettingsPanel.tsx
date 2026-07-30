@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { validateApiKey } from "../analysisService";
 
 interface Props {
@@ -9,6 +9,13 @@ interface Props {
 export function SettingsPanel({ apiKey, onSave }: Props) {
   const [value, setValue] = useState(apiKey);
   const [status, setStatus] = useState<"idle" | "checking" | "valid" | "invalid" | "error">("idle");
+
+  // apiKey loads asynchronously from the settings store after this panel's
+  // first render (it starts as "" until that resolves), so the input needs
+  // to pick up the loaded value instead of only using useState's initial one.
+  useEffect(() => {
+    setValue(apiKey);
+  }, [apiKey]);
 
   async function save() {
     onSave(value.trim());
