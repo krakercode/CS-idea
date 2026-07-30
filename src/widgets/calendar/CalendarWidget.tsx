@@ -1,0 +1,66 @@
+import { useMemo, useState } from "react";
+import { usePolling } from "../../shared/hooks/usePolling";
+import { WidgetShell } from "../../shared/WidgetShell";
+import { getCalendarProvider } from "./calendarService";
+import type { EventCategory } from "./types";
+import "./CalendarWidget.css";
+
+const REFRESH_INTERVAL_MS = 30 * 60_000;
+const DAYS_AHEAD = 7;
+
+const FILTERS: Array<{ label: string; value: EventCategory | "all" }> = [
+  { label: "All", value: "all" },
+  { label: "Esports", value: "esports" },
+  { label: "Sports", value: "sports" },
+];
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" });
+
+export function CalendarWidget() {
+  const [filter, setFilter] = useState<EventCategory | "all">("all");
+  const { data, loading, error, refresh } = usePolling(
+    () => getCalendarProvider().fetchUpcoming(DAYS_AHEAD),
+    REFRESH_INTERVAL_MS,
+  );
+
+  const events = useMemo(() => data?.filter((e) => filter === "all" || e.category === filter) ?? [], [data, filter]);
+
+  const headerActions = (
+    <div className="calendar-widget__filters">
+      {FILTERS.map((f) => (
+        <button
+          key={f.value}
+          type="button"
+          className={`calendar-widget__filter ${filter === f.value ? "calendar-widget__filter--active" : ""}`}
+          onClick={() => setFilter(f.value)}
+        >
+          {f.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <WidgetShell title="Calendar" loading={loading} error={error} onRefresh={refresh} headerActions={headerActions}>
+      {events.length === 0 && <p className="calendar-widget__empty">Nothing upcoming.</p>}
+      <ul className="calendar-widget__list">
+        {events.map((event) => (
+          <li key={event.id} className="calendar-widget__row">
+            <span className="calendar-widget__time">{dateFormatter.format(new Date(event.startTime))}</span>
+            <div className="calendar-widget__details">
+              <span className="calendar-widget__title">
+                {event.teams ? event.teams.join(" vs ") : event.title}
+              </span>
+              <span className="calendar-widget__competition">
+                {event.competition} · {event.title}
+              </span>
+            </div>
+            <span className={`calendar-widget__badge calendar-widget__badge--${event.category}`}>
+              {event.category}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </WidgetShell>
+  );
+}
