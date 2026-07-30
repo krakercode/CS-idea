@@ -3,7 +3,10 @@
 
 mod db;
 mod leetify_client;
+mod news;
+mod stocks;
 mod suggestions;
+mod system_health;
 
 use db::Db;
 use leetify_client::{LeetifyClient, LeetifyError};
@@ -117,6 +120,43 @@ async fn validate_api_key(
     Ok(state.leetify.validate_api_key(&api_key).await?)
 }
 
+#[tauri::command]
+fn get_system_health(state: tauri::State<'_, system_health::SystemHealthState>) -> system_health::SystemHealth {
+    system_health::collect(&state)
+}
+
+/// Shared HTTP client for the widgets that fetch real, unauthenticated
+/// third-party data (news feeds, stock quotes) - reused across requests for
+/// connection pooling, with a browser-like User-Agent since some of these
+/// unofficial endpoints reject the default reqwest one.
+struct HttpState {
+    client: reqwest::Client,
+}
+
+impl HttpState {
+    fn new() -> Self {
+        let client = reqwest::Client::builder()
+            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+            .timeout(std::time::Duration::from_secs(15))
+            .build()
+            .expect("failed to build shared http client");
+        Self { client }
+    }
+}
+
+#[tauri::command]
+async fn fetch_news(
+    state: tauri::State<'_, HttpState>,
+    sources: Vec<news::NewsSourceRequest>,
+) -> Result<Vec<news::NewsArticle>, ()> {
+    Ok(news::fetch_all(&state.client, &sources).await)
+}
+
+#[tauri::command]
+async fn fetch_quotes(state: tauri::State<'_, HttpState>, symbols: Vec<String>) -> Result<Vec<stocks::Quote>, ()> {
+    Ok(stocks::fetch_all(&state.client, &symbols).await)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -130,6 +170,8 @@ fn main() {
                 leetify: LeetifyClient::new(),
                 db,
             });
+            app.manage(system_health::SystemHealthState::new());
+            app.manage(HttpState::new());
             Ok(())
         })
         // Register new #[tauri::command] functions here as native features get added.
@@ -138,7 +180,10 @@ fn main() {
             fetch_match_history,
             get_trend,
             get_suggestions,
-            validate_api_key
+            validate_api_key,
+            get_system_health,
+            fetch_news,
+            fetch_quotes
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

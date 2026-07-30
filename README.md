@@ -1,18 +1,16 @@
 # JESSPR-EAST
 
 An always-on second-monitor dashboard: news, stocks, a sports/esports calendar,
-a CS2 nade lineup + pro-play database, and Spotify. Built on
-[Tauri](https://tauri.app/) (Rust shell + native webview) with a
+a CS2 nade lineup + pro-play database, Spotify, and a system health monitor.
+Built on [Tauri](https://tauri.app/) (Rust shell + native webview) with a
 React/TypeScript frontend, chosen specifically to stay light enough to run
 continuously without eating a monitor's worth of RAM the way an
 Electron app would.
 
-Everything except the CS2 Database's Analysis view currently runs on
-mock/local data - there are no real API keys or network calls to configure
-for those yet. The goal of this pass was the base structure: a clean widget
-architecture that's easy to extend, with each widget's "swap this for a real
-data source" seam clearly marked. Analysis is the exception: it's a real,
-working integration against Leetify's public CS2 stats API.
+News, Stocks, Analysis (CS2 Database's fourth view), and System Health all
+run on real data now - no API keys required for any of them. Calendar and
+Spotify are still mock/local (see their widget notes below for why, and
+what's needed to make them real).
 
 ## Stack
 
@@ -48,6 +46,19 @@ Before packaging a real build, replace the placeholder icon
 > `npm run tauri dev`/`build` re-verified once - see the
 > [Tauri prerequisites](https://tauri.app/start/prerequisites/) for what's
 > required on a real desktop machine (already standard there).
+>
+> One thing this environment genuinely can't verify: outbound network here
+> is allowlisted to package registries and a few other known hosts, so News
+> (RSS) and Stocks (Yahoo Finance) can't actually reach the internet from
+> this container - `hltv.org`, `bbci.co.uk`, and `query1.finance.yahoo.com`
+> are all blocked at the network policy level, confirmed via
+> `$HTTPS_PROXY/__agentproxy/status`. Both widgets are built to degrade
+> gracefully when a fetch fails (see below), which was confirmed - they show
+> a clean empty state rather than erroring or crashing - but the "does the
+> real request actually succeed and return real articles/quotes" question
+> is only testable on a machine with normal internet access. The parsing
+> logic itself *is* verified, via unit tests against embedded fixture
+> data (`cargo test`).
 
 ## Architecture
 
@@ -58,6 +69,11 @@ src/
     widgets.config.ts         - the list of widgets on the dashboard (add one here)
     dashboardSettingsStore.ts - per-widget visibility/schedule/size, persisted to localStorage
     DashboardSettings.tsx     - the settings panel (opened via the ⚙ button)
+    themeStore.ts             - active theme (preset or custom), persisted to localStorage
+    ThemeSettings.tsx         - preset picker + custom color editor, shown in DashboardSettings
+  styles/
+    theme.css   - the default (Dark) CSS custom properties every widget's CSS uses
+    themes.ts   - preset palettes + the field list that drives the custom color editor
   shared/
     WidgetShell.tsx       - common card chrome: title bar, refresh, expand, loading/error
     Overlay.tsx            - generic centered modal (portal + Escape + backdrop-click), used by
@@ -67,7 +83,7 @@ src/
     hooks/usePolling.ts    - fetch-once-then-poll hook every widget's data uses
     mock.ts, format.ts     - small helpers used by the mock providers/widgets
   widgets/
-    news/       stocks/       calendar/       cs2db/        spotify/
+    news/       stocks/       calendar/       cs2db/        spotify/       systemhealth/    quotes/
 ```
 
 Each widget follows the same shape:
@@ -103,8 +119,31 @@ builds itself:
 
 ### Customizing the dashboard
 
-Click the ⚙ button (fixed top-right) to open the settings panel. Per widget,
-you can set:
+Click the ⚙ button (fixed top-right) to open the settings panel.
+
+**Appearance** (top of the panel) - pick a theme, or build your own:
+
+- **Presets**: Dark (default), Light, Midnight (true black, OLED-friendly),
+  High Contrast, plus three "for testing" themes riffing on specific games'
+  visual identities (researched, not official palettes) - **Disco Elysium**
+  (muted, painterly sepia with a deep maroon accent), **Marathon** (Bungie's
+  2025 reboot - steely dark blue/black with neon pink and yellow), and
+  **Ultrakill** (black/white/blood-red/gold, high contrast).
+- **Custom**: picking it reveals a color picker for each of the 10 themeable
+  roles (background, surface, border, text, accent, positive/negative/
+  warning, etc.) - see `THEME_COLOR_FIELDS` in `src/styles/themes.ts` for
+  the full list. It starts from whatever preset was active when you
+  switched, so you're tweaking rather than starting blank.
+
+Every widget's CSS is already built entirely on the same 10 CSS custom
+properties (`src/styles/theme.css`), so switching or customizing a theme
+needs no per-widget work - `themeStore.ts`'s `applyTheme` just writes new
+values onto `:root` via `element.style.setProperty`, and the cascade does
+the rest. Applied on startup before the first render (see `main.tsx`) so
+there's no flash of the default theme before your saved one loads.
+Persisted to `localStorage` (key `dashboard-theme`).
+
+Per widget, you can set:
 
 - **Visibility** - *Always shown*, *Hidden*, or *Scheduled*. Scheduled adds a
   day-of-week picker (tap a letter to toggle that day) and a start/end time
@@ -124,13 +163,27 @@ you've touched its settings.
 
 ### Widget notes
 
-- **News** - topics list lives in `widgets/news/userInterests.ts`; edit that
-  array to change what it follows. No real source wired up yet (plan: RSS
-  and/or a news API).
-- **Stocks** - tickers live in `widgets/stocks/watchlist.ts`. Mock provider
-  random-walks a price per symbol so polling has something to show.
-- **Calendar** - sample esports/sports fixtures, filterable by category.
-  Real version needs a schedule source per league/competition you care about.
+- **News** - real news, configured with plain keywords (`widgets/news/newsSources.ts`'s
+  `NEWS_KEYWORDS` - "Counter-Strike 2", a ticker like "AAPL", a team name,
+  whatever you want to follow). No RSS knowledge needed: each keyword is
+  turned into a Google News search under the hood
+  (`src-tauri/src/news.rs::NewsSourceRequest::resolve_url`) and fetched the
+  same way as any other feed. If you *do* know a specific feed URL you'd
+  rather follow directly, `NEWS_FEEDS` in the same file is the advanced,
+  empty-by-default option for that. Either way, a source that's unreachable
+  or fails to parse is dropped rather than failing the whole widget.
+- **Stocks** - real quotes from Yahoo Finance's unofficial chart endpoint
+  (`src-tauri/src/stocks.rs`) - no API key, but also undocumented and could
+  change without notice; see "CS2 Analysis backend" for the same tradeoff
+  Leetify's API has. Tickers live in `widgets/stocks/watchlist.ts`. Polls
+  every 60s (deliberately not faster, since it's an unauthenticated
+  endpoint). A symbol that fails to resolve is dropped, not fatal.
+- **Calendar** - still mock/sample data, by choice: there's no good
+  free/keyless API for esports schedules (HLTV has no official one, and
+  scraping their site would violate their ToS), and general-sports-only
+  felt like the wrong tradeoff for an app centered on CS2. Real esports
+  data would need something like PandaScore (requires signing up for a free
+  API key) wired into `calendarService.ts`.
 - **CS2 Database** - four views, cycled with `useWidgetViews`/`ViewSwitcher`:
   - *Lineups* and *Pro Plays* - searchable/filterable by map, sample data in
     `widgets/cs2db/data/`, meant to be replaced/expanded (lineup positions
@@ -161,6 +214,22 @@ you've touched its settings.
   Authorization Code + PKCE flow suits a desktop app well (no client secret
   to embed), using Tauri's shell/opener plugin to launch the system browser
   and a loopback redirect (or a custom URL scheme) to catch the callback.
+- **System Health** - the other real (not mock) widget, for the same reason
+  as Analysis: there's no meaningful mock for "this machine's actual CPU/
+  memory/disk load." CPU name + overall/per-core usage, RAM (and swap, if
+  any is configured), free space per mounted disk, and temperature sensors
+  where the OS exposes them (often empty in VMs/containers - that's
+  expected, not a bug). Polls every 3s via `get_system_health`
+  (`src-tauri/src/system_health.rs`, using the `sysinfo` crate). Color
+  thresholds (green/yellow/red at 70%/90%) are in `SystemHealthWidget.tsx`.
+- **Quotes** - a small local, curated set (`widgets/quotes/data/quotes.ts`),
+  currently three sources: Napoleon Bonaparte, Vladimir Lenin, and Volition
+  (a skill/inner voice from Disco Elysium, ZA/UM 2019 - fictional, and
+  labeled as such in the UI so it's never presented as a historical
+  quote). Filter chips (one per speaker) narrow which pool it draws from;
+  the shell's ⟳ button and a 10-minute auto-rotate both just pick a new
+  random quote from that pool - see "Sourcing the quotes" below for how
+  these were chosen and verified.
 
 ## CS2 Analysis backend (Leetify)
 
@@ -187,6 +256,87 @@ Optionally grab a Leetify API key at https://leetify.com/app/developer and
 paste it into Analysis's Settings tab - it works without one, just at
 stricter rate limits. Data provided by Leetify; this project isn't
 affiliated with or endorsed by them.
+
+## System Health backend
+
+`src-tauri/src/system_health.rs` wraps the [`sysinfo`](https://docs.rs/sysinfo)
+crate behind one command, `get_system_health`. Implementation notes:
+
+- A `System` instance lives in managed app state and is refreshed (not
+  recreated) on every call. CPU usage is a delta between refreshes, so the
+  *first* poll after launch can read low/zero - `sysinfo` needs two samples
+  apart in time (it recommends `MINIMUM_CPU_UPDATE_INTERVAL`, ~200ms) for an
+  accurate number, and the widget's own 3s poll interval comfortably clears
+  that bar from the second reading on.
+- Disks and temperature components are re-listed each call
+  (`Disks::new_with_refreshed_list()` / `Components::new_with_refreshed_list()`)
+  since, unlike CPU/memory, drives and sensors can appear/disappear (USB
+  drives, etc.).
+- There's a unit test (`cargo test --bin jesspr-east system_health -- --nocapture`)
+  that asserts the values are plausible (non-zero memory, used ≤ total, at
+  least one disk) - useful as a quick sanity check on a new machine, since
+  this is the one widget where "does the underlying library actually work
+  here" varies by OS/hardware.
+- JSON field names are snake_case (Rust's default `Serialize` output,
+  un-renamed) and `src/widgets/systemhealth/types.ts` mirrors them exactly
+  rather than converting case - there's no real API contract to abstract
+  away here, so a 1:1 mirror is simpler than adding a mapping layer.
+
+## News & Stocks backends
+
+Both follow the same shape: a small Rust module (`src-tauri/src/news.rs`,
+`stocks.rs`) that fetches over HTTP via a shared `reqwest::Client` (managed
+in `HttpState`, with a browser-like `User-Agent` since some unofficial
+endpoints reject the default one) and hands back plain JSON - no API keys,
+no OAuth.
+
+- **News** takes a list of sources tagged `keyword` or `feed`
+  (`NewsSourceRequest`, a serde-tagged enum) from the frontend. A `keyword`
+  source is resolved to a Google News search URL (`news.google.com/rss/search`,
+  built with `reqwest::Url`'s query-pair encoding rather than hand-rolled
+  string formatting, so special characters in a query can't break the
+  request); a `feed` source is used as-is. Every source is then fetched
+  *concurrently* (`futures::future::join_all`) and parsed with `feed-rs`,
+  which handles both RSS and Atom. Per-source failures (unreachable,
+  malformed XML) are swallowed and that source is just dropped from the
+  results - one flaky source shouldn't blank the whole widget. Capped at 5
+  articles per source, merged and sorted by published date.
+- **Stocks** hits `query1.finance.yahoo.com/v8/finance/chart/{symbol}` per
+  ticker, concurrently, and reads only the `meta` block (price, previous
+  close, currency, timestamp) out of a much larger response. Same
+  per-symbol failure tolerance as News.
+- Both modules split the "parse a response" logic from the "make the HTTP
+  request" logic specifically so the parsing can be unit-tested against an
+  embedded fixture (`cargo test`) without a live connection - see the note
+  above on why that split mattered while building this.
+
+## Sourcing the quotes
+
+The Quotes widget was built to a specific bar: verified, attributable
+quotes only, each with context on when/why it was said - not the usual
+internet "famous quotes" grab-bag, where a large fraction of what
+circulates for figures like Napoleon is misattributed or has no real
+primary source (several widely-repeated ones were deliberately left out of
+this list for exactly that reason).
+
+- Every historical quote (Napoleon, Lenin) was checked via live web search
+  against multiple independent sources before being included - not pulled
+  from memory alone. `sourceUrl` on each entry points to where you can
+  verify it yourself. That said: translations vary (both are working from
+  French/Russian originals) and secondary sources can still be wrong, so
+  treat this as a solid starting point, not a guarantee - a real citation
+  check before quoting these anywhere serious is still worth doing.
+- Volition's lines are exact dialogue from Disco Elysium (ZA/UM, 2019),
+  cross-checked against community-maintained transcripts and multiple
+  independent quote compilations. It's fiction, not history - every
+  Volition entry is tagged `speakerType: "fictional"` in
+  `widgets/quotes/data/quotes.ts`, and the widget always renders a visible
+  "(fictional)" label next to its name so it's never confused for a real
+  attributed quote.
+- Adding a source: `Quote` (`widgets/quotes/types.ts`) is `text`, `speaker`,
+  `speakerType`, `work`, `context`, and an optional `sourceUrl`. Append to
+  the array in `data/quotes.ts` - the widget's filter chips and rotation
+  pick up any new speaker automatically.
 
 ## Design choices worth knowing about
 
