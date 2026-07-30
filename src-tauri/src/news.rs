@@ -1,9 +1,42 @@
 use serde::{Deserialize, Serialize};
 
+/// A news source from the frontend's perspective is either a plain
+/// keyword/ticker to search for, or (for anyone who already knows what an
+/// RSS/Atom feed is and wants a specific one) a direct feed URL. Both
+/// resolve to a URL and go through the exact same fetch+parse path.
 #[derive(Debug, Deserialize, Clone)]
-pub struct FeedRequest {
-    pub topic: String,
-    pub url: String,
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum NewsSourceRequest {
+    Keyword { topic: String, query: String },
+    Feed { topic: String, url: String },
+}
+
+impl NewsSourceRequest {
+    fn topic(&self) -> &str {
+        match self {
+            NewsSourceRequest::Keyword { topic, .. } => topic,
+            NewsSourceRequest::Feed { topic, .. } => topic,
+        }
+    }
+
+    /// Resolves this source to the feed URL to fetch. Keyword searches go
+    /// through Google News' search RSS endpoint - undocumented but stable
+    /// and widely relied on (e.g. by several open-source news aggregators),
+    /// and keyless, which matters more here than official support does.
+    fn resolve_url(&self) -> String {
+        match self {
+            NewsSourceRequest::Keyword { query, .. } => {
+                let mut url = reqwest::Url::parse("https://news.google.com/rss/search").expect("static URL is valid");
+                url.query_pairs_mut()
+                    .append_pair("q", query)
+                    .append_pair("hl", "en-US")
+                    .append_pair("gl", "US")
+                    .append_pair("ceid", "US:en");
+                url.into()
+            }
+            NewsSourceRequest::Feed { url, .. } => url.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq)]
@@ -59,22 +92,23 @@ fn parse_feed(topic: &str, bytes: &[u8]) -> Vec<NewsArticle> {
         .collect()
 }
 
-async fn fetch_one(client: &reqwest::Client, request: &FeedRequest) -> Vec<NewsArticle> {
-    let bytes = match client.get(&request.url).send().await {
+async fn fetch_one(client: &reqwest::Client, request: &NewsSourceRequest) -> Vec<NewsArticle> {
+    let bytes = match client.get(request.resolve_url()).send().await {
         Ok(resp) => match resp.bytes().await {
             Ok(b) => b,
             Err(_) => return Vec::new(),
         },
         Err(_) => return Vec::new(),
     };
-    parse_feed(&request.topic, &bytes)
+    parse_feed(request.topic(), &bytes)
 }
 
-/// Fetches every configured feed concurrently. A feed that's unreachable or
-/// fails to parse is silently dropped rather than failing the whole batch -
-/// partial news is more useful than none because one source hiccuped.
-pub async fn fetch_all(client: &reqwest::Client, feeds: &[FeedRequest]) -> Vec<NewsArticle> {
-    let fetches = feeds.iter().map(|f| fetch_one(client, f));
+/// Fetches every configured source concurrently. A source that's
+/// unreachable or fails to parse is silently dropped rather than failing
+/// the whole batch - partial news is more useful than none because one
+/// source hiccuped.
+pub async fn fetch_all(client: &reqwest::Client, sources: &[NewsSourceRequest]) -> Vec<NewsArticle> {
+    let fetches = sources.iter().map(|s| fetch_one(client, s));
     let mut articles: Vec<NewsArticle> = futures::future::join_all(fetches).await.into_iter().flatten().collect();
     articles.sort_by(|a, b| b.published_at.cmp(&a.published_at));
     articles
@@ -135,5 +169,39 @@ mod tests {
         );
         let articles = parse_feed("Technology", rss.as_bytes());
         assert_eq!(articles.len(), MAX_ARTICLES_PER_FEED);
+    }
+
+    #[test]
+    fn keyword_source_resolves_to_google_news_search() {
+        let source = NewsSourceRequest::Keyword {
+            topic: "AAPL".to_string(),
+            query: "AAPL stock".to_string(),
+        };
+        let url = source.resolve_url();
+        assert!(url.starts_with("https://news.google.com/rss/search?"));
+        assert!(url.contains("q=AAPL+stock") || url.contains("q=AAPL%20stock"));
+        assert_eq!(source.topic(), "AAPL");
+    }
+
+    #[test]
+    fn keyword_query_is_url_encoded() {
+        let source = NewsSourceRequest::Keyword {
+            topic: "C&C".to_string(),
+            query: "C&C: tiberian sun".to_string(),
+        };
+        let url = source.resolve_url();
+        // A raw unencoded '&' would be parsed as a second query param and
+        // break the request - confirm it went through the encoder.
+        assert!(!url.contains("&C:"), "query should be percent-encoded, got: {url}");
+    }
+
+    #[test]
+    fn feed_source_uses_url_verbatim() {
+        let source = NewsSourceRequest::Feed {
+            topic: "Custom".to_string(),
+            url: "https://example.com/feed.xml".to_string(),
+        };
+        assert_eq!(source.resolve_url(), "https://example.com/feed.xml");
+        assert_eq!(source.topic(), "Custom");
     }
 }

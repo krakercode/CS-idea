@@ -135,11 +135,15 @@ you've touched its settings.
 
 ### Widget notes
 
-- **News** - real RSS/Atom feeds, fetched and parsed on the Rust side
-  (`src-tauri/src/news.rs`, using `feed-rs`). Feed list lives in
-  `widgets/news/newsFeeds.ts` - edit that array (any RSS/Atom URL works) to
-  change what it follows. A feed that's unreachable or fails to parse is
-  dropped rather than failing the whole widget.
+- **News** - real news, configured with plain keywords (`widgets/news/newsSources.ts`'s
+  `NEWS_KEYWORDS` - "Counter-Strike 2", a ticker like "AAPL", a team name,
+  whatever you want to follow). No RSS knowledge needed: each keyword is
+  turned into a Google News search under the hood
+  (`src-tauri/src/news.rs::NewsSourceRequest::resolve_url`) and fetched the
+  same way as any other feed. If you *do* know a specific feed URL you'd
+  rather follow directly, `NEWS_FEEDS` in the same file is the advanced,
+  empty-by-default option for that. Either way, a source that's unreachable
+  or fails to parse is dropped rather than failing the whole widget.
 - **Stocks** - real quotes from Yahoo Finance's unofficial chart endpoint
   (`src-tauri/src/stocks.rs`) - no API key, but also undocumented and could
   change without notice; see "CS2 Analysis backend" for the same tradeoff
@@ -250,12 +254,17 @@ in `HttpState`, with a browser-like `User-Agent` since some unofficial
 endpoints reject the default one) and hands back plain JSON - no API keys,
 no OAuth.
 
-- **News** fetches every configured feed *concurrently*
-  (`futures::future::join_all`) and parses each with `feed-rs`, which
-  handles both RSS and Atom. Per-feed failures (unreachable, malformed XML)
-  are swallowed and that feed is just dropped from the results - one flaky
-  source shouldn't blank the whole widget. Capped at 5 articles per feed,
-  merged and sorted by published date.
+- **News** takes a list of sources tagged `keyword` or `feed`
+  (`NewsSourceRequest`, a serde-tagged enum) from the frontend. A `keyword`
+  source is resolved to a Google News search URL (`news.google.com/rss/search`,
+  built with `reqwest::Url`'s query-pair encoding rather than hand-rolled
+  string formatting, so special characters in a query can't break the
+  request); a `feed` source is used as-is. Every source is then fetched
+  *concurrently* (`futures::future::join_all`) and parsed with `feed-rs`,
+  which handles both RSS and Atom. Per-source failures (unreachable,
+  malformed XML) are swallowed and that source is just dropped from the
+  results - one flaky source shouldn't blank the whole widget. Capped at 5
+  articles per source, merged and sorted by published date.
 - **Stocks** hits `query1.finance.yahoo.com/v8/finance/chart/{symbol}` per
   ticker, concurrently, and reads only the `meta` block (price, previous
   close, currency, timestamp) out of a much larger response. Same

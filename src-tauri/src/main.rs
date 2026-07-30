@@ -145,8 +145,11 @@ impl HttpState {
 }
 
 #[tauri::command]
-async fn fetch_news(state: tauri::State<'_, HttpState>, feeds: Vec<news::FeedRequest>) -> Result<Vec<news::NewsArticle>, ()> {
-    Ok(news::fetch_all(&state.client, &feeds).await)
+async fn fetch_news(
+    state: tauri::State<'_, HttpState>,
+    sources: Vec<news::NewsSourceRequest>,
+) -> Result<Vec<news::NewsArticle>, ()> {
+    Ok(news::fetch_all(&state.client, &sources).await)
 }
 
 #[tauri::command]
