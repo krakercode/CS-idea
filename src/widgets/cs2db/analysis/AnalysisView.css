@@ -1,0 +1,210 @@
+.analysis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.analysis__muted {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.analysis__search-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.analysis input,
+.analysis button {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  padding: var(--space-1) var(--space-3);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+}
+
+.analysis input {
+  flex: 1;
+  min-width: 0;
+}
+
+.analysis button {
+  cursor: pointer;
+  border-color: transparent;
+  background: var(--color-accent);
+  color: #04101f;
+  font-weight: 600;
+}
+
+.analysis button:hover {
+  filter: brightness(1.1);
+}
+
+.analysis button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.analysis__recent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.analysis__chip {
+  background: var(--color-surface-raised) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
+  font-weight: 400 !important;
+  padding: 2px var(--space-2) !important;
+  font-size: 11px !important;
+  border-radius: 999px !important;
+}
+
+.analysis__tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-1);
+}
+
+.analysis__tab {
+  background: none !important;
+  border: none !important;
+  color: var(--color-text-muted) !important;
+  border-radius: 0 !important;
+  padding: var(--space-1) var(--space-2) !important;
+  border-bottom: 2px solid transparent !important;
+  font-weight: 400 !important;
+}
+
+.analysis__tab--active {
+  color: var(--color-accent) !important;
+  border-bottom: 2px solid var(--color-accent) !important;
+  font-weight: 600 !important;
+}
+
+.analysis__player-name {
+  margin: 0 0 var(--space-2);
+  font-size: 15px;
+}
+
+.analysis__card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.analysis__stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+
+.analysis__stat-label {
+  font-size: 10px;
+  text-transform: capitalize;
+  color: var(--color-text-muted);
+}
+
+.analysis__stat-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.analysis__match-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.analysis__match-table th,
+.analysis__match-table td {
+  text-align: left;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.analysis__result-win {
+  color: var(--color-positive);
+  font-weight: 600;
+}
+
+.analysis__result-loss {
+  color: var(--color-negative);
+  font-weight: 600;
+}
+
+.analysis__suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.analysis__suggestion-card {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: 12px;
+}
+
+.analysis__suggestion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-1);
+}
+
+.analysis__suggestion-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.analysis__suggestion-score {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.analysis__settings {
+  max-width: 480px;
+}
+
+.analysis__settings label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.analysis__status-ok {
+  color: var(--color-positive);
+  font-size: 12px;
+}
+
+.analysis__status-error {
+  color: var(--color-negative);
+  font-size: 12px;
+}
+
+.analysis__attribution {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.analysis__attribution a {
+  color: inherit;
+  font-weight: 600;
+}

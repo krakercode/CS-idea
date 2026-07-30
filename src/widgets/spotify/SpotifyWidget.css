@@ -1,0 +1,53 @@
+.spotify-widget__disconnected {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.spotify-widget__connect,
+.spotify-widget__disconnect {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  font-size: 12px;
+  margin-top: var(--space-2);
+}
+
+.spotify-widget__connect:hover,
+.spotify-widget__disconnect:hover {
+  border-color: var(--color-accent);
+}
+
+.spotify-widget__track {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.spotify-widget__artist {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.spotify-widget__progress-bar {
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+  margin-top: var(--space-3);
+  overflow: hidden;
+}
+
+.spotify-widget__progress-fill {
+  height: 100%;
+  background: var(--color-positive);
+}
+
+.spotify-widget__times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}

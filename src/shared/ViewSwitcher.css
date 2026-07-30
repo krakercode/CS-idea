@@ -1,0 +1,32 @@
+.view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.view-switcher__arrow {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px var(--space-1);
+}
+
+.view-switcher__arrow:hover {
+  color: var(--color-text);
+}
+
+.view-switcher__tab {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+  font-size: 11px;
+}
+
+.view-switcher__tab--active {
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}

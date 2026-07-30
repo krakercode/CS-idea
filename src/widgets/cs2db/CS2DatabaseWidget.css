@@ -1,0 +1,95 @@
+.cs2-widget__filters {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.cs2-widget__filters select,
+.cs2-widget__search {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 12px;
+}
+
+.cs2-widget__search {
+  flex: 1;
+  min-width: 0;
+}
+
+.cs2-widget__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cs2-widget__card {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cs2-widget__card:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.cs2-widget__card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.cs2-widget__card-title {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cs2-widget__card-team {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.cs2-widget__card-meta {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.cs2-widget__card-description {
+  font-size: 12px;
+  margin: var(--space-1) 0 0;
+}
+
+.cs2-widget__badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+}
+
+.cs2-widget__tags {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.cs2-widget__tag {
+  font-size: 10px;
+  color: var(--color-accent);
+  background: rgba(88, 166, 255, 0.12);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.cs2-widget__empty {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
