@@ -54,10 +54,14 @@ Before packaging a real build, replace the placeholder icon
 ```
 src/
   app/
-    Dashboard.tsx        - lays out enabled widgets in a CSS grid
-    widgets.config.ts    - the list of widgets on the dashboard (add one here)
+    Dashboard.tsx             - lays out visible widgets in a CSS grid, minute schedule tick
+    widgets.config.ts         - the list of widgets on the dashboard (add one here)
+    dashboardSettingsStore.ts - per-widget visibility/schedule/size, persisted to localStorage
+    DashboardSettings.tsx     - the settings panel (opened via the ⚙ button)
   shared/
     WidgetShell.tsx       - common card chrome: title bar, refresh, expand, loading/error
+    Overlay.tsx            - generic centered modal (portal + Escape + backdrop-click), used by
+                              WidgetShell's expand and by DashboardSettings
     useWidgetViews.ts      - generic "multiple internal views" state (id, next/prev/select)
     ViewSwitcher.tsx        - tab + cycle-arrow UI for a widget's views, pairs with the hook above
     hooks/usePolling.ts    - fetch-once-then-poll hook every widget's data uses
@@ -94,8 +98,29 @@ builds itself:
   the active-view state and `next`/`prev`/`setActiveId`, pass a
   `<ViewSwitcher>` as `WidgetShell`'s `headerActions`, and render each
   view's content based on `activeId`. CS2 Database is the current example
-  (Lineups / Pro Plays / Analysis, with ‹ › arrows to cycle and tabs to jump
-  directly); any widget can adopt the same pattern later.
+  (Lineups / Pro Plays / Profiles / Analysis, with ‹ › arrows to cycle and
+  tabs to jump directly); any widget can adopt the same pattern later.
+
+### Customizing the dashboard
+
+Click the ⚙ button (fixed top-right) to open the settings panel. Per widget,
+you can set:
+
+- **Visibility** - *Always shown*, *Hidden*, or *Scheduled*. Scheduled adds a
+  day-of-week picker (tap a letter to toggle that day) and a start/end time
+  range; the widget only appears during that window. `Dashboard.tsx` re-checks
+  every 60s, so a scheduled widget appears/disappears on its own as the clock
+  crosses the boundary - no reload needed. An overnight window like
+  22:00-02:00 works too (`isWidgetVisibleNow` in `dashboardSettingsStore.ts`
+  handles the wraparound).
+- **Width / Height** - Small/Medium/Large (grid column span) and
+  Normal/Tall (grid row span).
+
+All of this is per-device, persisted to `localStorage` (key
+`dashboard-widget-settings`) - there's no sync or account system, matching
+everything else in this app being local-first. `widgets.config.ts`'s
+`defaultColSpan`/`defaultRowSpan` are just what a widget starts at before
+you've touched its settings.
 
 ### Widget notes
 

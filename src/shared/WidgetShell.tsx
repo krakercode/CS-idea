@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { useState, type ReactNode } from "react";
+import { Overlay } from "./Overlay";
 import "./WidgetShell.css";
 
 export interface WidgetShellProps {
@@ -22,15 +22,6 @@ export interface WidgetShellProps {
 export function WidgetShell({ title, loading, error, onRefresh, headerActions, children }: WidgetShellProps) {
   const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    if (!expanded) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setExpanded(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [expanded]);
-
   const body = (
     <div className="widget-shell__body">
       {error && <div className="widget-shell__error">{error}</div>}
@@ -47,36 +38,31 @@ export function WidgetShell({ title, loading, error, onRefresh, headerActions, c
             ⤡ Expanded — restore
           </button>
         </section>
-        {createPortal(
-          <div className="widget-overlay" onClick={() => setExpanded(false)}>
-            <div className="widget-overlay__panel" onClick={(e) => e.stopPropagation()}>
-              <section className="widget-shell widget-shell--expanded">
-                <header className="widget-shell__header">
-                  <h2 className="widget-shell__title">{title}</h2>
-                  <div className="widget-shell__header-actions">
-                    {headerActions}
-                    {onRefresh && (
-                      <button type="button" className="widget-shell__icon-button" onClick={onRefresh} title="Refresh now">
-                        ⟳
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="widget-shell__icon-button"
-                      onClick={() => setExpanded(false)}
-                      title="Collapse"
-                      aria-label={`Collapse ${title}`}
-                    >
-                      ⤢
-                    </button>
-                  </div>
-                </header>
-                {body}
-              </section>
-            </div>
-          </div>,
-          document.body,
-        )}
+        <Overlay onClose={() => setExpanded(false)}>
+          <section className="widget-shell widget-shell--expanded">
+            <header className="widget-shell__header">
+              <h2 className="widget-shell__title">{title}</h2>
+              <div className="widget-shell__header-actions">
+                {headerActions}
+                {onRefresh && (
+                  <button type="button" className="widget-shell__icon-button" onClick={onRefresh} title="Refresh now">
+                    ⟳
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="widget-shell__icon-button"
+                  onClick={() => setExpanded(false)}
+                  title="Collapse"
+                  aria-label={`Collapse ${title}`}
+                >
+                  ⤢
+                </button>
+              </div>
+            </header>
+            {body}
+          </section>
+        </Overlay>
       </>
     );
   }

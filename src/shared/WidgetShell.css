@@ -71,22 +71,6 @@
   border-color: var(--color-accent);
 }
 
-.widget-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-5);
-  z-index: 100;
-}
-
-.widget-overlay__panel {
-  width: min(1100px, 100%);
-  height: min(800px, 100%);
-}
-
 .widget-shell--expanded {
   height: 100%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
