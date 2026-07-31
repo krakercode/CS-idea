@@ -3,6 +3,24 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- Release workflow: GitHub only resolves `/releases/latest` (what the
+  updater's endpoint URL depends on) to a non-prerelease release, but both
+  0.1.0 and 0.1.1 came out flagged prerelease despite tauri-action's
+  `prerelease: false` input - silently breaking auto-updates. `release.yml`
+  now force-corrects the flag right after the build via `gh release edit`,
+  regardless of what tauri-action does; `fix-release-flags.yml` is a
+  one-off utility to correct an already-published release without a
+  rebuild.
+- Update check: a failed check (network error, a 404, a bad signature -
+  anything) was silently reported as "you're up to date" instead of as a
+  failure, since `checkForUpdate()` caught every error and returned `null`,
+  identically to a genuine no-update result. Errors now surface as a
+  distinct state with the underlying message.
+
 ## [0.1.1] - 2026-07-31
 
 ### Added
