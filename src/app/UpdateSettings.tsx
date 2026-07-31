@@ -14,6 +14,7 @@ export function UpdateSettings() {
   const [status, setStatus] = useState<Status>("idle");
   const [update, setUpdate] = useState<Update | null>(null);
   const [progress, setProgress] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     getCurrentVersion().then(setVersion);
@@ -25,7 +26,8 @@ export function UpdateSettings() {
       const found = await checkForUpdate();
       setUpdate(found);
       setStatus(found ? "available" : "up-to-date");
-    } catch {
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Unknown error.");
       setStatus("error");
     }
   }
@@ -37,7 +39,8 @@ export function UpdateSettings() {
     try {
       await installUpdate(update, setProgress);
       // installUpdate relaunches the app on success - nothing left to do here.
-    } catch {
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Unknown error.");
       setStatus("error");
     }
   }
@@ -53,7 +56,11 @@ export function UpdateSettings() {
       )}
 
       {status === "up-to-date" && <p className="update-settings__status">You're up to date.</p>}
-      {status === "error" && <p className="update-settings__status update-settings__status--error">Couldn't check for updates right now.</p>}
+      {status === "error" && (
+        <p className="update-settings__status update-settings__status--error">
+          Couldn't check for updates{errorMessage ? `: ${errorMessage}` : ""}
+        </p>
+      )}
 
       {status === "available" && update && (
         <div className="update-settings__available">

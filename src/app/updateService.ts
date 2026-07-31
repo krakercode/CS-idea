@@ -8,10 +8,12 @@ import { getVersion } from "@tauri-apps/api/app";
  * README's "Releasing & auto-updates" section for how the signing key and
  * GitHub Releases endpoint fit together.
  *
- * Like the other *Service modules, this fails soft rather than throwing when
- * there's no real Tauri runtime to talk to (e.g. `vite dev` in a plain
- * browser tab), so it's safe to call from anywhere without special-casing
- * dev mode.
+ * `checkForUpdate` deliberately does NOT swallow errors the way the other
+ * *Service modules do - a failed check (network error, private-repo 404,
+ * bad signature, whatever) needs to reach UpdateSettings as a distinct
+ * "couldn't check" state, not get flattened into the same `null` result as
+ * a genuine "you're already up to date". Only version display is soft-failed
+ * (falls back to "dev"), since that's just a label, not a decision.
  */
 
 export async function getCurrentVersion(): Promise<string> {
@@ -23,11 +25,7 @@ export async function getCurrentVersion(): Promise<string> {
 }
 
 export async function checkForUpdate(): Promise<Update | null> {
-  try {
-    return await check();
-  } catch {
-    return null;
-  }
+  return check();
 }
 
 /** Downloads and installs the given update, then restarts the app to apply
