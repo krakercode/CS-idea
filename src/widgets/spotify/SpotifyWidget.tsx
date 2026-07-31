@@ -146,7 +146,9 @@ export function SpotifyWidget() {
         </div>
       )}
 
-      {connected && activeId === "library" && <LibraryView deviceId={player.deviceId} />}
+      {connected && activeId === "library" && (
+        <LibraryView deviceId={player.deviceId} onActivate={player.activateElement} />
+      )}
     </WidgetShell>
   );
 }

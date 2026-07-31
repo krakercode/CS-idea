@@ -8,9 +8,12 @@ interface Props {
   /** Play button is disabled until the Web Playback SDK device is ready -
    * there's nowhere to route playback to until then. */
   deviceId: string | null;
+  /** Called synchronously on the play button's click, before the async
+   * playback request - see usePlayer.ts's activateElement doc comment. */
+  onActivate: () => void;
 }
 
-export function LibraryView({ deviceId }: Props) {
+export function LibraryView({ deviceId, onActivate }: Props) {
   const [tracks, setTracks] = useState<SavedTrack[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [playingUri, setPlayingUri] = useState<string | null>(null);
@@ -30,6 +33,7 @@ export function LibraryView({ deviceId }: Props) {
 
   async function handlePlay(uri: string) {
     if (!deviceId) return;
+    onActivate();
     setPlayingUri(uri);
     setPlayError(null);
     try {

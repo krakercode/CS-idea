@@ -3,6 +3,18 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- Spotify: playing a track from Library could fail with "Spotify couldn't
+  start playback (status 404)" - a device that's only just registered via
+  the Web Playback SDK isn't always immediately targetable by the Web API
+  yet, a known race in these integrations. `playTrackHere` now explicitly
+  transfers playback to the device first (rather than relying on
+  `/me/player/play`'s `device_id` param to do it implicitly) and retries
+  a 404 a couple of times with a short delay before giving up.
+
 ## [0.1.2] - 2026-07-31
 
 ### Added

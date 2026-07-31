@@ -31,6 +31,10 @@ export interface UsePlayerResult {
   previous: () => void;
   seek: (ms: number) => void;
   setVolume: (volume: number) => void;
+  /** Spotify's own recommendation: call this in direct response to a user
+   * gesture (e.g. a "Play" click) before the first playback attempt, to
+   * unlock audio on browser engines with strict autoplay policies. */
+  activateElement: () => void;
 }
 
 const PLAYER_NAME = "JESSPR-EAST";
@@ -129,5 +133,6 @@ export function usePlayer(enabled: boolean): UsePlayerResult {
     previous: () => void playerRef.current?.previousTrack(),
     seek: (ms: number) => void playerRef.current?.seek(ms),
     setVolume: (volume: number) => void playerRef.current?.setVolume(volume),
+    activateElement: () => void playerRef.current?.activateElement(),
   };
 }
