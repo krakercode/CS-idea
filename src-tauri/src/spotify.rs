@@ -24,12 +24,17 @@ const REDIRECT_PORT: u16 = 14700;
 const REDIRECT_URI: &str = "http://127.0.0.1:14700/callback";
 // `streaming` + `user-read-email` + `user-read-private` are what Spotify's
 // Web Playback SDK docs require to initialize a player (the SDK registers
-// this app as a real Spotify Connect device); `user-library-read` is for
-// browsing saved tracks in the player UI. Existing connections won't have
-// these until reconnected - Spotify requires a fresh consent grant to add
-// scopes to a token, there's no way to upgrade one in place.
-const SCOPES: &str =
-    "user-read-currently-playing user-read-playback-state user-top-read streaming user-read-email user-read-private user-library-read";
+// this app as a real Spotify Connect device). `user-modify-playback-state`
+// is what actually lets that device be controlled - play/pause/skip/seek/
+// volume and the transfer-playback call all 403 without it. The rest are
+// for browsing the library UI: `user-library-read` (saved tracks/albums),
+// `playlist-read-private` + `playlist-read-collaborative` (the user's own
+// and collaborative playlists - public ones would show without these, but
+// most of a real library isn't public), `user-follow-read` (followed
+// artists). Existing connections won't have any of these until reconnected
+// - Spotify requires a fresh consent grant to add scopes to a token,
+// there's no way to upgrade one in place.
+const SCOPES: &str = "user-read-currently-playing user-read-playback-state user-modify-playback-state user-top-read streaming user-read-email user-read-private user-library-read playlist-read-private playlist-read-collaborative user-follow-read";
 
 /// Tokens are stored on disk via tauri-plugin-store (a JSON file in the
 /// app's data dir), the same mechanism already used for the Leetify API

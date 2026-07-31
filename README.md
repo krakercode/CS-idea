@@ -399,12 +399,29 @@ anything.
     "tokens stay in Rust", since the SDK runs its own WebSocket connection
     to Spotify from the browser context and has to authenticate that
     itself.
-  - The **Library** tab (`LibraryView.tsx`) lists your saved ("Liked
-    Songs") tracks (`spotify_saved_tracks`, needs `user-library-read`) -
-    click one to transfer playback to JESSPR-EAST and start it, via a
-    direct `fetch()` to Spotify's Web API with that same token (the same
-    pattern Spotify's own SDK examples use, no Rust command needed for
-    this one).
+  - The **Library** tab (`LibraryView.tsx`) is a small Spotify browser, not
+    just a saved-tracks list: sub-tabs for Liked Songs / Playlists / Albums
+    / Artists, a search box (debounced, searches tracks/albums/artists/
+    playlists at once), and clicking a playlist/album/artist drills into
+    its tracks with a "Play all" button. Playing something from inside a
+    playlist/album/artist uses `playContextHere` (Spotify's `context_uri` +
+    `offset`), so playback continues naturally into the rest of it
+    afterwards - plain track/search results use `playTrackHere` instead,
+    since there's no context to continue into. Saved tracks still come
+    from the Rust-side `spotify_saved_tracks` command (predates the rest);
+    everything else (`spotifyService.ts`) is a direct `fetch()` to
+    Spotify's Web API with the exposed access token, same pattern as
+    `playTrackHere` - once that one exception to "tokens stay in Rust"
+    exists for the player, there's no reason to keep growing the Rust side
+    for read-only browsing that has to be authenticated in the browser
+    anyway for playback.
+  - Starting playback (`playTrackHere`/`playContextHere`) explicitly
+    transfers to JESSPR-EAST's device first rather than relying on
+    `/me/player/play`'s `device_id` param to do that implicitly, and
+    retries a `404` a couple of times with a short delay - a device that
+    just registered via the SDK's `ready` event isn't always immediately
+    targetable by the Web API yet, a known race in these integrations, not
+    a permanent failure.
   - **One-time setup for a fork/new Client ID**: create an app at
     [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard),
     add `http://127.0.0.1:14700/callback` as a Redirect URI, and put the
@@ -412,9 +429,13 @@ anything.
     top of `spotify.rs`. Client IDs aren't secret, but they are
     per-developer-account, so a fork needs its own.
   - Scopes: `user-read-currently-playing` + `user-read-playback-state` +
-    `user-top-read` (for "Of the Day", see below) plus, for the player,
-    `streaming` + `user-read-email` + `user-read-private` (required by the
-    Web Playback SDK to initialize) and `user-library-read` (Library tab).
+    `user-top-read` (for "Of the Day", see below); `streaming` +
+    `user-read-email` + `user-read-private` (required by the Web Playback
+    SDK to initialize) + `user-modify-playback-state` (actually
+    controlling it - play/pause/skip/seek/volume/transfer all `403`
+    without this one); `user-library-read` + `playlist-read-private` +
+    `playlist-read-collaborative` + `user-follow-read` (Library tab's
+    saved tracks/albums, playlists, and followed artists respectively).
     Reconnect once if you connected before any of these were added -
     Spotify only grants scopes present at the time of consent, there's no
     way to add one to an existing token.

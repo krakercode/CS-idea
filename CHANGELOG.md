@@ -5,6 +5,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Spotify: the Library tab is a real browser now, not just Liked Songs -
+  sub-tabs for Playlists, Albums, and followed Artists, each drilling into
+  its tracks with a "Play all" that keeps going into the rest of it
+  afterwards, plus a debounced search across tracks/albums/artists/
+  playlists at once. Needs a reconnect (more scopes: playback control
+  itself, playlists, followed artists) if you connected before this landed.
+
 ### Fixed
 
 - Spotify: playing a track from Library could fail with "Spotify couldn't
