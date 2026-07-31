@@ -99,6 +99,14 @@ jobs:
   # available". This job forces the flag straight after the build regardless
   # of what tauri-action did, without touching draft status - the release
   # still needs a human to hit Publish.
+  #
+  # Deliberately does NOT also pass --latest here: GitHub rejects
+  # make_latest=true on a still-draft release ("Latest release cannot be
+  # draft or prerelease", a real failure hit on app-v0.1.2's first run of
+  # this job) - and since the whole request is validated atomically, that
+  # also silently skipped the prerelease fix. --latest isn't actually
+  # needed anyway: once a human publishes a non-prerelease, non-draft
+  # release, GitHub resolves /releases/latest to it on its own.
   finalize:
     needs: release
     runs-on: ubuntu-latest
@@ -121,5 +129,4 @@ jobs:
         run: |
           gh release edit "${{ steps.release_tag.outputs.tag }}" \
             --repo "${{ github.repository }}" \
-            --prerelease=false \
-            --latest
+            --prerelease=false
