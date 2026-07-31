@@ -1,6 +1,7 @@
 import { type FormEvent, type ReactNode, useState } from "react";
 import { usePolling } from "../../shared/hooks/usePolling";
 import { WidgetShell } from "../../shared/WidgetShell";
+import { ExternalLink } from "../../shared/ExternalLink";
 import { ViewSwitcher } from "../../shared/ViewSwitcher";
 import { useWidgetViews } from "../../shared/useWidgetViews";
 import { fetchOfTheDay } from "./oftheDayService";
@@ -52,9 +53,9 @@ export function OfTheDayWidget() {
       </>
     );
     songBody = data.song.externalUrl ? (
-      <a className="oftheday-widget__card" href={data.song.externalUrl} target="_blank" rel="noreferrer">
+      <ExternalLink className="oftheday-widget__card" href={data.song.externalUrl}>
         {inner}
-      </a>
+      </ExternalLink>
     ) : (
       <div className="oftheday-widget__card">{inner}</div>
     );
@@ -64,7 +65,7 @@ export function OfTheDayWidget() {
     <WidgetShell title="Of the Day" loading={loading} error={error} onRefresh={refresh} headerActions={headerActions}>
       {activeId === "article" &&
         (data?.article ? (
-          <a className="oftheday-widget__card" href={data.article.pageUrl} target="_blank" rel="noreferrer">
+          <ExternalLink className="oftheday-widget__card" href={data.article.pageUrl}>
             {data.article.thumbnailUrl && (
               <img className="oftheday-widget__thumb" src={data.article.thumbnailUrl} alt="" />
             )}
@@ -72,20 +73,20 @@ export function OfTheDayWidget() {
               <h3 className="oftheday-widget__title">{data.article.title}</h3>
               <p className="oftheday-widget__extract">{data.article.extract}</p>
             </div>
-          </a>
+          </ExternalLink>
         ) : (
           <p className="oftheday-widget__empty">No featured article available right now.</p>
         ))}
 
       {activeId === "picture" &&
         (data?.picture ? (
-          <a className="oftheday-widget__card oftheday-widget__card--picture" href={data.picture.imageUrl} target="_blank" rel="noreferrer">
+          <ExternalLink className="oftheday-widget__card oftheday-widget__card--picture" href={data.picture.imageUrl}>
             <img className="oftheday-widget__picture-img" src={data.picture.imageUrl} alt={data.picture.title} />
             <div>
               <h3 className="oftheday-widget__title">{data.picture.title}</h3>
               {data.picture.description && <p className="oftheday-widget__extract">{data.picture.description}</p>}
             </div>
-          </a>
+          </ExternalLink>
         ) : (
           <p className="oftheday-widget__empty">No picture of the day available right now.</p>
         ))}

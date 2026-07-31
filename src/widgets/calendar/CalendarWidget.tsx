@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { usePolling } from "../../shared/hooks/usePolling";
 import { WidgetShell } from "../../shared/WidgetShell";
+import { ExternalLink } from "../../shared/ExternalLink";
 import { getCalendarProvider } from "./calendarService";
 import { getPandaScoreKey, setPandaScoreKey } from "./pandascoreKeyStore";
 import type { EventCategory } from "./types";
@@ -85,9 +86,7 @@ export function CalendarWidget() {
           <label htmlFor="pandascore-api-key">PandaScore API key (esports/CS2 matches)</label>
           <p className="calendar-widget__settings-hint">
             Free at{" "}
-            <a href="https://pandascore.co" target="_blank" rel="noreferrer">
-              pandascore.co
-            </a>
+            <ExternalLink href="https://pandascore.co">pandascore.co</ExternalLink>
             . Without a key, only general sports show up.
           </p>
           <div className="calendar-widget__settings-row">
@@ -135,15 +134,9 @@ export function CalendarWidget() {
 
           return event.link_url ? (
             <li key={event.id} className="calendar-widget__row">
-              <a
-                className="calendar-widget__link"
-                href={event.link_url}
-                target="_blank"
-                rel="noreferrer"
-                title="Open match page / find a stream"
-              >
+              <ExternalLink className="calendar-widget__link" href={event.link_url} title="Open match page / find a stream">
                 {row}
-              </a>
+              </ExternalLink>
             </li>
           ) : (
             <li key={event.id} className="calendar-widget__row">

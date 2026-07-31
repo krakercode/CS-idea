@@ -1,9 +1,9 @@
+import { ExternalLink } from "../../../../shared/ExternalLink";
+
 export function AttributionBadge() {
   return (
     <div className="analysis__attribution">
-      <a href="https://leetify.com" target="_blank" rel="noreferrer">
-        Data Provided by Leetify
-      </a>
+      <ExternalLink href="https://leetify.com">Data Provided by Leetify</ExternalLink>
       <span> · not affiliated with or endorsed by Leetify</span>
     </div>
   );

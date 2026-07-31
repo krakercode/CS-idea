@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ExternalLink } from "../../../../shared/ExternalLink";
 import { validateApiKey } from "../analysisService";
 
 interface Props {
@@ -37,9 +38,7 @@ export function SettingsPanel({ apiKey, onSave }: Props) {
       <label htmlFor="leetify-api-key">Leetify API key</label>
       <p className="analysis__muted">
         Optional but recommended — get one at{" "}
-        <a href="https://leetify.com/app/developer" target="_blank" rel="noreferrer">
-          leetify.com/app/developer
-        </a>
+        <ExternalLink href="https://leetify.com/app/developer">leetify.com/app/developer</ExternalLink>
         . Without a key, requests use stricter rate limits.
       </p>
       <div className="analysis__search-row">

@@ -16,6 +16,23 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Every external link in the app (news articles, calendar match/stream
+  links, CS2 lineup references, Of the Day's article/picture/song, Leetify
+  attribution, PandaScore/Spotify signup links) was a plain
+  `<a target="_blank">`, which Tauri's webview doesn't reliably hand off to
+  the OS browser - clicking one could just silently do nothing. Replaced
+  every one with a shared `<ExternalLink>` that opens the URL via the
+  opener plugin's JS API instead (`"opener:default"` added to
+  `capabilities/default.json`, which was missing it entirely).
+- CS2 Database: lineup cards without a real `sourceUrl` now show a visible
+  **unverified** badge plus a page-level notice, instead of only a code
+  comment nobody using the app would ever see - starter placeholder
+  content (the throw technique/from-to detail) was easy to mistake for a
+  tested lineup. The map callouts themselves (Jungle, Banana, Secret,
+  etc.) are all real and current; what's unverified is the specific throw
+  detail, which this sandboxed dev environment has no way to check against
+  a live source (csnades.gg and even a plain web search both 403 from
+  here) - every card links out so it can actually be confirmed.
 - Spotify: playing a track from Library could fail with "Spotify couldn't
   start playback (status 404)" - a device that's only just registered via
   the Web Playback SDK isn't always immediately targetable by the Web API

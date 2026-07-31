@@ -345,8 +345,16 @@ anything.
   - *Lineups* and *Pro Plays* - searchable/filterable by map, sample data in
     `widgets/cs2db/data/`, meant to be replaced/expanded (lineup positions
     can shift between patches, and the pro-play entries are placeholder
-    fixtures - fake names/dates, not real match records). Lineups are
-    tagged `side: "T" | "CT"`, and CT lineups additionally carry
+    fixtures - fake names/dates, not real match records). The map callouts
+    used (Mirage Jungle, Inferno Banana, Nuke Secret, etc.) are all real and
+    current, but the specific throw technique/from-to detail per lineup is
+    starter content that's never been checked against a live source (this
+    sandboxed dev environment can't reach csnades.gg or similar sites to
+    verify one) - `LineupList` flags any entry without a `sourceUrl` as
+    **unverified** right in the UI rather than only in a code comment, and
+    always links out (a real source once one's set, otherwise a search
+    query) so there's a way to actually confirm a throw before using it.
+    Lineups are tagged `side: "T" | "CT"`, and CT lineups additionally carry
     `positions: string[]` referencing `data/positions.ts` - the named CT
     holding spots per map (Mirage's "Jungle", Inferno's "Banana", etc.)
     that Profiles is built on.
@@ -603,3 +611,11 @@ this list for exactly that reason).
   "Every widget can be expanded..." above. The intent is that this keeps
   paying off as more widgets grow multiple views instead of each one
   reinventing tabs/cycling/maximize.
+- **External links go through `<ExternalLink>`, never a plain `<a
+  target="_blank">`.** Tauri's webview doesn't reliably hand those off to
+  the OS browser - clicking one can just silently do nothing. `ExternalLink`
+  (`src/shared/ExternalLink.tsx`) intercepts the click and opens the URL via
+  `@tauri-apps/plugin-opener`'s `openUrl`, which needs `"opener:default"` in
+  `capabilities/default.json` (already there). Every external link in the
+  app goes through it for this reason - if a new one gets added as a plain
+  `<a>` instead, it'll look fine in review and then just not work.

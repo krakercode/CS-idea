@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { WidgetShell } from "../../shared/WidgetShell";
+import { ExternalLink } from "../../shared/ExternalLink";
 import { getRandomQuote, listSpeakers } from "./quotesService";
 import type { Quote } from "./types";
 import "./QuotesWidget.css";
@@ -70,9 +71,9 @@ export function QuotesWidget() {
           </div>
           <p className="quotes-widget__context">{quote.context}</p>
           {quote.sourceUrl && (
-            <a href={quote.sourceUrl} className="quotes-widget__source" target="_blank" rel="noreferrer">
+            <ExternalLink href={quote.sourceUrl} className="quotes-widget__source">
               Source ↗
-            </a>
+            </ExternalLink>
           )}
         </div>
       )}

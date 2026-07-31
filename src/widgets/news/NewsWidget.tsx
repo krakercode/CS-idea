@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { usePolling } from "../../shared/hooks/usePolling";
 import { WidgetShell } from "../../shared/WidgetShell";
+import { ExternalLink } from "../../shared/ExternalLink";
 import { formatRelativeTime } from "../../shared/format";
 import { fetchNews } from "./newsService";
 import { addKeyword, getKeywords, MAX_KEYWORDS, removeKeyword } from "./newsKeywordsStore";
@@ -58,9 +59,9 @@ export function NewsWidget() {
       <ul className="news-widget__list">
         {data?.map((article) => (
           <li key={article.id} className="news-widget__item">
-            <a href={article.url} className="news-widget__title" target="_blank" rel="noreferrer">
+            <ExternalLink href={article.url} className="news-widget__title">
               {article.title}
-            </a>
+            </ExternalLink>
             <div className="news-widget__meta">
               <span className="news-widget__topic">{article.topic}</span>
               <span>{article.source}</span>
