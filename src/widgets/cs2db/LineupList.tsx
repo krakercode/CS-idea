@@ -58,7 +58,8 @@ export function LineupList({ lineups, emptyMessage = "No lineups match." }: Prop
               </div>
             </div>
             <div className="cs2-widget__card-meta">
-              {lineup.map} · {lineup.from} → {lineup.to} · {lineup.technique}
+              {lineup.map} · {lineup.from} → {lineup.to}
+              {lineup.technique ? ` · ${lineup.technique}` : ""}
             </div>
             <p className="cs2-widget__card-description">{lineup.description}</p>
             <ExternalLink href={referenceUrl(lineup)} className="cs2-widget__card-source">

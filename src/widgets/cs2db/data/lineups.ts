@@ -10,16 +10,22 @@ import type { NadeLineup } from "../types";
  */
 export const SAMPLE_LINEUPS: NadeLineup[] = [
   {
-    id: "mirage-window-smoke-t-spawn",
+    // Real, sourced lineup - id/from/to/grenadeType read straight off the
+    // csnades.gg URL structure (/mirage/smokes/window-from-back-alley-b),
+    // not guessed. `technique` is deliberately omitted rather than
+    // invented - that needs the page's actual content, which isn't
+    // reachable from here (see referenceUrl's doc comment / README). This
+    // replaced an earlier placeholder ("Window smoke from T spawn") that
+    // was never actually verified as a real lineup.
+    id: "mirage-window-smoke-back-alley",
     map: "Mirage",
     grenadeType: "smoke",
     side: "T",
-    name: "Window smoke from T spawn",
-    from: "T spawn",
-    to: "Window (mid to A connector)",
-    technique: "jumping",
-    description:
-      "Blocks CT vision through window into mid, letting T's cross mid or push window safely. Classic default-setup smoke.",
+    name: "Window smoke from Back Alley",
+    from: "Back Alley",
+    to: "Window",
+    description: "Real, sourced lineup - open the link for the exact throw position and technique.",
+    sourceUrl: "https://csnades.gg/mirage/smokes/window-from-back-alley-b",
   },
   {
     id: "mirage-jungle-smoke-ct",

@@ -22,7 +22,13 @@ export interface NadeLineup {
   name: string;
   from: string;
   to: string;
-  technique: ThrowTechnique;
+  /** Optional because it's not always something we actually know - a
+   * sourced entry's `from`/`to` can be read straight off a real page's URL
+   * (map/grenade-type/slug), but the throw technique itself needs the
+   * page's actual content, which isn't always reachable. Guessing it would
+   * be exactly the kind of unverified-but-confident-sounding detail this
+   * field is trying to get away from. */
+  technique?: ThrowTechnique;
   description: string;
   side: Side;
   /** CT-side lineups only: which MapPosition id(s) this is relevant to. */
