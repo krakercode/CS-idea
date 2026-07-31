@@ -1,4 +1,5 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
+use chrono::Datelike;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -21,7 +22,7 @@ const CLIENT_ID: &str = "a82c0039f3024cbb88ecb595f381ff4e";
 /// port rather than letting the OS pick a free one.
 const REDIRECT_PORT: u16 = 14700;
 const REDIRECT_URI: &str = "http://127.0.0.1:14700/callback";
-const SCOPES: &str = "user-read-currently-playing user-read-playback-state";
+const SCOPES: &str = "user-read-currently-playing user-read-playback-state user-top-read";
 
 /// Tokens are stored on disk via tauri-plugin-store (a JSON file in the
 /// app's data dir), the same mechanism already used for the Leetify API
@@ -40,6 +41,15 @@ pub struct NowPlaying {
     pub duration_ms: u64,
 }
 
+#[derive(Debug, Serialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SongOfDay {
+    pub track_name: String,
+    pub artist: String,
+    pub album_art_url: Option<String>,
+    pub external_url: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 struct TokenResponse {
     access_token: String,
@@ -54,22 +64,56 @@ struct CurrentlyPlayingResponse {
     item: Option<TrackItem>,
 }
 
-#[derive(Debug, Deserialize)]
+// Same track-object shape Spotify returns from currently-playing, search,
+// and top-tracks alike - one struct covers all three call sites.
+#[derive(Debug, Deserialize, Clone)]
 struct TrackItem {
     name: String,
+    #[serde(default)]
     duration_ms: u64,
     artists: Vec<ArtistItem>,
     album: AlbumItem,
+    #[serde(default)]
+    external_urls: Option<ExternalUrls>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct ArtistItem {
     name: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct AlbumItem {
     name: String,
+    #[serde(default)]
+    images: Vec<AlbumImage>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct AlbumImage {
+    url: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct ExternalUrls {
+    spotify: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SearchResponse {
+    tracks: Option<TracksPage>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TracksPage {
+    #[serde(default)]
+    items: Vec<TrackItem>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TopTracksResponse {
+    #[serde(default)]
+    items: Vec<TrackItem>,
 }
 
 fn random_url_safe_string(byte_len: usize) -> String {
@@ -276,6 +320,123 @@ pub async fn now_playing(app: &AppHandle, client: &reqwest::Client) -> Result<Op
     }))
 }
 
+fn urlencoding(input: &str) -> String {
+    use std::fmt::Write as _;
+
+    let mut out = String::with_capacity(input.len());
+    for byte in input.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(byte as char);
+            }
+            _ => {
+                let _ = write!(out, "%{byte:02X}");
+            }
+        }
+    }
+    out
+}
+
+fn track_to_song(track: TrackItem) -> SongOfDay {
+    SongOfDay {
+        track_name: track.name,
+        artist: track.artists.into_iter().map(|a| a.name).collect::<Vec<_>>().join(", "),
+        album_art_url: track.album.images.first().map(|i| i.url.clone()),
+        external_url: track.external_urls.and_then(|u| u.spotify),
+    }
+}
+
+/// A stable-for-the-whole-day, changes-tomorrow index into a list of length
+/// `len` - the same seed always picks the same item on a given date, so
+/// "song of the day" doesn't flicker between app restarts or widget
+/// refreshes within the same day.
+fn pick_index(len: usize, seed: i32) -> Option<usize> {
+    if len == 0 {
+        return None;
+    }
+    Some(seed.rem_euclid(len as i32) as usize)
+}
+
+fn today_seed() -> i32 {
+    chrono::Utc::now().date_naive().num_days_from_ce()
+}
+
+fn parse_search_response(body: &str) -> Vec<TrackItem> {
+    serde_json::from_str::<SearchResponse>(body)
+        .ok()
+        .and_then(|r| r.tracks)
+        .map(|t| t.items)
+        .unwrap_or_default()
+}
+
+fn parse_top_tracks_response(body: &str) -> Vec<TrackItem> {
+    serde_json::from_str::<TopTracksResponse>(body).map(|r| r.items).unwrap_or_default()
+}
+
+async fn search_track_by_artist(
+    client: &reqwest::Client,
+    access_token: &str,
+    artist: &str,
+    seed: i32,
+) -> Option<TrackItem> {
+    let query = format!("artist:\"{artist}\"");
+    let url = format!("https://api.spotify.com/v1/search?type=track&limit=50&q={}", urlencoding(&query));
+
+    let response = client.get(&url).bearer_auth(access_token).send().await.ok()?;
+    if !response.status().is_success() {
+        return None;
+    }
+    let body = response.text().await.ok()?;
+    let items = parse_search_response(&body);
+    let index = pick_index(items.len(), seed)?;
+    items.into_iter().nth(index)
+}
+
+async fn top_track(client: &reqwest::Client, access_token: &str, seed: i32) -> Option<TrackItem> {
+    let response = client
+        .get("https://api.spotify.com/v1/me/top/tracks?time_range=medium_term&limit=50")
+        .bearer_auth(access_token)
+        .send()
+        .await
+        .ok()?;
+    // A 403 here just means the "user-top-read" scope hasn't been granted
+    // yet (e.g. connected before that scope was added) - treated the same
+    // as "no top tracks available" rather than a hard error.
+    if !response.status().is_success() {
+        return None;
+    }
+    let body = response.text().await.ok()?;
+    let items = parse_top_tracks_response(&body);
+    let index = pick_index(items.len(), seed)?;
+    items.into_iter().nth(index)
+}
+
+/// `favorite_artists` (user-entered, see the "Of the Day" widget) takes
+/// priority when present - a deterministic pick from that day's chosen
+/// artist's tracks via Spotify's public Search endpoint. Falls back to the
+/// user's own top tracks (needs the `user-top-read` scope) when no
+/// favorite artists are configured. `Ok(None)` covers "not connected" and
+/// "nothing to pick from" alike, same as `now_playing`.
+pub async fn song_of_day(
+    app: &AppHandle,
+    client: &reqwest::Client,
+    favorite_artists: &[String],
+) -> Result<Option<SongOfDay>, String> {
+    let Some(access_token) = ensure_fresh_token(app, client).await? else {
+        return Ok(None);
+    };
+
+    let seed = today_seed();
+
+    let track = if let Some(index) = pick_index(favorite_artists.len(), seed) {
+        search_track_by_artist(client, &access_token, &favorite_artists[index], seed).await
+    } else {
+        top_track(client, &access_token, seed).await
+    };
+
+    Ok(track.map(track_to_song))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -301,5 +462,83 @@ mod tests {
     #[test]
     fn random_url_safe_string_is_actually_random() {
         assert_ne!(random_url_safe_string(16), random_url_safe_string(16));
+    }
+
+    const SEARCH_SAMPLE: &str = r#"{
+        "tracks": {
+            "items": [
+                {
+                    "name": "Track One",
+                    "duration_ms": 200000,
+                    "artists": [{ "name": "Artist A" }],
+                    "album": { "name": "Album A", "images": [{ "url": "https://example.com/a.jpg" }] },
+                    "external_urls": { "spotify": "https://open.spotify.com/track/1" }
+                },
+                {
+                    "name": "Track Two",
+                    "duration_ms": 210000,
+                    "artists": [{ "name": "Artist A" }, { "name": "Artist B" }],
+                    "album": { "name": "Album B", "images": [] },
+                    "external_urls": { "spotify": "https://open.spotify.com/track/2" }
+                }
+            ]
+        }
+    }"#;
+
+    #[test]
+    fn parses_search_response_tracks() {
+        let items = parse_search_response(SEARCH_SAMPLE);
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0].name, "Track One");
+        assert_eq!(items[1].artists.len(), 2);
+    }
+
+    #[test]
+    fn search_response_missing_tracks_yields_empty_not_panic() {
+        assert!(parse_search_response(r#"{}"#).is_empty());
+        assert!(parse_search_response("not json").is_empty());
+    }
+
+    const TOP_TRACKS_SAMPLE: &str = r#"{
+        "items": [
+            {
+                "name": "Top Track",
+                "duration_ms": 180000,
+                "artists": [{ "name": "Artist C" }],
+                "album": { "name": "Album C", "images": [{ "url": "https://example.com/c.jpg" }] },
+                "external_urls": { "spotify": "https://open.spotify.com/track/3" }
+            }
+        ]
+    }"#;
+
+    #[test]
+    fn parses_top_tracks_response() {
+        let items = parse_top_tracks_response(TOP_TRACKS_SAMPLE);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].name, "Top Track");
+    }
+
+    #[test]
+    fn top_tracks_malformed_json_yields_empty_not_panic() {
+        assert!(parse_top_tracks_response("not json").is_empty());
+    }
+
+    #[test]
+    fn pick_index_wraps_within_bounds_and_is_deterministic() {
+        assert_eq!(pick_index(0, 42), None);
+        assert_eq!(pick_index(5, 0), Some(0));
+        assert_eq!(pick_index(5, 7), Some(2));
+        // Negative seeds still land in-bounds (rem_euclid, not rem).
+        assert_eq!(pick_index(5, -1), Some(4));
+    }
+
+    #[test]
+    fn track_to_song_prefers_first_album_image_and_joins_artists() {
+        let items = parse_search_response(SEARCH_SAMPLE);
+        let song = track_to_song(items[1].clone());
+        assert_eq!(song.track_name, "Track Two");
+        assert_eq!(song.artist, "Artist A, Artist B");
+        assert_eq!(song.album_art_url, None); // empty images array
+        assert_eq!(song.external_url.as_deref(), Some("https://open.spotify.com/track/2"));
     }
 }

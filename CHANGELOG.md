@@ -33,11 +33,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   exists), fetched concurrently so one source failing doesn't affect the
   other. Each event links out on click - the match's own HLTV page for
   esports, a search query for general sports.
-
-### In progress
-
-- New "___ of the Day" widget: Wikipedia featured article, Wikimedia
-  picture of the day, and a personalized song of the day via Spotify.
+- New "Of the Day" widget (`of_the_day.rs`): Wikipedia's featured article
+  and picture of the day (one keyless request, via Wikimedia's Feed REST
+  API), plus a Spotify song of the day - personalized from user-entered
+  favorite artists when set, otherwise the user's own top tracks (new
+  `user-top-read` scope; existing Spotify connections need to reconnect
+  once to pick it up). The daily pick is stable all day, not re-randomized
+  on every refresh.
 
 ## [0.1.0] - first installable release
 

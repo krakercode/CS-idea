@@ -5,6 +5,7 @@ mod calendar;
 mod db;
 mod leetify_client;
 mod news;
+mod of_the_day;
 mod spotify;
 mod stocks;
 mod suggestions;
@@ -164,6 +165,25 @@ async fn fetch_calendar(state: tauri::State<'_, HttpState>) -> Result<Vec<calend
     Ok(calendar::fetch_all(&state.client).await)
 }
 
+#[derive(Serialize)]
+struct OfTheDayResponse {
+    article: Option<of_the_day::FeaturedArticle>,
+    picture: Option<of_the_day::PictureOfDay>,
+    song: Option<spotify::SongOfDay>,
+}
+
+#[tauri::command]
+async fn fetch_of_the_day(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, HttpState>,
+    favorite_artists: Vec<String>,
+) -> Result<OfTheDayResponse, ()> {
+    let (wiki, song) =
+        tokio::join!(of_the_day::fetch(&state.client), spotify::song_of_day(&app, &state.client, &favorite_artists));
+    let (article, picture) = wiki;
+    Ok(OfTheDayResponse { article, picture, song: song.unwrap_or(None) })
+}
+
 #[tauri::command]
 async fn spotify_login(app: tauri::AppHandle, state: tauri::State<'_, HttpState>) -> Result<(), String> {
     spotify::login(&app, &state.client).await
@@ -218,6 +238,7 @@ fn main() {
             fetch_news,
             fetch_quotes,
             fetch_calendar,
+            fetch_of_the_day,
             spotify_login,
             spotify_logout,
             spotify_is_connected,

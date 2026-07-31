@@ -361,9 +361,11 @@ anything.
     Client ID (not the secret - PKCE doesn't use one) in `CLIENT_ID` at the
     top of `spotify.rs`. Client IDs aren't secret, but they are
     per-developer-account, so a fork needs its own.
-  - Only reads what's needed to show "now playing"
-    (`user-read-currently-playing`, `user-read-playback-state`) - it
-    can't control playback.
+  - Only reads what's needed: `user-read-currently-playing` and
+    `user-read-playback-state` for "now playing", plus `user-top-read` for
+    the "Of the Day" widget's song pick (see below) - it can't control
+    playback. If you connected before `user-top-read` was added, reconnect
+    once to pick up the new scope.
 - **System Health** - the other real (not mock) widget, for the same reason
   as Analysis: there's no meaningful mock for "this machine's actual CPU/
   memory/disk load." CPU name + overall/per-core usage, RAM (and swap, if
@@ -380,6 +382,18 @@ anything.
   the shell's ⟳ button and a 10-minute auto-rotate both just pick a new
   random quote from that pool - see "Sourcing the quotes" below for how
   these were chosen and verified.
+- **Of the Day** - three keyless-where-possible daily picks, tabbed with the
+  same `ViewSwitcher` as CS2 Database (`src-tauri/src/of_the_day.rs`):
+  - *Article* and *Picture* - Wikipedia's featured article and picture of
+    the day, both from Wikimedia's public Feed REST API in one request, no
+    API key.
+  - *Song* - via Spotify (`spotify.rs::song_of_day`): if you've added
+    favorite artists in this view (tag chips, `favoriteArtistsStore.ts`,
+    localStorage), it deterministically picks one of them each day and
+    searches Spotify for a track by them; otherwise it picks from your own
+    top tracks (needs Spotify connected and the `user-top-read` scope).
+    The pick is stable for the whole day (seeded off the date), not random
+    on every refresh. Empty/prompts to connect if Spotify isn't linked.
 
 ## CS2 Analysis backend (Leetify)
 
