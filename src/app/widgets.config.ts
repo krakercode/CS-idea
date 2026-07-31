@@ -74,6 +74,13 @@ export const WIDGETS: WidgetDefinition[] = [
     defaultRowSpan: 1,
     Component: lazy(() => import("../widgets/quotes/QuotesWidget").then((m) => ({ default: m.QuotesWidget }))),
   },
+  {
+    id: "oftheday",
+    label: "Of the Day",
+    defaultColSpan: 1,
+    defaultRowSpan: 1,
+    Component: lazy(() => import("../widgets/oftheday/OfTheDayWidget").then((m) => ({ default: m.OfTheDayWidget }))),
+  },
 ];
 
 export function getDefaultSettings(): Record<string, WidgetUserSettings> {

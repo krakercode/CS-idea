@@ -63,6 +63,34 @@ export function updateWidgetSettings(
   return next;
 }
 
+const ORDER_STORAGE_KEY = "dashboard-widget-order";
+
+/** Position on the grid is drag-to-reorder now rather than a setting, so it
+ * lives separately from WidgetUserSettings - just a persisted ordering of
+ * widget ids. `allIds` is widgets.config.ts's current WIDGETS list, used to
+ * drop ids for widgets that no longer exist and append ones added since the
+ * order was last saved (or on first run, when nothing's saved yet). */
+export function getWidgetOrder(allIds: string[]): string[] {
+  try {
+    const raw = localStorage.getItem(ORDER_STORAGE_KEY);
+    const stored = raw ? (JSON.parse(raw) as unknown) : [];
+    const storedIds = Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string") : [];
+    const known = storedIds.filter((id) => allIds.includes(id));
+    const missing = allIds.filter((id) => !known.includes(id));
+    return [...known, ...missing];
+  } catch {
+    return allIds;
+  }
+}
+
+export function saveWidgetOrder(order: string[]): void {
+  try {
+    localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(order));
+  } catch {
+    // Best-effort - e.g. localStorage disabled/full.
+  }
+}
+
 /** Whether a widget should be on screen right now, given its visibility
  * mode and (if scheduled) its day/time window. Overnight windows (e.g.
  * 22:00-02:00) are supported; the day-of-week check always looks at

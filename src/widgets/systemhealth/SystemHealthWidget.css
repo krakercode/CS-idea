@@ -24,6 +24,10 @@
   font-size: 12px;
 }
 
+.sys-health__row-header--sub {
+  font-size: 11px;
+}
+
 .sys-health__label {
   font-weight: 500;
 }

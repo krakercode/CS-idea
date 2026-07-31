@@ -1,3 +1,5 @@
+use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
+use nvml_wrapper::Nvml;
 use serde::Serialize;
 use std::sync::Mutex;
 use sysinfo::{Components, Cpu, Disks, System};
@@ -34,6 +36,15 @@ pub struct ComponentInfo {
 }
 
 #[derive(Debug, Serialize, Clone)]
+pub struct GpuInfo {
+    pub name: String,
+    pub usage_percent: f32,
+    pub memory_used_bytes: u64,
+    pub memory_total_bytes: u64,
+    pub temperature_celsius: Option<f32>,
+}
+
+#[derive(Debug, Serialize, Clone)]
 pub struct SystemHealth {
     pub hostname: Option<String>,
     pub os_name: Option<String>,
@@ -41,21 +52,59 @@ pub struct SystemHealth {
     pub memory: MemoryInfo,
     pub disks: Vec<DiskInfo>,
     pub components: Vec<ComponentInfo>,
+    /// Empty when there's no NVIDIA GPU/driver to talk to (AMD/Intel-only
+    /// machines, or NVML just isn't installed) - the widget shows nothing
+    /// rather than an error in that case. AMD/Intel GPU stats aren't
+    /// supported yet; there's no equivalent of NVML that works across
+    /// vendors without much more platform-specific work.
+    pub gpus: Vec<GpuInfo>,
 }
 
 /// Held in app state so CPU usage is measured as a delta between polls
 /// (sysinfo needs two refreshes apart in time for accurate percentages)
-/// rather than blocking each call with a sleep.
-pub struct SystemHealthState(Mutex<System>);
+/// rather than blocking each call with a sleep. NVML is initialized once
+/// here too - it's a fairly heavyweight driver handshake, and Nvml itself
+/// is Send + Sync so it's fine to hold across calls.
+pub struct SystemHealthState {
+    sys: Mutex<System>,
+    nvml: Option<Nvml>,
+}
 
 impl SystemHealthState {
     pub fn new() -> Self {
-        Self(Mutex::new(System::new_all()))
+        Self {
+            sys: Mutex::new(System::new_all()),
+            nvml: Nvml::init().ok(),
+        }
     }
 }
 
+fn collect_gpus(nvml: &Nvml) -> Vec<GpuInfo> {
+    let Ok(count) = nvml.device_count() else {
+        return Vec::new();
+    };
+
+    (0..count)
+        .filter_map(|i| {
+            let device = nvml.device_by_index(i).ok()?;
+            let name = device.name().unwrap_or_else(|_| "GPU".to_string());
+            let utilization = device.utilization_rates().ok()?;
+            let memory = device.memory_info().ok()?;
+            let temperature_celsius = device.temperature(TemperatureSensor::Gpu).ok().map(|t| t as f32);
+
+            Some(GpuInfo {
+                name,
+                usage_percent: utilization.gpu as f32,
+                memory_used_bytes: memory.used,
+                memory_total_bytes: memory.total,
+                temperature_celsius,
+            })
+        })
+        .collect()
+}
+
 pub fn collect(state: &SystemHealthState) -> SystemHealth {
-    let mut sys = state.0.lock().expect("system health mutex poisoned");
+    let mut sys = state.sys.lock().expect("system health mutex poisoned");
     sys.refresh_cpu_usage();
     sys.refresh_memory();
 
@@ -92,6 +141,8 @@ pub fn collect(state: &SystemHealthState) -> SystemHealth {
         })
         .collect();
 
+    let gpus = state.nvml.as_ref().map(collect_gpus).unwrap_or_default();
+
     SystemHealth {
         hostname: System::host_name(),
         os_name: System::name(),
@@ -99,6 +150,7 @@ pub fn collect(state: &SystemHealthState) -> SystemHealth {
         memory,
         disks,
         components,
+        gpus,
     }
 }
 

@@ -1,9 +1,12 @@
 // Prevents an additional console window from appearing on Windows in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod calendar;
 mod db;
 mod leetify_client;
 mod news;
+mod of_the_day;
+mod spotify;
 mod stocks;
 mod suggestions;
 mod system_health;
@@ -157,11 +160,59 @@ async fn fetch_quotes(state: tauri::State<'_, HttpState>, symbols: Vec<String>) 
     Ok(stocks::fetch_all(&state.client, &symbols).await)
 }
 
+#[tauri::command]
+async fn fetch_calendar(state: tauri::State<'_, HttpState>) -> Result<Vec<calendar::CalendarEvent>, ()> {
+    Ok(calendar::fetch_all(&state.client).await)
+}
+
+#[derive(Serialize)]
+struct OfTheDayResponse {
+    article: Option<of_the_day::FeaturedArticle>,
+    picture: Option<of_the_day::PictureOfDay>,
+    song: Option<spotify::SongOfDay>,
+}
+
+#[tauri::command]
+async fn fetch_of_the_day(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, HttpState>,
+    favorite_artists: Vec<String>,
+) -> Result<OfTheDayResponse, ()> {
+    let (wiki, song) =
+        tokio::join!(of_the_day::fetch(&state.client), spotify::song_of_day(&app, &state.client, &favorite_artists));
+    let (article, picture) = wiki;
+    Ok(OfTheDayResponse { article, picture, song: song.unwrap_or(None) })
+}
+
+#[tauri::command]
+async fn spotify_login(app: tauri::AppHandle, state: tauri::State<'_, HttpState>) -> Result<(), String> {
+    spotify::login(&app, &state.client).await
+}
+
+#[tauri::command]
+fn spotify_logout(app: tauri::AppHandle) -> Result<(), String> {
+    spotify::logout(&app)
+}
+
+#[tauri::command]
+fn spotify_is_connected(app: tauri::AppHandle) -> Result<bool, String> {
+    spotify::is_connected(&app)
+}
+
+#[tauri::command]
+async fn spotify_now_playing(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, HttpState>,
+) -> Result<Option<spotify::NowPlaying>, String> {
+    spotify::now_playing(&app, &state.client).await
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let data_dir = app
                 .path()
@@ -185,7 +236,13 @@ fn main() {
             validate_api_key,
             get_system_health,
             fetch_news,
-            fetch_quotes
+            fetch_quotes,
+            fetch_calendar,
+            fetch_of_the_day,
+            spotify_login,
+            spotify_logout,
+            spotify_is_connected,
+            spotify_now_playing
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

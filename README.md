@@ -7,10 +7,9 @@ React/TypeScript frontend, chosen specifically to stay light enough to run
 continuously without eating a monitor's worth of RAM the way an
 Electron app would.
 
-News, Stocks, Analysis (CS2 Database's fourth view), and System Health all
-run on real data now - no API keys required for any of them. Calendar and
-Spotify are still mock/local (see their widget notes below for why, and
-what's needed to make them real).
+News, Stocks, Calendar, Analysis (CS2 Database's fourth view), System Health,
+and Spotify all run on real data now - no API keys required for any of them
+except Spotify (see its widget notes below).
 
 ## Stack
 
@@ -252,38 +251,72 @@ Per widget, you can set:
   crosses the boundary - no reload needed. An overnight window like
   22:00-02:00 works too (`isWidgetVisibleNow` in `dashboardSettingsStore.ts`
   handles the wraparound).
-- **Width / Height** - Small/Medium/Large (grid column span) and
-  Normal/Tall (grid row span).
 
-All of this is per-device, persisted to `localStorage` (key
-`dashboard-widget-settings`) - there's no sync or account system, matching
-everything else in this app being local-first. `widgets.config.ts`'s
-`defaultColSpan`/`defaultRowSpan` are just what a widget starts at before
-you've touched its settings.
+Size and position aren't in the settings panel - they're mouse-driven,
+directly on the dashboard (`WidgetCell.tsx`):
+
+- **Resize**: hover a widget, grab the ⌟ handle that appears in its
+  bottom-right corner, and drag. Self-calibrating against the cell's own
+  current rendered size (rather than assuming a fixed column width/row
+  height, which isn't constant - rows are `minmax(260px, 1fr)`), clamped to
+  1-3 columns and 1-2 rows, live-previewed as you drag and only written to
+  `localStorage` on release.
+- **Reposition**: grab the ⠿ handle that appears top-left, drag onto
+  another widget, and drop - it's inserted right before whatever you
+  dropped it on. Plain native HTML5 drag-and-drop, so it plays fine with
+  the rest of each widget staying normally interactive (links, buttons,
+  text selection) - only that small handle initiates a drag.
+
+All of this is per-device, persisted to `localStorage` (`dashboard-widget-settings`
+for size, `dashboard-widget-order` for position) - there's no sync or
+account system, matching everything else in this app being local-first.
+`widgets.config.ts`'s `defaultColSpan`/`defaultRowSpan` and the widget
+list's own order are just the starting point before you've touched
+anything.
 
 ### Widget notes
 
-- **News** - real news, configured with plain keywords (`widgets/news/newsSources.ts`'s
-  `NEWS_KEYWORDS` - "Counter-Strike 2", a ticker like "AAPL", a team name,
-  whatever you want to follow). No RSS knowledge needed: each keyword is
-  turned into a Google News search under the hood
-  (`src-tauri/src/news.rs::NewsSourceRequest::resolve_url`) and fetched the
-  same way as any other feed. If you *do* know a specific feed URL you'd
-  rather follow directly, `NEWS_FEEDS` in the same file is the advanced,
-  empty-by-default option for that. Either way, a source that's unreachable
-  or fails to parse is dropped rather than failing the whole widget.
+- **News** - real news, configured with plain keywords - edit the tag chips
+  right in the widget (add one, click × to remove one; capped at 10, see
+  `newsKeywordsStore.ts`) rather than needing to touch code. No RSS
+  knowledge needed: each keyword is turned into a Google News search under
+  the hood (`src-tauri/src/news.rs::NewsSourceRequest::resolve_url`) and
+  fetched the same way as any other feed. `NEWS_KEYWORDS` in
+  `newsSources.ts` is just the first-run default now, before the user has
+  customized anything. If you *do* know a specific feed URL you'd rather
+  follow directly, `NEWS_FEEDS` in the same file is the advanced,
+  empty-by-default, code-only option for that. Either way, a source that's
+  unreachable or fails to parse is dropped rather than failing the whole
+  widget.
 - **Stocks** - real quotes from Yahoo Finance's unofficial chart endpoint
   (`src-tauri/src/stocks.rs`) - no API key, but also undocumented and could
   change without notice; see "CS2 Analysis backend" for the same tradeoff
-  Leetify's API has. Tickers live in `widgets/stocks/watchlist.ts`. Polls
-  every 60s (deliberately not faster, since it's an unauthenticated
+  Leetify's API has. The watchlist is editable in the widget itself (same
+  tag-chip pattern as News, capped at 12, see `watchlistStore.ts`) -
+  `watchlist.ts`'s `STOCK_WATCHLIST` is just the first-run default. Each
+  quote also carries a month of daily closes for a per-row sparkline
+  (color-coded with the same green/red as the change figure), toggleable
+  via the 📈/📉 button in the header if you'd rather keep it text-only.
+  Polls every 60s (deliberately not faster, since it's an unauthenticated
   endpoint). A symbol that fails to resolve is dropped, not fatal.
-- **Calendar** - still mock/sample data, by choice: there's no good
-  free/keyless API for esports schedules (HLTV has no official one, and
-  scraping their site would violate their ToS), and general-sports-only
-  felt like the wrong tradeoff for an app centered on CS2. Real esports
-  data would need something like PandaScore (requires signing up for a free
-  API key) wired into `calendarService.ts`.
+- **Calendar** - real data from two independent sources
+  (`src-tauri/src/calendar.rs`), fetched concurrently and merged so one
+  failing doesn't take down the other:
+  - *General sports* - [TheSportsDB](https://www.thesportsdb.com/), using
+    their long-documented shared free/test key (`"3"`, no signup). A
+    small hard-coded set of leagues for now (Premier League, NBA).
+  - *CS2/esports* - there's no official HLTV API, so this scrapes their
+    public matches listing page instead. This is inherently fragile:
+    HLTV can change their markup without notice, which would silently
+    stop esports matches from showing up until someone updates the
+    selectors in `calendar.rs`. If that happens, compare hltv.org/matches'
+    current markup to the `Selector::parse(...)` calls near the top of
+    `parse_hltv_html` and adjust them - the rest of the pipeline doesn't
+    need to change.
+  - Each event links out on click - to the match's own HLTV page for
+    esports (which shows the official stream once live), or a search
+    query for general sports, since there's no reliable single source for
+    those. Neither is a scraped/rehosted stream link.
 - **CS2 Database** - four views, cycled with `useWidgetViews`/`ViewSwitcher`:
   - *Lineups* and *Pro Plays* - searchable/filterable by map, sample data in
     `widgets/cs2db/data/`, meant to be replaced/expanded (lineup positions
@@ -300,7 +333,10 @@ you've touched its settings.
     go dig up when your team switches sides at halftime. Adding more
     positions/CT lineups is just adding entries to `data/positions.ts` and
     `data/lineups.ts`; the shared `<LineupList>` card renderer is reused
-    from the Lineups view.
+    from the Lineups view. Every card links out to a reference for the
+    lineup - a specific `sourceUrl` if you've set one on that entry,
+    otherwise a search query for it - rather than downloading and
+    rehosting images from lineup sites, which isn't ours to redistribute.
   - *Analysis* - a real (not mock) integration: look up a Leetify profile by
     Steam64/profile ID for its rank/rating breakdown, recent matches, local
     rating-trend charts (built from a snapshot taken on each lookup), and
@@ -309,11 +345,27 @@ you've touched its settings.
     which otherwise never touches the main bundle) and backed by Rust
     (`src-tauri/src/leetify_client.rs`, `db.rs`, `suggestions.rs`) - see
     below.
-- **Spotify** - "Connect" is currently a stub (flips a local flag; no real
-  OAuth). The real integration is noted in `spotifyService.ts`: Spotify's
-  Authorization Code + PKCE flow suits a desktop app well (no client secret
-  to embed), using Tauri's shell/opener plugin to launch the system browser
-  and a loopback redirect (or a custom URL scheme) to catch the callback.
+- **Spotify** - real integration, entirely on the Rust side
+  (`src-tauri/src/spotify.rs`) so the access/refresh tokens never touch the
+  frontend. Uses Spotify's Authorization Code + PKCE flow (the right fit
+  for a desktop app - no client secret to embed): "Connect" opens the
+  system browser to Spotify's login page (via `tauri-plugin-opener`), a
+  one-shot local server (`tauri-plugin-oauth`, pinned to port 14700)
+  catches the redirect, and the code is exchanged for tokens which get
+  stored via `tauri-plugin-store` (plaintext JSON in the app data dir -
+  same tradeoff as the Leetify API key, not a real OS keychain). Access
+  tokens are refreshed automatically when they're close to expiry.
+  - **One-time setup for a fork/new Client ID**: create an app at
+    [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard),
+    add `http://127.0.0.1:14700/callback` as a Redirect URI, and put the
+    Client ID (not the secret - PKCE doesn't use one) in `CLIENT_ID` at the
+    top of `spotify.rs`. Client IDs aren't secret, but they are
+    per-developer-account, so a fork needs its own.
+  - Only reads what's needed: `user-read-currently-playing` and
+    `user-read-playback-state` for "now playing", plus `user-top-read` for
+    the "Of the Day" widget's song pick (see below) - it can't control
+    playback. If you connected before `user-top-read` was added, reconnect
+    once to pick up the new scope.
 - **System Health** - the other real (not mock) widget, for the same reason
   as Analysis: there's no meaningful mock for "this machine's actual CPU/
   memory/disk load." CPU name + overall/per-core usage, RAM (and swap, if
@@ -330,6 +382,18 @@ you've touched its settings.
   the shell's ⟳ button and a 10-minute auto-rotate both just pick a new
   random quote from that pool - see "Sourcing the quotes" below for how
   these were chosen and verified.
+- **Of the Day** - three keyless-where-possible daily picks, tabbed with the
+  same `ViewSwitcher` as CS2 Database (`src-tauri/src/of_the_day.rs`):
+  - *Article* and *Picture* - Wikipedia's featured article and picture of
+    the day, both from Wikimedia's public Feed REST API in one request, no
+    API key.
+  - *Song* - via Spotify (`spotify.rs::song_of_day`): if you've added
+    favorite artists in this view (tag chips, `favoriteArtistsStore.ts`,
+    localStorage), it deterministically picks one of them each day and
+    searches Spotify for a track by them; otherwise it picks from your own
+    top tracks (needs Spotify connected and the `user-top-read` scope).
+    The pick is stable for the whole day (seeded off the date), not random
+    on every refresh. Empty/prompts to connect if Spotify isn't linked.
 
 ## CS2 Analysis backend (Leetify)
 
@@ -381,6 +445,16 @@ crate behind one command, `get_system_health`. Implementation notes:
   un-renamed) and `src/widgets/systemhealth/types.ts` mirrors them exactly
   rather than converting case - there's no real API contract to abstract
   away here, so a 1:1 mirror is simpler than adding a mapping layer.
+- **GPU usage/memory/temperature is NVIDIA-only** (via
+  [`nvml-wrapper`](https://docs.rs/nvml-wrapper), initialized once in
+  `SystemHealthState::new()`). On a machine without an NVIDIA GPU or driver,
+  `Nvml::init()` fails gracefully and `gpus` is just an empty array - the
+  widget shows nothing rather than an error. AMD/Intel GPUs aren't
+  supported yet; there's no cross-vendor equivalent of NVML without
+  significantly more platform-specific work (e.g. Windows performance
+  counters), so this was scoped to the common case first. This container
+  has no GPU at all, so the NVIDIA path itself is unverified on real
+  hardware - confirm the values look sane on an actual NVIDIA machine.
 
 ## News & Stocks backends
 
@@ -401,10 +475,11 @@ no OAuth.
   malformed XML) are swallowed and that source is just dropped from the
   results - one flaky source shouldn't blank the whole widget. Capped at 5
   articles per source, merged and sorted by published date.
-- **Stocks** hits `query1.finance.yahoo.com/v8/finance/chart/{symbol}` per
-  ticker, concurrently, and reads only the `meta` block (price, previous
-  close, currency, timestamp) out of a much larger response. Same
-  per-symbol failure tolerance as News.
+- **Stocks** hits `query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=1mo&interval=1d`
+  per ticker, concurrently, reading the `meta` block (price, previous
+  close, currency, timestamp) plus `indicators.quote[0].close` (a month of
+  daily closes, nulls dropped) for the sparkline - the rest of the response
+  is still ignored. Same per-symbol failure tolerance as News.
 - Both modules split the "parse a response" logic from the "make the HTTP
   request" logic specifically so the parsing can be unit-tested against an
   embedded fixture (`cargo test`) without a live connection - see the note

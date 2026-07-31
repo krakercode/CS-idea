@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { STOCK_WATCHLIST } from "./watchlist";
+import { getWatchlist } from "./watchlistStore";
 import type { Quote } from "./types";
 
 /**
@@ -8,5 +8,5 @@ import type { Quote } from "./types";
  * fails to resolve is dropped rather than failing the whole watchlist.
  */
 export async function fetchQuotes(): Promise<Quote[]> {
-  return invoke<Quote[]>("fetch_quotes", { symbols: STOCK_WATCHLIST });
+  return invoke<Quote[]>("fetch_quotes", { symbols: getWatchlist() });
 }

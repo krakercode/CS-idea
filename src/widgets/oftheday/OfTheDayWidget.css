@@ -1,0 +1,100 @@
+.oftheday-widget__card {
+  display: flex;
+  gap: var(--space-3);
+  color: inherit;
+  text-decoration: none;
+}
+
+.oftheday-widget__card:hover .oftheday-widget__title {
+  color: var(--color-accent);
+}
+
+.oftheday-widget__card--picture {
+  flex-direction: column;
+}
+
+.oftheday-widget__thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.oftheday-widget__picture-img {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
+.oftheday-widget__title {
+  margin: 0 0 var(--space-1);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.oftheday-widget__extract {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.oftheday-widget__empty {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.oftheday-widget__song-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.oftheday-widget__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.oftheday-widget__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-1) 2px var(--space-2);
+  font-size: 11px;
+}
+
+.oftheday-widget__tag-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.oftheday-widget__tag-remove:hover {
+  color: var(--color-negative);
+}
+
+.oftheday-widget__tag-form {
+  display: inline-flex;
+}
+
+.oftheday-widget__tag-input {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+  font-size: 11px;
+  width: 120px;
+}

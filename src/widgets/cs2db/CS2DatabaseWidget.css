@@ -66,6 +66,12 @@
   margin: var(--space-1) 0 0;
 }
 
+.cs2-widget__card-source {
+  display: inline-block;
+  font-size: 11px;
+  margin-top: var(--space-1);
+}
+
 .cs2-widget__badge {
   font-size: 10px;
   text-transform: uppercase;

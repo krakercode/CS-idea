@@ -1,6 +1,6 @@
 [package]
 name = "jesspr-east"
-version = "0.1.0"
+version = "0.1.1"
 description = "Always-on second-monitor dashboard: news, stocks, sports/esports calendar, CS2 nade/pro-play database, Spotify."
 edition = "2021"
 
@@ -22,6 +22,13 @@ feed-rs = "2.4.0"
 futures = "0.3.33"
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
+nvml-wrapper = "0.12.1"
+tauri-plugin-oauth = "2.1.0"
+tauri-plugin-opener = "2.5.4"
+rand = "0.10.2"
+sha2 = "0.11.0"
+base64 = "0.23.0"
+scraper = "0.27.0"
 
 [profile.release]
 # Keep the always-running background footprint small.

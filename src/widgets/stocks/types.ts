@@ -7,4 +7,7 @@ export interface Quote {
   change_percent: number;
   currency: string;
   updated_at: string; // RFC3339
+  /** Closing prices over the lookback window, oldest first - empty if
+   * unavailable. See stocks.rs for the window/interval used. */
+  history: number[];
 }
