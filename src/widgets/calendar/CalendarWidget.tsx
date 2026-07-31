@@ -6,7 +6,14 @@ import type { EventCategory } from "./types";
 import "./CalendarWidget.css";
 
 const REFRESH_INTERVAL_MS = 30 * 60_000;
-const DAYS_AHEAD = 7;
+// TheSportsDB's `eventsnextleague` endpoint returns each league's next ~15
+// fixtures regardless of how far out they are - a 7-day cutoff here was
+// silently discarding every one of them during an off-season gap (e.g. the
+// weeks before a new Premier League/NBA season kicks off), which is exactly
+// what "nothing upcoming" turned out to be. A wide cutoff is just a safety
+// net against a source ever returning something absurdly far out, not a
+// meaningful curation window.
+const DAYS_AHEAD = 90;
 
 const FILTERS: Array<{ label: string; value: EventCategory | "all" }> = [
   { label: "All", value: "all" },
