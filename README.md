@@ -84,7 +84,14 @@ launch, so today it's a manual "Check for updates" click).
    them attached plus a signed `latest.json` update manifest.
 4. Review the draft, then publish it. Existing installs pick up the new
    version the next time they check - the updater endpoint always points at
-   this repo's *latest published* release.
+   this repo's *latest published* release, which GitHub only resolves to a
+   **non-prerelease, non-draft** release. `release.yml`'s `finalize` job
+   forces the prerelease flag off right after the build (tauri-action's own
+   `prerelease: false` input hasn't reliably done that), so this should
+   already be correct - if an update ever silently stops showing up as
+   available, check the release isn't flagged prerelease on GitHub. Run
+   `fix-release-flags.yml` (Actions -> Fix Release Flags -> Run workflow,
+   given the tag) to correct an already-published one without rebuilding.
 
 ### One-time setup: the signing key
 

@@ -1,0 +1,28 @@
+name: Fix Release Flags
+
+# One-off utility to correct an already-published release's prerelease/latest
+# flags after the fact - for releases published before release.yml's
+# `finalize` job started doing this automatically. Doesn't touch draft
+# status - a draft stays a draft until published by hand.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to fix (e.g. app-v0.1.1)"
+        required: true
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Force non-prerelease + latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "${{ inputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --prerelease=false \
+            --latest

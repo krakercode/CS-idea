@@ -89,3 +89,37 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+  # tauri-action's `prerelease: false` input above hasn't reliably produced a
+  # non-prerelease release (both app-v0.1.0 and app-v0.1.1 came out flagged
+  # prerelease despite it) - and GitHub's `/releases/latest` endpoint, which
+  # the in-app updater's endpoint URL depends on, only ever resolves to a
+  # non-prerelease, non-draft release. Left alone, that silently breaks
+  # auto-updates: the updater's request 404s and gets treated as "no update
+  # available". This job forces the flag straight after the build regardless
+  # of what tauri-action did, without touching draft status - the release
+  # still needs a human to hit Publish.
+  finalize:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Resolve release tag
+        id: release_tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Force the release to be a full (non-prerelease) release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "${{ steps.release_tag.outputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --prerelease=false \
+            --latest
