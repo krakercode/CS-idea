@@ -3,7 +3,7 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.1.3] - 2026-07-31
 
 ### Changed
 
@@ -21,6 +21,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   afterwards, plus a debounced search across tracks/albums/artists/
   playlists at once. Needs a reconnect (more scopes: playback control
   itself, playlists, followed artists) if you connected before this landed.
+- CS2 Database: the first actually-sourced lineup (Mirage window smoke
+  from Back Alley, from a real csnades.gg link) - `technique` is now
+  optional on a lineup rather than always guessed, since it's not always
+  something derivable from a source URL alone.
 
 ### Fixed
 
