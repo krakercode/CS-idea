@@ -63,7 +63,7 @@ export function CS2DatabaseWidget() {
 
   return (
     <WidgetShell
-      title="CS2 Database"
+      title="CS2 Database (WIP)"
       loading={!SELF_MANAGED_VIEWS.has(activeId) && loading}
       error={!SELF_MANAGED_VIEWS.has(activeId) ? error : null}
       headerActions={headerActions}

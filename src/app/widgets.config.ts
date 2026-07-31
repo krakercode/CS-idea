@@ -44,7 +44,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "cs2db",
-    label: "CS2 Database",
+    label: "CS2 Database (WIP)",
     defaultColSpan: 2,
     defaultRowSpan: 1,
     Component: lazy(() =>

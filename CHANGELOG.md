@@ -5,6 +5,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- CS2 Database is now labeled "(WIP)" everywhere it's shown (widget title,
+  Settings panel) - most of its lineup data is still unverified starter
+  content (see the per-card "unverified" badges added earlier), and
+  encoding real ones one-by-one from source links isn't done. Not a
+  regression, just being upfront about where it's actually at.
+
 ### Added
 
 - Spotify: the Library tab is a real browser now, not just Liked Songs -
