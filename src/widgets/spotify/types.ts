@@ -1,15 +1,12 @@
-export interface NowPlaying {
+export interface SavedTrack {
+  uri: string;
   trackName: string;
   artist: string;
-  albumName: string;
-  isPlaying: boolean;
-  progressMs: number;
-  durationMs: number;
+  albumArtUrl?: string;
 }
 
 export interface SpotifyProvider {
   isConnected(): Promise<boolean>;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
-  getNowPlaying(): Promise<NowPlaying | null>;
 }

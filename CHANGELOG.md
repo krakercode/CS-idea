@@ -5,8 +5,25 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Spotify: a real, fully functional in-app player via Spotify's Web
+  Playback SDK - JESSPR-EAST becomes its own Spotify Connect device, so
+  music plays through the app directly instead of needing the (much
+  heavier) official Spotify client running. Play/pause/skip, click-to-seek,
+  volume, and a Library tab listing saved tracks to play. Needs Spotify
+  Premium and a reconnect (new scopes) if you connected before this landed.
+- Calendar: esports/CS2 matches now come from PandaScore, a real API with
+  a free key (entered via the widget's ⚙ button), replacing the old
+  unofficial HLTV scraper - more reliable, and not at risk of anti-bot
+  blocking the way scraping HLTV directly was.
+
 ### Fixed
 
+- Calendar: general sports showing "nothing upcoming" for weeks at a time
+  wasn't a bug in the fetch - it was a 7-day cutoff throwing away real,
+  correctly-fetched fixtures during a league's off-season. Widened to 90
+  days.
 - Release workflow: GitHub only resolves `/releases/latest` (what the
   updater's endpoint URL depends on) to a non-prerelease release, but both
   0.1.0 and 0.1.1 came out flagged prerelease despite tauri-action's

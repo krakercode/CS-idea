@@ -6,6 +6,7 @@ mod db;
 mod leetify_client;
 mod news;
 mod of_the_day;
+mod pandascore;
 mod spotify;
 mod stocks;
 mod suggestions;
@@ -161,8 +162,11 @@ async fn fetch_quotes(state: tauri::State<'_, HttpState>, symbols: Vec<String>) 
 }
 
 #[tauri::command]
-async fn fetch_calendar(state: tauri::State<'_, HttpState>) -> Result<Vec<calendar::CalendarEvent>, ()> {
-    Ok(calendar::fetch_all(&state.client).await)
+async fn fetch_calendar(
+    state: tauri::State<'_, HttpState>,
+    pandascore_api_key: Option<String>,
+) -> Result<Vec<calendar::CalendarEvent>, ()> {
+    Ok(calendar::fetch_all(&state.client, pandascore_api_key.as_deref()).await)
 }
 
 #[derive(Serialize)]
@@ -207,6 +211,24 @@ async fn spotify_now_playing(
     spotify::now_playing(&app, &state.client).await
 }
 
+#[tauri::command]
+async fn spotify_get_access_token(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, HttpState>,
+) -> Result<Option<String>, String> {
+    spotify::get_access_token(&app, &state.client).await
+}
+
+#[tauri::command]
+async fn spotify_saved_tracks(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, HttpState>,
+    limit: u32,
+    offset: u32,
+) -> Result<Option<Vec<spotify::SavedTrack>>, String> {
+    spotify::saved_tracks(&app, &state.client, limit, offset).await
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -242,7 +264,9 @@ fn main() {
             spotify_login,
             spotify_logout,
             spotify_is_connected,
-            spotify_now_playing
+            spotify_now_playing,
+            spotify_get_access_token,
+            spotify_saved_tracks
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

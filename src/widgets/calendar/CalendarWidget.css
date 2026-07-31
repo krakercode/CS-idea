@@ -1,6 +1,49 @@
+.calendar-widget__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .calendar-widget__filters {
   display: flex;
   gap: var(--space-1);
+}
+
+.calendar-widget__settings {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.calendar-widget__settings label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.calendar-widget__settings-hint {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin: var(--space-1) 0 var(--space-2);
+}
+
+.calendar-widget__settings-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.calendar-widget__hint {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin-bottom: var(--space-2);
+}
+
+.calendar-widget__hint-link {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  padding: 0;
+  font-size: 12px;
+  text-decoration: underline;
 }
 
 .calendar-widget__filter {

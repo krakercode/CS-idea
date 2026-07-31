@@ -1,4 +1,3 @@
-use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Clone, PartialEq)]
@@ -9,13 +8,11 @@ pub struct CalendarEvent {
     pub category: String, // "esports" | "sports"
     pub start_time: String, // RFC3339
     pub teams: Option<Vec<String>>,
-    /// Where "click this match" goes. For HLTV matches this is the match's
-    /// own HLTV page (which shows the official stream once live) - not a
-    /// scraped/rehosted stream link, just a normal hyperlink to HLTV's own
-    /// page about that match. General sports don't have a reliable
-    /// equivalent source, so this is a search query instead (same
-    /// can't-verify-a-specific-link-so-don't-guess-one approach as the CS2
-    /// lineup source links).
+    /// Where "click this match" goes - a real match/official-stream link
+    /// when the source provides one, otherwise a search query. General
+    /// sports don't have a reliable single-source equivalent, so that's
+    /// always a search query (same can't-verify-a-specific-link-so-don't
+    /// -guess-one approach as the CS2 lineup source links).
     pub link_url: Option<String>,
 }
 
@@ -117,94 +114,7 @@ async fn fetch_sportsdb(client: &reqwest::Client) -> Vec<CalendarEvent> {
     futures::future::join_all(fetches).await.into_iter().flatten().collect()
 }
 
-// HLTV has no official API. This scrapes the public matches listing page,
-// which is about as fragile as it sounds: HLTV can (and does, periodically)
-// change their markup without notice, which would silently break this until
-// someone notices matches stopped showing up and updates the selectors
-// below. Genuinely not verifiable against the live site from this
-// environment's sandboxed network - the parsing logic is unit-tested
-// against a hand-built fixture matching HLTV's structure as of when this
-// was written, not the live page. If this breaks, check hltv.org/matches
-// in a browser, compare its current markup to the selectors here, and
-// update them - the rest of the pipeline (fetch, parse, merge, sort)
-// doesn't need to change.
-const HLTV_MATCHES_URL: &str = "https://www.hltv.org/matches";
-
-fn parse_hltv_html(html: &str) -> Vec<CalendarEvent> {
-    let document = Html::parse_document(html);
-
-    // Each match is (assumed to be) a single <a class="match" href="/matches/...">
-    // wrapping everything else, rather than a bare div - `.select()` only
-    // searches descendants, so the match link has to be the top-level
-    // selector here, not something looked up from inside a nested div.
-    //
-    // Selectors are declared with .expect() rather than propagated as
-    // errors - they're static strings we control, so a parse failure here
-    // would be a typo in this file, not bad input from the network.
-    let match_selector = Selector::parse("a.match").expect("static selector is valid");
-    let team_selector = Selector::parse(".matchTeamName").expect("static selector is valid");
-    let event_selector = Selector::parse(".matchEventName").expect("static selector is valid");
-    let time_selector = Selector::parse("[data-unix]").expect("static selector is valid");
-
-    document
-        .select(&match_selector)
-        .filter_map(|match_el| {
-            let teams: Vec<String> = match_el
-                .select(&team_selector)
-                .map(|el| el.text().collect::<Vec<_>>().join(" ").trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect();
-            if teams.len() != 2 {
-                return None;
-            }
-
-            let unix_ms: i64 = match_el.select(&time_selector).next()?.value().attr("data-unix")?.parse().ok()?;
-            let start_time = chrono::DateTime::from_timestamp_millis(unix_ms)?.to_rfc3339();
-
-            let event_name = match_el
-                .select(&event_selector)
-                .next()
-                .map(|el| el.text().collect::<Vec<_>>().join(" ").trim().to_string())
-                .filter(|s| !s.is_empty())
-                .unwrap_or_else(|| "HLTV Match".to_string());
-
-            let link_url = match_el
-                .value()
-                .attr("href")
-                .map(|href| format!("https://www.hltv.org{href}"))
-                .unwrap_or_else(|| HLTV_MATCHES_URL.to_string());
-
-            let id = link_url
-                .split("/matches/")
-                .nth(1)
-                .and_then(|rest| rest.split('/').next())
-                .map(|id| format!("hltv-{id}"))
-                .unwrap_or_else(|| format!("hltv-{unix_ms}"));
-
-            Some(CalendarEvent {
-                id,
-                title: teams.join(" vs "),
-                competition: event_name,
-                category: "esports".to_string(),
-                start_time,
-                teams: Some(teams),
-                link_url: Some(link_url),
-            })
-        })
-        .collect()
-}
-
-async fn fetch_hltv(client: &reqwest::Client) -> Vec<CalendarEvent> {
-    let Ok(response) = client.get(HLTV_MATCHES_URL).send().await else {
-        return Vec::new();
-    };
-    let Ok(body) = response.text().await else {
-        return Vec::new();
-    };
-    parse_hltv_html(&body)
-}
-
-fn urlencoding(input: &str) -> String {
+pub(crate) fn urlencoding(input: &str) -> String {
     use std::fmt::Write as _;
 
     let mut out = String::with_capacity(input.len());
@@ -221,14 +131,20 @@ fn urlencoding(input: &str) -> String {
     out
 }
 
-/// Fetches both sources concurrently and merges them, oldest-first. Each
-/// source degrading independently (a bad HLTV markup change doesn't take
-/// down sports scores, and vice versa) matters more here than usual, since
-/// one of these two is explicitly unofficial and expected to break
-/// eventually.
-pub async fn fetch_all(client: &reqwest::Client) -> Vec<CalendarEvent> {
-    let (sportsdb, hltv) = tokio::join!(fetch_sportsdb(client), fetch_hltv(client));
-    let mut events: Vec<CalendarEvent> = sportsdb.into_iter().chain(hltv).collect();
+/// Fetches both sources concurrently and merges them, oldest-first. Sports
+/// (TheSportsDB, keyless) always runs; esports (PandaScore) only runs when
+/// a key is configured (`pandascore_api_key`), and contributes nothing
+/// rather than erroring without one. Each source degrading independently
+/// matters here since they're on entirely different upstream services.
+pub async fn fetch_all(client: &reqwest::Client, pandascore_api_key: Option<&str>) -> Vec<CalendarEvent> {
+    let pandascore = async {
+        match pandascore_api_key {
+            Some(key) if !key.is_empty() => crate::pandascore::fetch(client, key).await,
+            _ => Vec::new(),
+        }
+    };
+    let (sportsdb, pandascore) = tokio::join!(fetch_sportsdb(client), pandascore);
+    let mut events: Vec<CalendarEvent> = sportsdb.into_iter().chain(pandascore).collect();
     events.sort_by(|a, b| a.start_time.cmp(&b.start_time));
     events
 }
@@ -279,43 +195,5 @@ mod tests {
     #[test]
     fn sportsdb_malformed_json_yields_empty_not_panic() {
         assert!(parse_sportsdb_response("not json", "League").is_empty());
-    }
-
-    // Hand-built to match this file's assumed HLTV markup (see the caveat
-    // above parse_hltv_html) - passing here confirms the parsing logic is
-    // internally correct, not that it matches the live site today.
-    const HLTV_SAMPLE: &str = r#"<!DOCTYPE html>
-<html><body>
-<div class="upcomingMatchesSection">
-  <a class="match" href="/matches/2378421/navi-vs-spirit-blast-premier">
-    <div class="upcomingMatch">
-      <div class="matchTeam"><div class="matchTeamName">NAVI</div></div>
-      <div class="matchTeam"><div class="matchTeamName">Spirit</div></div>
-      <div class="matchEvent"><span class="matchEventName">BLAST Premier</span></div>
-      <div class="matchTime" data-unix="1785440400000">18:00</div>
-    </div>
-  </a>
-  <div class="upcomingMatch">
-    <div class="matchTeamName">TBD</div>
-  </div>
-</div>
-</body></html>"#;
-
-    #[test]
-    fn parses_hltv_matches_and_skips_incomplete_ones() {
-        let events = parse_hltv_html(HLTV_SAMPLE);
-        assert_eq!(events.len(), 1);
-        let event = &events[0];
-        assert_eq!(event.title, "NAVI vs Spirit");
-        assert_eq!(event.competition, "BLAST Premier");
-        assert_eq!(event.category, "esports");
-        assert_eq!(event.id, "hltv-2378421");
-        assert_eq!(event.link_url.as_deref(), Some("https://www.hltv.org/matches/2378421/navi-vs-spirit-blast-premier"));
-    }
-
-    #[test]
-    fn hltv_malformed_html_yields_empty_not_panic() {
-        assert!(parse_hltv_html("<not><valid html").is_empty());
-        assert!(parse_hltv_html("").is_empty());
     }
 }

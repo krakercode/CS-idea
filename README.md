@@ -8,8 +8,10 @@ continuously without eating a monitor's worth of RAM the way an
 Electron app would.
 
 News, Stocks, Calendar, Analysis (CS2 Database's fourth view), System Health,
-and Spotify all run on real data now - no API keys required for any of them
-except Spotify (see its widget notes below).
+and Spotify all run on real data now. Stocks/News/general-sports Calendar/
+System Health need no API key at all; Calendar's esports matches need a free
+PandaScore key, Spotify needs your own login (and Premium for in-app
+playback) - see each widget's notes below.
 
 ## Stack
 
@@ -308,22 +310,37 @@ anything.
   endpoint). A symbol that fails to resolve is dropped, not fatal.
 - **Calendar** - real data from two independent sources
   (`src-tauri/src/calendar.rs`), fetched concurrently and merged so one
-  failing doesn't take down the other:
+  failing doesn't take down the other. Shows anything upcoming within 90
+  days (not just the next week) - sports leagues go weeks between fixtures
+  in their off-season, and a tighter window was silently hiding real,
+  correctly-fetched events.
   - *General sports* - [TheSportsDB](https://www.thesportsdb.com/), using
     their long-documented shared free/test key (`"3"`, no signup). A
-    small hard-coded set of leagues for now (Premier League, NBA).
-  - *CS2/esports* - there's no official HLTV API, so this scrapes their
-    public matches listing page instead. This is inherently fragile:
-    HLTV can change their markup without notice, which would silently
-    stop esports matches from showing up until someone updates the
-    selectors in `calendar.rs`. If that happens, compare hltv.org/matches'
-    current markup to the `Selector::parse(...)` calls near the top of
-    `parse_hltv_html` and adjust them - the rest of the pipeline doesn't
-    need to change.
-  - Each event links out on click - to the match's own HLTV page for
-    esports (which shows the official stream once live), or a search
-    query for general sports, since there's no reliable single source for
-    those. Neither is a scraped/rehosted stream link.
+    small hard-coded set of leagues for now (Premier League, NBA) - both
+    have real off-seasons, so an empty Calendar for weeks at a stretch can
+    be correct, not broken.
+  - *CS2/esports* - [PandaScore](https://pandascore.co)
+    (`src-tauri/src/pandascore.rs`), a real esports API. Needs a free
+    account and API key (pandascore.co), entered via the ⚙ button in the
+    widget's header - persisted locally (`pandascoreKeyStore.ts`), never
+    baked into the app since it's a per-account secret unlike Spotify's
+    client ID. Without a key, only general sports show up. CS2 still lives
+    under PandaScore's `csgo` videogame slug (kept for API stability
+    across the CS:GO → CS2 rename). This module's response parsing hasn't
+    been verified against a live call from the sandboxed environment this
+    was built in - it's written defensively (every field optional,
+    malformed/unexpected shape just yields fewer or no matches, never a
+    panic) and unit-tested against a hand-built fixture. If matches come
+    back missing a title/time/link once run against a real key, check
+    PandaScore's actual response shape and adjust the structs in
+    `pandascore.rs` - the rest of the pipeline doesn't change. (This
+    replaced an earlier unofficial HLTV scraper, dropped because HLTV has
+    no official API and is very likely behind anti-bot protection that a
+    plain HTTP client can't get past anyway.)
+  - Each event links out on click - PandaScore's official stream link when
+    it provides one, otherwise a search query, since there's no reliable
+    single source for general sports streams. Neither is a scraped/
+    rehosted stream link.
 - **CS2 Database** - four views, cycled with `useWidgetViews`/`ViewSwitcher`:
   - *Lineups* and *Pro Plays* - searchable/filterable by map, sample data in
     `widgets/cs2db/data/`, meant to be replaced/expanded (lineup positions
@@ -352,27 +369,55 @@ anything.
     which otherwise never touches the main bundle) and backed by Rust
     (`src-tauri/src/leetify_client.rs`, `db.rs`, `suggestions.rs`) - see
     below.
-- **Spotify** - real integration, entirely on the Rust side
-  (`src-tauri/src/spotify.rs`) so the access/refresh tokens never touch the
-  frontend. Uses Spotify's Authorization Code + PKCE flow (the right fit
-  for a desktop app - no client secret to embed): "Connect" opens the
+- **Spotify** - a real, fully functional in-app player, not just a
+  "now playing" readout. Auth is entirely on the Rust side
+  (`src-tauri/src/spotify.rs`) so the access/refresh tokens never sit in
+  localStorage. Uses Spotify's Authorization Code + PKCE flow (the right
+  fit for a desktop app - no client secret to embed): "Connect" opens the
   system browser to Spotify's login page (via `tauri-plugin-opener`), a
   one-shot local server (`tauri-plugin-oauth`, pinned to port 14700)
   catches the redirect, and the code is exchanged for tokens which get
   stored via `tauri-plugin-store` (plaintext JSON in the app data dir -
   same tradeoff as the Leetify API key, not a real OS keychain). Access
   tokens are refreshed automatically when they're close to expiry.
+  - **Playback** is Spotify's [Web Playback
+    SDK](https://developer.spotify.com/documentation/web-playback-sdk)
+    (`webPlaybackSdk.ts`, loaded from `sdk.scdn.co` at runtime, not
+    bundled), which turns JESSPR-EAST itself into a Spotify Connect
+    device - real audio plays through the app, no separate Spotify client
+    needs to be running. **Requires Spotify Premium** (Free accounts get a
+    clear "needs Premium" message from the SDK, not a silent failure).
+    Needs a browser engine with working DRM/EME support to decode audio:
+    solid on Windows (WebView2/Chromium), genuinely unverified on macOS/
+    Linux (WebKit-based webviews have historically had gaps here) - if
+    playback silently does nothing on those, that's almost certainly why.
+  - `usePlayer.ts` owns the SDK's `Spotify.Player` instance and turns its
+    events into React state - transport controls (play/pause/skip,
+    click-to-seek, volume) call the SDK's own methods directly. A
+    `getOAuthToken` callback wired to a new `spotify_get_access_token`
+    command feeds it a live token: the **one** deliberate exception to
+    "tokens stay in Rust", since the SDK runs its own WebSocket connection
+    to Spotify from the browser context and has to authenticate that
+    itself.
+  - The **Library** tab (`LibraryView.tsx`) lists your saved ("Liked
+    Songs") tracks (`spotify_saved_tracks`, needs `user-library-read`) -
+    click one to transfer playback to JESSPR-EAST and start it, via a
+    direct `fetch()` to Spotify's Web API with that same token (the same
+    pattern Spotify's own SDK examples use, no Rust command needed for
+    this one).
   - **One-time setup for a fork/new Client ID**: create an app at
     [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard),
     add `http://127.0.0.1:14700/callback` as a Redirect URI, and put the
     Client ID (not the secret - PKCE doesn't use one) in `CLIENT_ID` at the
     top of `spotify.rs`. Client IDs aren't secret, but they are
     per-developer-account, so a fork needs its own.
-  - Only reads what's needed: `user-read-currently-playing` and
-    `user-read-playback-state` for "now playing", plus `user-top-read` for
-    the "Of the Day" widget's song pick (see below) - it can't control
-    playback. If you connected before `user-top-read` was added, reconnect
-    once to pick up the new scope.
+  - Scopes: `user-read-currently-playing` + `user-read-playback-state` +
+    `user-top-read` (for "Of the Day", see below) plus, for the player,
+    `streaming` + `user-read-email` + `user-read-private` (required by the
+    Web Playback SDK to initialize) and `user-library-read` (Library tab).
+    Reconnect once if you connected before any of these were added -
+    Spotify only grants scopes present at the time of consent, there's no
+    way to add one to an existing token.
 - **System Health** - the other real (not mock) widget, for the same reason
   as Analysis: there's no meaningful mock for "this machine's actual CPU/
   memory/disk load." CPU name + overall/per-core usage, RAM (and swap, if

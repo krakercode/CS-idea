@@ -22,7 +22,14 @@ const CLIENT_ID: &str = "a82c0039f3024cbb88ecb595f381ff4e";
 /// port rather than letting the OS pick a free one.
 const REDIRECT_PORT: u16 = 14700;
 const REDIRECT_URI: &str = "http://127.0.0.1:14700/callback";
-const SCOPES: &str = "user-read-currently-playing user-read-playback-state user-top-read";
+// `streaming` + `user-read-email` + `user-read-private` are what Spotify's
+// Web Playback SDK docs require to initialize a player (the SDK registers
+// this app as a real Spotify Connect device); `user-library-read` is for
+// browsing saved tracks in the player UI. Existing connections won't have
+// these until reconnected - Spotify requires a fresh consent grant to add
+// scopes to a token, there's no way to upgrade one in place.
+const SCOPES: &str =
+    "user-read-currently-playing user-read-playback-state user-top-read streaming user-read-email user-read-private user-library-read";
 
 /// Tokens are stored on disk via tauri-plugin-store (a JSON file in the
 /// app's data dir), the same mechanism already used for the Leetify API
@@ -320,6 +327,92 @@ pub async fn now_playing(app: &AppHandle, client: &reqwest::Client) -> Result<Op
     }))
 }
 
+/// Hands a valid, freshly-refreshed access token to the frontend. This is a
+/// deliberate, narrow exception to every other function in this module
+/// keeping tokens Rust-side only: the Web Playback SDK (see
+/// SpotifyWidget.tsx) runs its own WebSocket connection to Spotify's
+/// playback service directly from the browser context and has to
+/// authenticate that connection itself via a `getOAuthToken` callback -
+/// there's no way to proxy that through Rust without reimplementing the
+/// SDK. The token is still short-lived and scoped to what the user already
+/// granted.
+pub async fn get_access_token(app: &AppHandle, client: &reqwest::Client) -> Result<Option<String>, String> {
+    ensure_fresh_token(app, client).await
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedTrack {
+    pub uri: String,
+    pub track_name: String,
+    pub artist: String,
+    pub album_art_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SavedTracksResponse {
+    #[serde(default)]
+    items: Vec<SavedTrackItem>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SavedTrackItem {
+    track: Option<UriTrackItem>,
+}
+
+// Same shape as TrackItem plus the `uri` field the player needs to actually
+// queue/play a specific saved track (not returned by the endpoints
+// TrackItem is otherwise used for, so kept separate rather than bolted on).
+#[derive(Debug, Deserialize)]
+struct UriTrackItem {
+    uri: String,
+    name: String,
+    artists: Vec<ArtistItem>,
+    album: AlbumItem,
+}
+
+fn parse_saved_tracks_response(body: &str) -> Vec<SavedTrack> {
+    let Ok(parsed) = serde_json::from_str::<SavedTracksResponse>(body) else {
+        return Vec::new();
+    };
+
+    parsed
+        .items
+        .into_iter()
+        .filter_map(|item| {
+            let track = item.track?;
+            Some(SavedTrack {
+                uri: track.uri,
+                track_name: track.name,
+                artist: track.artists.into_iter().map(|a| a.name).collect::<Vec<_>>().join(", "),
+                album_art_url: track.album.images.first().map(|i| i.url.clone()),
+            })
+        })
+        .collect()
+}
+
+/// The user's saved ("Liked Songs") tracks, most-recently-saved first
+/// (Spotify's own default order for this endpoint). `Ok(None)` covers "not
+/// connected" the same way as `now_playing`/`song_of_day`.
+pub async fn saved_tracks(
+    app: &AppHandle,
+    client: &reqwest::Client,
+    limit: u32,
+    offset: u32,
+) -> Result<Option<Vec<SavedTrack>>, String> {
+    let Some(access_token) = ensure_fresh_token(app, client).await? else {
+        return Ok(None);
+    };
+
+    let url = format!("https://api.spotify.com/v1/me/tracks?limit={limit}&offset={offset}");
+    let response = client.get(&url).bearer_auth(access_token).send().await.map_err(|e| e.to_string())?;
+    if !response.status().is_success() {
+        return Ok(Some(Vec::new()));
+    }
+    let body = response.text().await.map_err(|e| e.to_string())?;
+    Ok(Some(parse_saved_tracks_response(&body)))
+}
+
 fn urlencoding(input: &str) -> String {
     use std::fmt::Write as _;
 
@@ -540,5 +633,34 @@ mod tests {
         assert_eq!(song.artist, "Artist A, Artist B");
         assert_eq!(song.album_art_url, None); // empty images array
         assert_eq!(song.external_url.as_deref(), Some("https://open.spotify.com/track/2"));
+    }
+
+    const SAVED_TRACKS_SAMPLE: &str = r#"{
+        "items": [
+            {
+                "track": {
+                    "uri": "spotify:track:abc123",
+                    "name": "Saved One",
+                    "artists": [{ "name": "Artist D" }],
+                    "album": { "name": "Album D", "images": [{ "url": "https://example.com/d.jpg" }] }
+                }
+            },
+            { "track": null }
+        ]
+    }"#;
+
+    #[test]
+    fn parses_saved_tracks_and_drops_null_ones() {
+        let tracks = parse_saved_tracks_response(SAVED_TRACKS_SAMPLE);
+        assert_eq!(tracks.len(), 1);
+        assert_eq!(tracks[0].uri, "spotify:track:abc123");
+        assert_eq!(tracks[0].track_name, "Saved One");
+        assert_eq!(tracks[0].artist, "Artist D");
+        assert_eq!(tracks[0].album_art_url.as_deref(), Some("https://example.com/d.jpg"));
+    }
+
+    #[test]
+    fn saved_tracks_malformed_json_yields_empty_not_panic() {
+        assert!(parse_saved_tracks_response("not json").is_empty());
     }
 }

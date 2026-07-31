@@ -28,7 +28,6 @@ tauri-plugin-opener = "2.5.4"
 rand = "0.10.2"
 sha2 = "0.11.0"
 base64 = "0.23.0"
-scraper = "0.27.0"
 
 [profile.release]
 # Keep the always-running background footprint small.

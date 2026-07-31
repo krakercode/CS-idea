@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { usePolling } from "../../shared/hooks/usePolling";
 import { WidgetShell } from "../../shared/WidgetShell";
 import { getCalendarProvider } from "./calendarService";
+import { getPandaScoreKey, setPandaScoreKey } from "./pandascoreKeyStore";
 import type { EventCategory } from "./types";
 import "./CalendarWidget.css";
 
@@ -25,30 +26,93 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", { weekday: "short", hour:
 
 export function CalendarWidget() {
   const [filter, setFilter] = useState<EventCategory | "all">("all");
+  const [showSettings, setShowSettings] = useState(false);
+  const [pandaScoreKey, setPandaScoreKeyState] = useState("");
+  const [keyDraft, setKeyDraft] = useState("");
   const { data, loading, error, refresh } = usePolling(
     () => getCalendarProvider().fetchUpcoming(DAYS_AHEAD),
     REFRESH_INTERVAL_MS,
   );
 
+  useEffect(() => {
+    getPandaScoreKey().then((key) => {
+      setPandaScoreKeyState(key ?? "");
+      setKeyDraft(key ?? "");
+    });
+  }, []);
+
+  async function handleSaveKey(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = keyDraft.trim();
+    await setPandaScoreKey(trimmed);
+    setPandaScoreKeyState(trimmed);
+    setShowSettings(false);
+    refresh();
+  }
+
   const events = useMemo(() => data?.filter((e) => filter === "all" || e.category === filter) ?? [], [data, filter]);
 
   const headerActions = (
-    <div className="calendar-widget__filters">
-      {FILTERS.map((f) => (
-        <button
-          key={f.value}
-          type="button"
-          className={`calendar-widget__filter ${filter === f.value ? "calendar-widget__filter--active" : ""}`}
-          onClick={() => setFilter(f.value)}
-        >
-          {f.label}
-        </button>
-      ))}
+    <div className="calendar-widget__header-actions">
+      <div className="calendar-widget__filters">
+        {FILTERS.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            className={`calendar-widget__filter ${filter === f.value ? "calendar-widget__filter--active" : ""}`}
+            onClick={() => setFilter(f.value)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        className="widget-shell__icon-button"
+        onClick={() => setShowSettings((v) => !v)}
+        title="Esports data source settings"
+        aria-label="Esports data source settings"
+      >
+        ⚙
+      </button>
     </div>
   );
 
   return (
     <WidgetShell title="Calendar" loading={loading} error={error} onRefresh={refresh} headerActions={headerActions}>
+      {showSettings && (
+        <form className="calendar-widget__settings" onSubmit={handleSaveKey}>
+          <label htmlFor="pandascore-api-key">PandaScore API key (esports/CS2 matches)</label>
+          <p className="calendar-widget__settings-hint">
+            Free at{" "}
+            <a href="https://pandascore.co" target="_blank" rel="noreferrer">
+              pandascore.co
+            </a>
+            . Without a key, only general sports show up.
+          </p>
+          <div className="calendar-widget__settings-row">
+            <input
+              id="pandascore-api-key"
+              type="password"
+              value={keyDraft}
+              onChange={(e) => setKeyDraft(e.currentTarget.value)}
+              placeholder="Paste your API key"
+            />
+            <button type="submit">Save</button>
+          </div>
+        </form>
+      )}
+
+      {!pandaScoreKey && !showSettings && (
+        <p className="calendar-widget__hint">
+          No esports source configured -{" "}
+          <button type="button" className="calendar-widget__hint-link" onClick={() => setShowSettings(true)}>
+            add a PandaScore key
+          </button>{" "}
+          to see CS2 matches here too.
+        </p>
+      )}
+
       {events.length === 0 && <p className="calendar-widget__empty">Nothing upcoming.</p>}
       <ul className="calendar-widget__list">
         {events.map((event) => {
