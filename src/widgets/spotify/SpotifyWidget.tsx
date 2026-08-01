@@ -34,10 +34,10 @@ export function SpotifyWidget() {
   }, []);
 
   useEffect(() => {
-    if (player.state?.paused) return;
+    if (!player.state || player.state.paused) return;
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
-  }, [player.state?.paused]);
+  }, [player.state === null, player.state?.paused]);
 
   async function handleConnect() {
     setConnecting(true);

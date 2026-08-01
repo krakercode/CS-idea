@@ -3,6 +3,31 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- Spotify: playback still 404'd even after 0.1.3's retry logic - the real
+  bug was that `deviceId` gets cached once from the SDK's `ready` event and
+  can go stale later (the SDK's connection drops and re-establishes
+  without a clean `not_ready`, or the initial registration just hadn't
+  propagated yet), and a stale id 404s every request that targets it no
+  matter how many times it's retried. `transferAndPlay` now looks up the
+  *live* device id from `/me/player/devices` by name immediately before
+  every playback action instead of trusting a cached value.
+- Spotify: nothing stopped a re-click on a stuck "Play"/"Play all" button
+  from firing a whole new transfer+play sequence on top of one already in
+  flight - every playback action is now serialized (one at a time,
+  buttons disabled while busy) and every Spotify API call from the
+  frontend now has a 10s timeout, so a slow/hung request can't just pile
+  up indefinitely. This was the actual likely source of the reported wifi
+  slowdown, not the widget data polling (audited all of it - News/Stocks/
+  Calendar/Of the Day poll every 10min/60s/30min/1hr respectively, nothing
+  unreasonable there).
+- Minor: the Spotify Player view's progress-bar tick ran every second
+  forever once the widget mounted, even with nothing loaded - now only
+  runs while something's actually playing.
+
 ## [0.1.3] - 2026-07-31
 
 ### Changed

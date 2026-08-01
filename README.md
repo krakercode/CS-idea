@@ -423,13 +423,18 @@ anything.
     exists for the player, there's no reason to keep growing the Rust side
     for read-only browsing that has to be authenticated in the browser
     anyway for playback.
-  - Starting playback (`playTrackHere`/`playContextHere`) explicitly
-    transfers to JESSPR-EAST's device first rather than relying on
-    `/me/player/play`'s `device_id` param to do that implicitly, and
-    retries a `404` a couple of times with a short delay - a device that
-    just registered via the SDK's `ready` event isn't always immediately
-    targetable by the Web API yet, a known race in these integrations, not
-    a permanent failure.
+  - Starting playback (`playTrackHere`/`playContextHere`, both funnel
+    through `transferAndPlay`) explicitly transfers to JESSPR-EAST's
+    device first rather than relying on `/me/player/play`'s `device_id`
+    param to do that implicitly. That device id is looked up *fresh* from
+    `/me/player/devices` (matched by name) immediately before every
+    playback action, with a few retries - never trusted from the id cached
+    once at the SDK's `ready` event, which can go stale later (the SDK's
+    connection can drop and re-establish without a clean `not_ready`) and
+    404 every request that targets it regardless of retries. Only one
+    playback action can be in flight at a time (`playbackActionInFlight`)
+    and every request has a 10s timeout, so a stuck button can't be
+    re-clicked into a pile of overlapping/hanging requests.
   - **One-time setup for a fork/new Client ID**: create an app at
     [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard),
     add `http://127.0.0.1:14700/callback` as a Redirect URI, and put the

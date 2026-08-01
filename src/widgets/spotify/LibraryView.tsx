@@ -60,6 +60,7 @@ export function LibraryView({ deviceId, onActivate }: Props) {
   const [loading, setLoading] = useState(false);
 
   const [playingUri, setPlayingUri] = useState<string | null>(null);
+  const [collectionPlaying, setCollectionPlaying] = useState(false);
   const [playError, setPlayError] = useState<string | null>(null);
 
   const isSearching = query.trim().length > 0;
@@ -115,8 +116,10 @@ export function LibraryView({ deviceId, onActivate }: Props) {
     };
   }, [openCollection]);
 
+  const anyPlaybackBusy = playingUri !== null || collectionPlaying;
+
   async function handlePlayTrack(uri: string, contextUri?: string) {
-    if (!deviceId) return;
+    if (!deviceId || anyPlaybackBusy) return;
     onActivate();
     setPlayingUri(uri);
     setPlayError(null);
@@ -134,13 +137,16 @@ export function LibraryView({ deviceId, onActivate }: Props) {
   }
 
   async function handlePlayCollection(contextUri: string) {
-    if (!deviceId) return;
+    if (!deviceId || anyPlaybackBusy) return;
     onActivate();
+    setCollectionPlaying(true);
     setPlayError(null);
     try {
       await playContextHere(deviceId, contextUri);
     } catch (err) {
       setPlayError(err instanceof Error ? err.message : "Couldn't start playback.");
+    } finally {
+      setCollectionPlaying(false);
     }
   }
 
@@ -220,10 +226,10 @@ export function LibraryView({ deviceId, onActivate }: Props) {
                 type="button"
                 className="spotify-widget__library-play spotify-widget__library-play--wide"
                 onClick={() => handlePlayCollection(openCollection.contextUri)}
-                disabled={!deviceId}
+                disabled={!deviceId || anyPlaybackBusy}
                 title={deviceId ? "Play all" : "Player isn't ready yet"}
               >
-                ▶ Play all
+                {collectionPlaying ? "…" : "▶ Play all"}
               </button>
             </div>
           </div>
@@ -236,6 +242,7 @@ export function LibraryView({ deviceId, onActivate }: Props) {
               tracks={collectionTracks}
               deviceId={deviceId}
               playingUri={playingUri}
+              busy={collectionPlaying}
               onPlay={(uri) => handlePlayTrack(uri, openCollection.contextUri)}
             />
           )}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { loadSpotifySdk } from "./webPlaybackSdk";
-import { getAccessToken } from "./spotifyService";
+import { getAccessToken, PLAYER_NAME } from "./spotifyService";
 
 export interface PlayerTrack {
   name: string;
@@ -36,8 +36,6 @@ export interface UsePlayerResult {
    * unlock audio on browser engines with strict autoplay policies. */
   activateElement: () => void;
 }
-
-const PLAYER_NAME = "JESSPR-EAST";
 
 /**
  * Owns the Spotify Web Playback SDK's Player instance for as long as
