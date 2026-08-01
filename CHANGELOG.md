@@ -3,6 +3,18 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.1] - 2026-08-01
+
+### Fixed
+
+- Habits & Reminders: tasks could only be added or removed, not edited -
+  renaming one or changing its point value meant deleting it and starting
+  over. Each task now has an in-place edit (✎ next to it, matching the
+  existing add form's layout). Also added a generic `update()` to the
+  shared `itemListStore` helper this and Shortcuts/Entertainment
+  Centre/Of the Day's puzzle links all use, so the same fix is available
+  to those for free if they ever need it.
+
 ## [0.2.0] - 2026-08-01
 
 ### Added

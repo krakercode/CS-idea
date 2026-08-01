@@ -13,6 +13,7 @@ import {
   removeTask,
   syntheticHeartRate,
   toggleTaskCompletion,
+  updateTask,
   vitalityBand,
 } from "./habitsStore";
 import type { HabitTask, VitalityBand } from "./types";
@@ -67,6 +68,9 @@ export function HabitsWidget() {
   const [completedToday, setCompletedToday] = useState<string[]>(() => getTodayCompletedIds());
   const [nameDraft, setNameDraft] = useState("");
   const [pointsDraft, setPointsDraft] = useState("10");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editNameDraft, setEditNameDraft] = useState("");
+  const [editPointsDraft, setEditPointsDraft] = useState("");
 
   const vitality = getVitalityScore();
   const band = vitalityBand(vitality);
@@ -87,6 +91,19 @@ export function HabitsWidget() {
 
   function handleRemove(id: string) {
     setTasks(removeTask(id));
+    if (editingId === id) setEditingId(null);
+  }
+
+  function startEdit(task: HabitTask) {
+    setEditingId(task.id);
+    setEditNameDraft(task.name);
+    setEditPointsDraft(String(task.points));
+  }
+
+  function handleSaveEdit(e: FormEvent, id: string) {
+    e.preventDefault();
+    setTasks(updateTask(id, editNameDraft, Number(editPointsDraft)));
+    setEditingId(null);
   }
 
   const headerActions = (
@@ -115,6 +132,43 @@ export function HabitsWidget() {
           <ul className="habits-widget__list">
             {tasks.map((t) => {
               const done = completedToday.includes(t.id);
+
+              if (editingId === t.id) {
+                return (
+                  <li key={t.id} className="habits-widget__item">
+                    <form className="habits-widget__edit-form" onSubmit={(e) => handleSaveEdit(e, t.id)}>
+                      <input
+                        type="text"
+                        value={editNameDraft}
+                        onChange={(e) => setEditNameDraft(e.target.value)}
+                        className="habits-widget__input habits-widget__input--name"
+                        placeholder="Task name"
+                        autoFocus
+                      />
+                      <input
+                        type="number"
+                        min={1}
+                        value={editPointsDraft}
+                        onChange={(e) => setEditPointsDraft(e.target.value)}
+                        className="habits-widget__input habits-widget__input--points"
+                        aria-label="Points"
+                      />
+                      <button type="submit" className="habits-widget__add">
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        className="habits-widget__remove"
+                        onClick={() => setEditingId(null)}
+                        aria-label="Cancel edit"
+                      >
+                        ×
+                      </button>
+                    </form>
+                  </li>
+                );
+              }
+
               return (
                 <li key={t.id} className="habits-widget__item">
                   <label className="habits-widget__checkbox-row">
@@ -124,14 +178,24 @@ export function HabitsWidget() {
                     </span>
                     <span className="habits-widget__task-points">+{t.points}</span>
                   </label>
-                  <button
-                    type="button"
-                    className="habits-widget__remove"
-                    onClick={() => handleRemove(t.id)}
-                    aria-label={`Remove ${t.name}`}
-                  >
-                    ×
-                  </button>
+                  <div className="habits-widget__item-actions">
+                    <button
+                      type="button"
+                      className="habits-widget__edit"
+                      onClick={() => startEdit(t)}
+                      aria-label={`Edit ${t.name}`}
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      className="habits-widget__remove"
+                      onClick={() => handleRemove(t.id)}
+                      aria-label={`Remove ${t.name}`}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </li>
               );
             })}

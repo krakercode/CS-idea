@@ -11,6 +11,7 @@ export interface ItemListStore<T> {
   get(): T[];
   add(item: T): T[];
   remove(id: string): T[];
+  update(id: string, updater: (item: T) => T): T[];
 }
 
 export function createItemListStore<T extends { id: string }>(
@@ -53,5 +54,11 @@ export function createItemListStore<T extends { id: string }>(
     return next;
   }
 
-  return { get, add, remove };
+  function update(id: string, updater: (item: T) => T): T[] {
+    const next = get().map((item) => (item.id === id ? updater(item) : item));
+    save(next);
+    return next;
+  }
+
+  return { get, add, remove, update };
 }

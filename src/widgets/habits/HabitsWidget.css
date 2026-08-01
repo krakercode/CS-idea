@@ -71,6 +71,13 @@
   flex-shrink: 0;
 }
 
+.habits-widget__item-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
 .habits-widget__remove {
   background: none;
   border: none;
@@ -83,6 +90,27 @@
 
 .habits-widget__remove:hover {
   color: var(--color-negative);
+}
+
+.habits-widget__edit {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.habits-widget__edit:hover {
+  color: var(--color-accent);
+}
+
+.habits-widget__edit-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
 }
 
 .habits-widget__form {

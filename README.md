@@ -525,10 +525,15 @@ anything.
 - **Habits & Reminders** - a small gamified habit tracker
   (`widgets/habits/`), two views:
   - *Tasks* - add recurring things worth doing daily (medication, chores,
-    reading), each worth a point value; check them off as you do them.
-    Shows today's points and a lifetime running total (`habitsStore.ts`,
-    plain localStorage - a task list plus a per-day completion log, pruned
-    to the last 30 days since only a 7-day rolling window is ever needed).
+    reading), each worth a point value; check them off as you do them. Both
+    the name and point value are editable in place (✎ next to each task) -
+    editing a task's points reshapes what it's worth for every past
+    completion too, not just future ones, since the lifetime total is
+    summed from each task's *current* point value rather than one frozen
+    at the moment it was logged. Shows today's points and a lifetime
+    running total (`habitsStore.ts`, plain localStorage - a task list plus
+    a per-day completion log, pruned to the last 30 days since only a
+    7-day rolling window is ever needed).
   - *Vitals* - a "vitality" score (0-100), a rolling average of the last 7
     *completed* days' checked-off ratio (today doesn't count against you
     until it's actually over) - driving a schematic human silhouette and a

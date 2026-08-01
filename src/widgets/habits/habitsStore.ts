@@ -31,6 +31,18 @@ export function removeTask(id: string): HabitTask[] {
   return taskStore.remove(id);
 }
 
+/** Renames a task and/or changes its point value in place - past
+ * completions logged for it aren't touched, but `getLifetimePoints`
+ * always sums using each task's *current* point value, so editing points
+ * does shift what past completions are worth going forward (not frozen at
+ * the value they were logged at). */
+export function updateTask(id: string, name: string, points: number): HabitTask[] {
+  const trimmed = name.trim();
+  if (!trimmed) return taskStore.get();
+  const safePoints = Number.isFinite(points) && points > 0 ? Math.round(points) : DEFAULT_POINTS;
+  return taskStore.update(id, (task) => ({ ...task, name: trimmed, points: safePoints }));
+}
+
 type HabitLog = Record<string, string[]>;
 
 function todayIso(): string {
