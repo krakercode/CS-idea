@@ -209,11 +209,15 @@ Click the ⚙ button (fixed top-right) to open the settings panel.
 **Appearance** (top of the panel) - pick a theme, or build your own:
 
 - **Presets**: Dark (default), Light, Midnight (true black, OLED-friendly),
-  High Contrast, plus three "for testing" themes riffing on specific games'
-  visual identities (researched, not official palettes) - **Disco Elysium**
-  (muted, painterly sepia with a deep maroon accent), **Marathon** (Bungie's
-  2025 reboot - steely dark blue/black with neon pink and yellow), and
-  **Ultrakill** (black/white/blood-red/gold, high contrast).
+  High Contrast, plus five "for testing" themes riffing on specific games'/
+  films' visual identities (researched, not official palettes) - **Disco
+  Elysium** (muted, painterly sepia with a deep maroon accent), **Marathon**
+  (Bungie's 2025 reboot - steely dark blue/black with neon pink and
+  yellow), **Ultrakill** (black/white/blood-red/gold, high contrast),
+  **Alien** (the Nostromo/Sulaco's own computer terminals - phosphor-green
+  CRT text on near-black), and **Deus Ex: Human Revolution** (black and
+  gold, built directly from reference screenshots of the game's own menu/
+  augmentation UI).
 - **Custom**: picking it reveals a color picker for each of the 10 themeable
   roles (background, surface, border, text, accent, positive/negative/
   warning, etc.) - see `THEME_COLOR_FIELDS` in `src/styles/themes.ts` for
@@ -228,11 +232,11 @@ the rest. Applied on startup before the first render (see `main.tsx`) so
 there's no flash of the default theme before your saved one loads.
 Persisted to `localStorage` (key `dashboard-theme`).
 
-The three game-inspired presets go a step further than color: `applyTheme`
+These five game-inspired presets go a step further than color: `applyTheme`
 also stamps `data-theme-style="<preset id>"` on `<html>`, and
 `src/styles/theme-flair.css` uses that to layer on non-color UI touches
-scoped to just those three presets (Dark/Light/Midnight/High
-Contrast/Custom are untouched by this file - pure color, as before):
+scoped to just those presets (Dark/Light/Midnight/High Contrast/Custom are
+untouched by this file - pure color, as before):
 
 - **Disco Elysium** - a double border, italic serif titles, a small ◆
   before each widget name, and a subtle painterly vignette texture.
@@ -241,12 +245,22 @@ Contrast/Custom are untouched by this file - pure color, as before):
   text-shadow (the "glitch" look), and a scanline texture.
 - **Ultrakill** - diagonal hazard-stripe accents on the header bar, a bold
   red left-border stripe on every widget, and heavy uppercase sans titles.
+- **Alien** - a CRT scanline texture, monospace titles with a green glow
+  and a `>` terminal prompt prefix, and body text in the same monospace
+  font throughout.
+- **Deus Ex: Human Revolution** - angled/chamfered panel corners (a
+  `clip-path` polygon, same technique Marathon's notches use) with a gold
+  border traced along the cut via a layered pseudo-element, since
+  `clip-path` clips a plain border along with everything else; a subtle
+  gold radial glow in the corner; bold uppercase titles with a soft gold
+  text-shadow.
 
-This is a best-effort approximation from research (search results, art
-direction interviews), not a pixel-accurate recreation of any game's real
-UI - if you want closer fidelity, reference screenshots would help a lot
-more than another round of guessing from search snippets. Everything here
-targets `.widget-shell`, so any future theme can add its own flair the same
+Disco Elysium/Marathon/Ultrakill are a best-effort approximation from
+research (search results, art direction interviews), not a pixel-accurate
+recreation of any game's real UI. Alien and Deus Ex: Human Revolution were
+built directly against reference screenshots instead, so those are a
+closer match. Everything here targets `.widget-shell`, so any future theme
+can add its own flair the same
 way just by adding a new `[data-theme-style="..."]` block.
 
 Per widget, you can set:
@@ -508,6 +522,22 @@ anything.
   `tauri-plugin-shell`'s scoped `Command` API, since that's meant for a
   fixed, developer-declared allowlist of binaries the app itself wants to
   run, not "whatever the user points it at."
+- **Habits & Reminders** - a small gamified habit tracker
+  (`widgets/habits/`), two views:
+  - *Tasks* - add recurring things worth doing daily (medication, chores,
+    reading), each worth a point value; check them off as you do them.
+    Shows today's points and a lifetime running total (`habitsStore.ts`,
+    plain localStorage - a task list plus a per-day completion log, pruned
+    to the last 30 days since only a 7-day rolling window is ever needed).
+  - *Vitals* - a "vitality" score (0-100), a rolling average of the last 7
+    *completed* days' checked-off ratio (today doesn't count against you
+    until it's actually over) - driving a schematic human silhouette and a
+    heartbeat-style pulse trace that both shift color/shape across three
+    bands (stable/fatigued/critical, using the theme's own
+    positive/warning/negative colors so it re-themes automatically) as
+    vitality rises or falls. The heart rate number and pulse shape are
+    purely cosmetic flavor, not a real physiological model - explicitly
+    labeled as such in the widget itself.
 
 ## CS2 Analysis backend (Leetify)
 

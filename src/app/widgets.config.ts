@@ -101,6 +101,13 @@ export const WIDGETS: WidgetDefinition[] = [
       })),
     ),
   },
+  {
+    id: "habits",
+    label: "Habits & Reminders",
+    defaultColSpan: 1,
+    defaultRowSpan: 1,
+    Component: lazy(() => import("../widgets/habits/HabitsWidget").then((m) => ({ default: m.HabitsWidget }))),
+  },
 ];
 
 export function getDefaultSettings(): Record<string, WidgetUserSettings> {

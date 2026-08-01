@@ -81,3 +81,74 @@
   font-weight: 900;
   letter-spacing: 0.05em;
 }
+
+/* ---------- Alien: phosphor-green CRT terminal ---------- */
+
+[data-theme-style="alien"] .widget-shell {
+  border-radius: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(57, 255, 106, 0.05) 0px,
+    rgba(57, 255, 106, 0.05) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  box-shadow: inset 0 0 40px rgba(57, 255, 106, 0.08);
+}
+
+[data-theme-style="alien"] .widget-shell__header {
+  border-bottom: 1px solid var(--color-accent);
+}
+
+[data-theme-style="alien"] .widget-shell__title {
+  font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 6px var(--color-accent);
+}
+
+[data-theme-style="alien"] .widget-shell__title::before {
+  content: "\003E\0020"; /* "> " - a terminal prompt */
+  color: var(--color-accent);
+}
+
+[data-theme-style="alien"] .widget-shell__body {
+  font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
+}
+
+/* ---------- Deus Ex: Human Revolution: black and gold, angled UI ---------- */
+
+[data-theme-style="deus-ex"] .widget-shell {
+  position: relative;
+  border-radius: 0;
+  border: none;
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+  background-image: radial-gradient(circle at 100% 0%, rgba(217, 164, 65, 0.12) 0%, transparent 55%);
+}
+
+/* clip-path clips the shell's own border along with everything else, so
+   the diagonal cut edges would otherwise render borderless - this
+   pseudo-element fakes a border tracing the same angled outline instead,
+   via the standard "mask subtracts the inner region" CSS border trick. */
+[data-theme-style="deus-ex"] .widget-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+  background: var(--color-border);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+[data-theme-style="deus-ex"] .widget-shell__header {
+  border-bottom: 1px solid var(--color-accent);
+}
+
+[data-theme-style="deus-ex"] .widget-shell__title {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-shadow: 0 0 8px rgba(217, 164, 65, 0.5);
+}

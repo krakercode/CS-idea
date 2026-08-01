@@ -162,4 +162,41 @@ export const THEME_PRESETS: ThemePreset[] = [
       warning: "#ffd700",
     },
   },
+  {
+    id: "alien",
+    label: "Alien",
+    colors: {
+      // The Nostromo/Sulaco's own computer terminals - phosphor-green CRT
+      // text on near-black, amber as the secondary alert color.
+      bg: "#05080a",
+      surface: "#0d1410",
+      surfaceRaised: "#131f18",
+      border: "#1b4d2c",
+      text: "#8fffb0",
+      textMuted: "#4f8f63",
+      accent: "#39ff6a",
+      positive: "#39ff6a",
+      negative: "#ff3b30",
+      warning: "#ffb000",
+    },
+  },
+  {
+    id: "deus-ex",
+    label: "Deus Ex: Human Revolution",
+    colors: {
+      // Black and gold, from the game's own menu/augmentation-screen UI
+      // (reference screenshots provided) - warm dark bronze-black with a
+      // bright gold accent.
+      bg: "#0c0904",
+      surface: "#171008",
+      surfaceRaised: "#1f1710",
+      border: "#6b5423",
+      text: "#e8e1d3",
+      textMuted: "#a8956a",
+      accent: "#d9a441",
+      positive: "#7a9a5c",
+      negative: "#b3503f",
+      warning: "#d9822b",
+    },
+  },
 ];

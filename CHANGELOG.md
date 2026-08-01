@@ -3,6 +3,28 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.0] - 2026-08-01
+
+### Added
+
+- New **Habits & Reminders** widget - a small gamified habit tracker.
+  Add recurring tasks (medication, chores, reading, anything) worth a
+  point value, check them off daily, and watch a "vitality" score - a
+  rolling 7-day completion average - drive a schematic human silhouette
+  and a heartbeat-style pulse trace through three color-coded bands
+  (stable/fatigued/critical) as it rises or falls. Purely a flavor
+  gamification layer, explicitly labeled as such in the widget itself -
+  not a real health metric.
+- Two new theme presets, built directly against reference screenshots
+  (Deus Ex) or the source material's own well-known look (Alien) rather
+  than researched-from-search-snippets like the existing three game
+  presets: **Alien** (phosphor-green CRT terminal, à la the Nostromo/
+  Sulaco's own computers) and **Deus Ex: Human Revolution** (black and
+  gold, angled/chamfered panel corners). The Deus Ex corners needed a new
+  technique this codebase didn't have yet - `clip-path` clips a plain
+  border along with the rest of the shell, so a layered pseudo-element
+  fakes a border tracing the same angled cut instead.
+
 ## [0.1.6] - 2026-08-01
 
 ### Added
