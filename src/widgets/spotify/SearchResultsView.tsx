@@ -4,7 +4,6 @@ import type { AlbumSummary, ArtistSummary, PlaylistSummary, SearchResults } from
 
 interface Props {
   results: SearchResults | null;
-  deviceId: string | null;
   playingUri: string | null;
   onPlayTrack: (uri: string) => void;
   onOpenPlaylist: (p: PlaylistSummary) => void;
@@ -12,7 +11,7 @@ interface Props {
   onOpenArtist: (a: ArtistSummary) => void;
 }
 
-export function SearchResultsView({ results, deviceId, playingUri, onPlayTrack, onOpenPlaylist, onOpenAlbum, onOpenArtist }: Props) {
+export function SearchResultsView({ results, playingUri, onPlayTrack, onOpenPlaylist, onOpenAlbum, onOpenArtist }: Props) {
   if (!results) return null;
   const { tracks, albums, artists, playlists } = results;
   const nothing = tracks.length === 0 && albums.length === 0 && artists.length === 0 && playlists.length === 0;
@@ -23,7 +22,7 @@ export function SearchResultsView({ results, deviceId, playingUri, onPlayTrack, 
       {tracks.length > 0 && (
         <section>
           <h3 className="spotify-widget__section-title">Tracks</h3>
-          <TrackList tracks={tracks} deviceId={deviceId} playingUri={playingUri} onPlay={onPlayTrack} />
+          <TrackList tracks={tracks} playingUri={playingUri} onPlay={onPlayTrack} />
         </section>
       )}
       {playlists.length > 0 && (

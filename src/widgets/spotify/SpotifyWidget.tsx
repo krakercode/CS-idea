@@ -3,7 +3,7 @@ import { WidgetShell } from "../../shared/WidgetShell";
 import { ViewSwitcher } from "../../shared/ViewSwitcher";
 import { useWidgetViews } from "../../shared/useWidgetViews";
 import { getSpotifyProvider } from "./spotifyService";
-import { usePlayer } from "./usePlayer";
+import { useNowPlaying } from "./useNowPlaying";
 import { LibraryView } from "./LibraryView";
 import "./SpotifyWidget.css";
 
@@ -24,9 +24,9 @@ export function SpotifyWidget() {
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
   const { activeId, setActiveId, next: nextView, prev: prevView } = useWidgetViews(VIEWS);
-  const player = usePlayer(connected === true);
-  // Ticks once a second so the progress bar advances between the SDK's own
-  // player_state_changed events, which only fire on real transitions.
+  const player = useNowPlaying(connected === true);
+  // Ticks once a second so the progress bar advances between polls, which
+  // only happen every few seconds (see useNowPlaying.ts).
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -90,11 +90,14 @@ export function SpotifyWidget() {
       {connected && activeId === "player" && (
         <div className="spotify-widget__player">
           {player.error && <p className="spotify-widget__error">{player.error}</p>}
+          {player.controlError && <p className="spotify-widget__error">{player.controlError}</p>}
 
-          {!player.error && !player.ready && <p className="spotify-widget__empty">Setting up player…</p>}
+          {!player.error && player.loading && <p className="spotify-widget__empty">Checking what's playing…</p>}
 
-          {player.ready && !player.state?.track && !player.error && (
-            <p className="spotify-widget__empty">Nothing playing yet - pick a track from your Library.</p>
+          {!player.error && !player.loading && !player.state?.track && (
+            <p className="spotify-widget__empty">
+              Nothing playing - open Spotify on your phone, computer, or spotify.com, then control it from here.
+            </p>
           )}
 
           {player.state?.track && (
@@ -104,6 +107,7 @@ export function SpotifyWidget() {
               )}
               <div className="spotify-widget__track">{player.state.track.name}</div>
               <div className="spotify-widget__artist">{player.state.track.artist}</div>
+              <div className="spotify-widget__device">Playing on {player.state.deviceName}</div>
 
               <div className="spotify-widget__progress-bar" onClick={handleSeekClick}>
                 <div
@@ -129,9 +133,9 @@ export function SpotifyWidget() {
                 <input
                   type="range"
                   min={0}
-                  max={1}
-                  step={0.01}
-                  defaultValue={0.5}
+                  max={100}
+                  step={1}
+                  value={player.state.volumePercent ?? 50}
                   className="spotify-widget__volume"
                   onChange={(e) => player.setVolume(Number(e.target.value))}
                   aria-label="Volume"
@@ -146,9 +150,7 @@ export function SpotifyWidget() {
         </div>
       )}
 
-      {connected && activeId === "library" && (
-        <LibraryView deviceId={player.deviceId} onActivate={player.activateElement} />
-      )}
+      {connected && activeId === "library" && <LibraryView />}
     </WidgetShell>
   );
 }

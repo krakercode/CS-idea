@@ -377,36 +377,46 @@ anything.
     which otherwise never touches the main bundle) and backed by Rust
     (`src-tauri/src/leetify_client.rs`, `db.rs`, `suggestions.rs`) - see
     below.
-- **Spotify** - a real, fully functional in-app player, not just a
-  "now playing" readout. Auth is entirely on the Rust side
-  (`src-tauri/src/spotify.rs`) so the access/refresh tokens never sit in
-  localStorage. Uses Spotify's Authorization Code + PKCE flow (the right
-  fit for a desktop app - no client secret to embed): "Connect" opens the
-  system browser to Spotify's login page (via `tauri-plugin-opener`), a
+- **Spotify** - a remote control for whatever's already playing on Spotify
+  elsewhere (your phone, the real desktop app, spotify.com in a browser
+  tab), not a player that outputs audio itself. Auth is entirely on the
+  Rust side (`src-tauri/src/spotify.rs`) so the access/refresh tokens never
+  sit in localStorage. Uses Spotify's Authorization Code + PKCE flow (the
+  right fit for a desktop app - no client secret to embed): "Connect" opens
+  the system browser to Spotify's login page (via `tauri-plugin-opener`), a
   one-shot local server (`tauri-plugin-oauth`, pinned to port 14700)
   catches the redirect, and the code is exchanged for tokens which get
   stored via `tauri-plugin-store` (plaintext JSON in the app data dir -
   same tradeoff as the Leetify API key, not a real OS keychain). Access
   tokens are refreshed automatically when they're close to expiry.
-  - **Playback** is Spotify's [Web Playback
-    SDK](https://developer.spotify.com/documentation/web-playback-sdk)
-    (`webPlaybackSdk.ts`, loaded from `sdk.scdn.co` at runtime, not
-    bundled), which turns JESSPR-EAST itself into a Spotify Connect
-    device - real audio plays through the app, no separate Spotify client
-    needs to be running. **Requires Spotify Premium** (Free accounts get a
-    clear "needs Premium" message from the SDK, not a silent failure).
-    Needs a browser engine with working DRM/EME support to decode audio:
-    solid on Windows (WebView2/Chromium), genuinely unverified on macOS/
-    Linux (WebKit-based webviews have historically had gaps here) - if
-    playback silently does nothing on those, that's almost certainly why.
-  - `usePlayer.ts` owns the SDK's `Spotify.Player` instance and turns its
-    events into React state - transport controls (play/pause/skip,
-    click-to-seek, volume) call the SDK's own methods directly. A
-    `getOAuthToken` callback wired to a new `spotify_get_access_token`
-    command feeds it a live token: the **one** deliberate exception to
-    "tokens stay in Rust", since the SDK runs its own WebSocket connection
-    to Spotify from the browser context and has to authenticate that
-    itself.
+  - **Why remote control, not local playback**: an earlier version tried
+    turning JESSPR-EAST itself into a Spotify Connect device via the [Web
+    Playback SDK](https://developer.spotify.com/documentation/web-playback-sdk),
+    so audio would play through the app directly. It never actually
+    worked - the SDK needs Widevine DRM (EME) to decode audio locally, and
+    WebView2 (the webview Tauri uses on Windows) doesn't support it - an
+    open, unresolved [Microsoft feature
+    request](https://github.com/MicrosoftEdge/WebView2Feedback/issues/4828).
+    It's the same reason Electron apps can't run the SDK out of the box
+    either. The player *looked* like it was working (track/position/pause
+    all update correctly) because that state comes over Spotify's control
+    channel regardless of whether local audio decode succeeds - there's no
+    way for the app to even detect the failure. Given that's a platform
+    limitation rather than a bug, the widget instead controls whatever
+    Spotify device is already active via the plain Web API - which is
+    honestly a better fit for a dashboard widget anyway.
+  - `useNowPlaying.ts` polls `GET /me/player` every 5s for whatever's
+    currently active anywhere on the account (track, position, pause
+    state, volume, and which device it's on) and exposes transport actions
+    (`play`/`pause`/`next`/`previous`/`seek`/`volume`) that call Spotify's
+    Web API (`spotifyService.ts`) and immediately re-poll afterwards so the
+    UI reflects the change without waiting out the full interval. If
+    nothing's active anywhere, control calls 404 with `NO_ACTIVE_DEVICE`,
+    surfaced as "open Spotify on your phone, computer, or spotify.com,
+    then try again" rather than a raw error. Actually controlling playback
+    (not just viewing it) needs Spotify Premium - Free accounts get a 403
+    from Spotify's own API on any control call, same as the old SDK
+    approach would have.
   - The **Library** tab (`LibraryView.tsx`) is a small Spotify browser, not
     just a saved-tracks list: sub-tabs for Liked Songs / Playlists / Albums
     / Artists, a search box (debounced, searches tracks/albums/artists/
@@ -418,23 +428,19 @@ anything.
     since there's no context to continue into. Saved tracks still come
     from the Rust-side `spotify_saved_tracks` command (predates the rest);
     everything else (`spotifyService.ts`) is a direct `fetch()` to
-    Spotify's Web API with the exposed access token, same pattern as
-    `playTrackHere` - once that one exception to "tokens stay in Rust"
-    exists for the player, there's no reason to keep growing the Rust side
-    for read-only browsing that has to be authenticated in the browser
-    anyway for playback.
-  - Starting playback (`playTrackHere`/`playContextHere`, both funnel
-    through `transferAndPlay`) explicitly transfers to JESSPR-EAST's
-    device first rather than relying on `/me/player/play`'s `device_id`
-    param to do that implicitly. That device id is looked up *fresh* from
-    `/me/player/devices` (matched by name) immediately before every
-    playback action, with a few retries - never trusted from the id cached
-    once at the SDK's `ready` event, which can go stale later (the SDK's
-    connection can drop and re-establish without a clean `not_ready`) and
-    404 every request that targets it regardless of retries. Only one
-    playback action can be in flight at a time (`playbackActionInFlight`)
-    and every request has a 10s timeout, so a stuck button can't be
-    re-clicked into a pile of overlapping/hanging requests.
+    Spotify's Web API with a token exposed via `spotify_get_access_token` -
+    the one deliberate exception to "tokens stay in Rust", since these
+    calls need to be authenticated straight from the browser context and
+    there's no reason to grow the Rust side one command per endpoint for
+    that.
+  - Every playback-control call funnels through `controlPlayback`, which
+    only lets one request be in flight at a time (`playbackActionInFlight`)
+    and gives every request a 10s timeout, so a stuck button can't be
+    re-clicked into a pile of overlapping/hanging requests. A 401/403 from
+    any browsing call (`getSpotify`) throws a distinguishable
+    `SpotifyAuthError` instead of silently reading as "empty" - a token
+    missing a scope that was added after you last connected looks
+    identical to a genuinely empty playlist otherwise.
   - **One-time setup for a fork/new Client ID**: create an app at
     [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard),
     add `http://127.0.0.1:14700/callback` as a Redirect URI, and put the
@@ -442,11 +448,10 @@ anything.
     top of `spotify.rs`. Client IDs aren't secret, but they are
     per-developer-account, so a fork needs its own.
   - Scopes: `user-read-currently-playing` + `user-read-playback-state` +
-    `user-top-read` (for "Of the Day", see below); `streaming` +
-    `user-read-email` + `user-read-private` (required by the Web Playback
-    SDK to initialize) + `user-modify-playback-state` (actually
-    controlling it - play/pause/skip/seek/volume/transfer all `403`
-    without this one); `user-library-read` + `playlist-read-private` +
+    `user-top-read` (for "Of the Day", see below); `user-read-email` +
+    `user-read-private` + `user-modify-playback-state` (actually
+    controlling playback - play/pause/skip/seek/volume all `403` without
+    this one); `user-library-read` + `playlist-read-private` +
     `playlist-read-collaborative` + `user-follow-read` (Library tab's
     saved tracks/albums, playlists, and followed artists respectively).
     Reconnect once if you connected before any of these were added -

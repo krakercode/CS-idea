@@ -3,6 +3,34 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.5] - 2026-08-01
+
+### Changed
+
+- Spotify: the in-app player never actually worked - 0.1.4 fixed the 404s,
+  but the underlying reason audio never came out was that the Web Playback
+  SDK needs Widevine DRM to decode audio locally, and WebView2 (Tauri's
+  Windows webview) doesn't support it. Confirmed this is a real platform
+  gap (an open, unresolved Microsoft issue, the same reason Electron apps
+  can't run this SDK either), not something fixable with more retry/timeout
+  logic - the player *looked* like it was working because track/position/
+  pause state is pushed over Spotify's control channel independent of
+  whether local decode succeeds, so there was no way for the app to even
+  detect the failure. Pivoted the widget to remote-control an already-active
+  Spotify device (phone, desktop app, spotify.com) instead of trying to be
+  one - no DRM involved, works reliably everywhere, and is a better fit for
+  a dashboard widget than expecting it to be your speaker. Removes the SDK
+  entirely; `usePlayer.ts`/`webPlaybackSdk.ts` are gone, replaced by
+  `useNowPlaying.ts` polling `/me/player` every 5s.
+
+### Fixed
+
+- Spotify Library: a 403 from a scope missing on an old token (e.g. not
+  reconnecting since 0.1.3 added Library scopes) silently read as "No
+  playlists found" - identical to a genuinely empty library - since
+  `getSpotify()` treated every non-2xx response the same way. Now throws a
+  distinguishable error surfaced as "try reconnecting Spotify" instead.
+
 ## [0.1.4] - 2026-07-31
 
 ### Fixed

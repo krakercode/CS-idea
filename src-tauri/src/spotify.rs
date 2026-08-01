@@ -34,7 +34,7 @@ const REDIRECT_URI: &str = "http://127.0.0.1:14700/callback";
 // artists). Existing connections won't have any of these until reconnected
 // - Spotify requires a fresh consent grant to add scopes to a token,
 // there's no way to upgrade one in place.
-const SCOPES: &str = "user-read-currently-playing user-read-playback-state user-modify-playback-state user-top-read streaming user-read-email user-read-private user-library-read playlist-read-private playlist-read-collaborative user-follow-read";
+const SCOPES: &str = "user-read-currently-playing user-read-playback-state user-modify-playback-state user-top-read user-read-email user-read-private user-library-read playlist-read-private playlist-read-collaborative user-follow-read";
 
 /// Tokens are stored on disk via tauri-plugin-store (a JSON file in the
 /// app's data dir), the same mechanism already used for the Leetify API
@@ -334,13 +334,12 @@ pub async fn now_playing(app: &AppHandle, client: &reqwest::Client) -> Result<Op
 
 /// Hands a valid, freshly-refreshed access token to the frontend. This is a
 /// deliberate, narrow exception to every other function in this module
-/// keeping tokens Rust-side only: the Web Playback SDK (see
-/// SpotifyWidget.tsx) runs its own WebSocket connection to Spotify's
-/// playback service directly from the browser context and has to
-/// authenticate that connection itself via a `getOAuthToken` callback -
-/// there's no way to proxy that through Rust without reimplementing the
-/// SDK. The token is still short-lived and scoped to what the user already
-/// granted.
+/// keeping tokens Rust-side only: browsing (playlists/albums/artists/
+/// search) and remote-control (play/pause/skip/seek/volume - see
+/// spotifyService.ts) call Spotify's Web API directly from the browser
+/// context via plain `fetch()` rather than growing a one-to-one Rust
+/// command per endpoint. The token is still short-lived and scoped to what
+/// the user already granted.
 pub async fn get_access_token(app: &AppHandle, client: &reqwest::Client) -> Result<Option<String>, String> {
     ensure_fresh_token(app, client).await
 }

@@ -8,15 +8,16 @@ import type { AlbumSummary, ArtistSummary, PlaylistSummary, SavedTrack, SearchRe
  * page and resolves once the redirect's been caught and tokens saved.
  *
  * Everything below `getAccessToken` is NOT part of the SpotifyProvider
- * abstraction - it's specific to the Web Playback SDK integration
- * (usePlayer.ts, LibraryView.tsx), which needs a real access token in the
- * browser context (see spotify.rs::get_access_token's doc comment for why
- * that's a deliberate, narrow exception). Once that exception exists,
- * browsing endpoints (playlists/albums/artists/search) are plain fetch()
- * calls straight from here rather than one-to-one Rust command wrappers -
- * `saved_tracks` stayed in Rust from before this was the pattern, but
+ * abstraction - it's plain fetch() calls against Spotify's Web API,
+ * straight from here rather than one-to-one Rust command wrappers
+ * (`saved_tracks` stayed in Rust from before this was the pattern, but
  * there's no reason to keep growing the Rust side for read-only browsing
- * that has to end up authenticated in the browser anyway for playback.
+ * and remote-control calls that need a browser-side token anyway - see
+ * spotify.rs::get_access_token's doc comment for why exposing one is a
+ * deliberate, narrow exception). Playback here always remote-controls
+ * whatever Spotify device is already active (phone, desktop app, a browser
+ * tab) rather than this app hosting its own - see `NoActiveDeviceError`'s
+ * doc comment for why.
  */
 class RealSpotifyProvider implements SpotifyProvider {
   async isConnected(): Promise<boolean> {
@@ -52,11 +53,6 @@ export async function getSavedTracks(limit: number, offset: number): Promise<Sav
 
 const SPOTIFY_API = "https://api.spotify.com/v1";
 
-/** Must match the `name` the SDK is initialized with (usePlayer.ts) -
- * `findLiveDeviceId` below matches on this to find our device in Spotify's
- * live device list. */
-export const PLAYER_NAME = "JESSPR-EAST";
-
 // No timeout at all on a fetch() call means a slow/unresponsive Spotify API
 // response just hangs indefinitely - and every hung request from a user
 // impatiently re-clicking "Play" stacks up as another open connection.
@@ -73,114 +69,154 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
   }
 }
 
-interface RawDevice {
-  id: string;
-  name: string;
-}
-
-// A device only just registered via the Web Playback SDK's `ready` event
-// isn't always immediately visible to the Web API yet (a real, observed
-// cause of "couldn't switch playback here" 404s), and separately, a
-// `deviceId` cached from that event can go stale later if the SDK's
-// connection drops and re-establishes without us noticing - a stale id
-// 404s every single request that targets it, no matter how many times
-// that request is retried. Looking the live id up fresh right before each
-// playback action - by name, not by trusting a cached value - avoids both
-// problems at once. Retries the lookup itself (not the play/transfer
-// calls) since that's what actually needs time to catch up.
-const DEVICE_LOOKUP_RETRY_DELAYS_MS = [0, 400, 900, 1500];
-
-async function findLiveDeviceId(token: string): Promise<string | null> {
-  for (const delay of DEVICE_LOOKUP_RETRY_DELAYS_MS) {
-    if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
-    const response = await fetchWithTimeout(`${SPOTIFY_API}/me/player/devices`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (response.ok) {
-      const data = (await response.json()) as { devices: RawDevice[] };
-      const match = data.devices.find((d) => d.name === PLAYER_NAME);
-      if (match) return match.id;
-    }
+/** Thrown when a playback-control call 404s because Spotify has no active
+ * device at all (`NO_ACTIVE_DEVICE`) - this app doesn't host its own
+ * playback device (see the README's Spotify section for why: the Web
+ * Playback SDK needs Widevine DRM to actually decode audio, which Tauri's
+ * webview doesn't support), so every control call here remote-controls
+ * whatever's already active - your phone, a desktop app, spotify.com in a
+ * browser tab. If nothing's active, Spotify has nowhere to route it. */
+export class NoActiveDeviceError extends Error {
+  constructor() {
+    super("Nothing's active on Spotify right now - open Spotify on your phone, computer, or spotify.com, then try again.");
+    this.name = "NoActiveDeviceError";
   }
-  return null;
 }
 
-// Prevents overlapping playback requests entirely - a user re-clicking a
-// broken "Play"/"Play all" button out of frustration used to fire a fresh
-// transfer+play sequence on every click with nothing stopping them from
-// piling up concurrently, which is both wasted network traffic and a good
-// way to make the underlying problem harder to diagnose (racing transfer
-// calls can plausibly cause their own spurious 404s). One playback action
-// at a time, full stop.
+// Prevents overlapping playback-control requests - a user re-clicking a
+// slow-to-respond "Play"/"Play all" button out of frustration used to fire
+// a fresh request on every click with nothing stopping them from piling up
+// concurrently. One control action at a time, full stop.
 let playbackActionInFlight = false;
 
-/** Makes this app's Web Playback SDK device the active one and starts
- * playback with the given request body - plain browser fetch() against
- * Spotify's Web API, same as the SDK's own examples do it, no Rust command
- * involved. Explicitly transfers playback to the device first rather than
- * relying on `/me/player/play`'s own `device_id` param to do that
- * implicitly - in practice that's the more reliable order and matches
- * Spotify's own Web Playback SDK examples. */
-async function transferAndPlay(body: Record<string, unknown>): Promise<void> {
+async function controlPlayback(path: string, init: RequestInit): Promise<void> {
   if (playbackActionInFlight) {
     throw new Error("Still working on the last playback request - give it a moment.");
   }
   playbackActionInFlight = true;
-
   try {
     const token = await getAccessToken();
     if (!token) throw new Error("Not connected to Spotify.");
 
-    const liveDeviceId = await findLiveDeviceId(token);
-    if (!liveDeviceId) {
-      throw new Error("Player isn't showing up as an active Spotify device right now - try reconnecting Spotify.");
-    }
-
-    const transferResponse = await fetchWithTimeout(`${SPOTIFY_API}/me/player`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ device_ids: [liveDeviceId], play: false }),
+    const response = await fetchWithTimeout(`${SPOTIFY_API}${path}`, {
+      ...init,
+      headers: { ...init.headers, Authorization: `Bearer ${token}` },
     });
-    if (!transferResponse.ok && transferResponse.status !== 204) {
-      throw new Error(`Spotify couldn't switch playback here (status ${transferResponse.status}).`);
-    }
-
-    const playResponse = await fetchWithTimeout(`${SPOTIFY_API}/me/player/play?device_id=${encodeURIComponent(liveDeviceId)}`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!playResponse.ok && playResponse.status !== 204) {
-      throw new Error(`Spotify couldn't start playback (status ${playResponse.status}).`);
+    if (response.status === 404) throw new NoActiveDeviceError();
+    if (!response.ok && response.status !== 204) {
+      throw new Error(`Spotify couldn't do that (status ${response.status}).`);
     }
   } finally {
     playbackActionInFlight = false;
   }
 }
 
-/** Plays a single track by URI - used for "Liked Songs" and search-result
- * tracks, which aren't part of any browsable context. `deviceId` is only
- * used as a fast client-side check (no point making any network call if
- * the SDK never even reported `ready`) - the actual playback calls always
- * look up a fresh device id themselves, see `transferAndPlay`. */
-export async function playTrackHere(deviceId: string | null, uri: string): Promise<void> {
-  if (!deviceId) throw new Error("Player isn't ready yet.");
-  await transferAndPlay({ uris: [uri] });
+/** Plays a single track by URI on whatever Spotify device is currently
+ * active - used for "Liked Songs" and search-result tracks, which aren't
+ * part of any browsable context. */
+export async function playTrackHere(uri: string): Promise<void> {
+  await controlPlayback("/me/player/play", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ uris: [uri] }),
+  });
 }
 
-/** Plays a playlist/album/artist as a context, optionally starting from a
- * specific track within it (`offsetUri`) - unlike `playTrackHere`, this
- * lets Spotify continue naturally into the rest of the playlist/album
- * afterwards instead of stopping after one track. */
-export async function playContextHere(deviceId: string | null, contextUri: string, offsetUri?: string): Promise<void> {
-  if (!deviceId) throw new Error("Player isn't ready yet.");
-  await transferAndPlay(offsetUri ? { context_uri: contextUri, offset: { uri: offsetUri } } : { context_uri: contextUri });
+/** Plays a playlist/album/artist as a context on the active device,
+ * optionally starting from a specific track within it (`offsetUri`) -
+ * unlike `playTrackHere`, this lets Spotify continue naturally into the
+ * rest of the playlist/album afterwards instead of stopping after one
+ * track. */
+export async function playContextHere(contextUri: string, offsetUri?: string): Promise<void> {
+  await controlPlayback("/me/player/play", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(offsetUri ? { context_uri: contextUri, offset: { uri: offsetUri } } : { context_uri: contextUri }),
+  });
+}
+
+export async function pausePlayback(): Promise<void> {
+  await controlPlayback("/me/player/pause", { method: "PUT" });
+}
+
+export async function resumePlayback(): Promise<void> {
+  await controlPlayback("/me/player/play", { method: "PUT" });
+}
+
+export async function skipToNext(): Promise<void> {
+  await controlPlayback("/me/player/next", { method: "POST" });
+}
+
+export async function skipToPrevious(): Promise<void> {
+  await controlPlayback("/me/player/previous", { method: "POST" });
+}
+
+export async function seekTo(positionMs: number): Promise<void> {
+  await controlPlayback(`/me/player/seek?position_ms=${Math.round(positionMs)}`, { method: "PUT" });
+}
+
+export async function setPlaybackVolume(volumePercent: number): Promise<void> {
+  await controlPlayback(`/me/player/volume?volume_percent=${Math.round(volumePercent)}`, { method: "PUT" });
+}
+
+export interface NowPlaying {
+  paused: boolean;
+  positionMs: number;
+  durationMs: number;
+  volumePercent: number | null;
+  deviceName: string;
+  track: { name: string; artist: string; albumArtUrl?: string } | null;
+  /** Client timestamp (ms) this snapshot was fetched at - `positionMs` only
+   * reflects the moment of the poll, so the UI ticks position forward
+   * locally between polls using this. */
+  timestamp: number;
+}
+
+/** The user's current playback state, remote-controlled device and all -
+ * a plain GET against `/me/player`, polled from `useNowPlaying`. Spotify
+ * returns 204 with no body when nothing's active anywhere, which reads
+ * fine as `null` here rather than an error. */
+export async function getNowPlaying(): Promise<NowPlaying | null> {
+  const token = await getAccessToken();
+  if (!token) return null;
+  const response = await fetchWithTimeout(`${SPOTIFY_API}/me/player`, { headers: { Authorization: `Bearer ${token}` } });
+  if (response.status === 401 || response.status === 403) throw new SpotifyAuthError();
+  if (response.status === 204 || !response.ok) return null;
+  const data = (await response.json()) as {
+    is_playing: boolean;
+    progress_ms: number | null;
+    device: { name: string; volume_percent: number | null };
+    item: RawTrack | null;
+  };
+  return {
+    paused: !data.is_playing,
+    positionMs: data.progress_ms ?? 0,
+    durationMs: data.item?.duration_ms ?? 0,
+    volumePercent: data.device.volume_percent,
+    deviceName: data.device.name,
+    track: data.item ? { name: data.item.name, artist: data.item.artists.map((a) => a.name).join(", "), albumArtUrl: data.item.album?.images[0]?.url } : null,
+    timestamp: Date.now(),
+  };
+}
+
+/** Thrown by `getSpotify` on 401/403 - specifically means the current token
+ * doesn't have permission for this call (most commonly: it was granted
+ * before a scope this endpoint needs was added, and needs a reconnect to
+ * pick it up), as opposed to a transient failure. Kept distinguishable so
+ * callers can show "reconnect Spotify" instead of a misleading "nothing
+ * here" for what's actually a permissions problem. */
+export class SpotifyAuthError extends Error {
+  constructor() {
+    super("Spotify says this isn't authorized - try disconnecting and reconnecting Spotify to pick up the latest permissions.");
+    this.name = "SpotifyAuthError";
+  }
 }
 
 async function getSpotify<T>(path: string): Promise<T | null> {
   const token = await getAccessToken();
   if (!token) return null;
   const response = await fetchWithTimeout(`${SPOTIFY_API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (response.status === 401 || response.status === 403) throw new SpotifyAuthError();
   if (!response.ok) return null;
   return (await response.json()) as T;
 }
@@ -199,6 +235,7 @@ interface RawAlbum {
 interface RawTrack {
   uri: string;
   name: string;
+  duration_ms: number;
   artists: RawArtist[];
   album: RawAlbum;
 }

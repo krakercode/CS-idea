@@ -1,7 +1,7 @@
 {
   "name": "jesspr-east",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -26,7 +26,6 @@
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@types/spotify-web-playback-sdk": "^0.1.19",
     "@vitejs/plugin-react": "^6.0.4",
     "typescript": "^5.9.3",
     "vite": "^8.1.5"

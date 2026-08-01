@@ -35,16 +35,7 @@ interface OpenCollection {
   loadTracks: () => Promise<SavedTrack[]>;
 }
 
-interface Props {
-  /** Play buttons are disabled until the Web Playback SDK device is ready -
-   * there's nowhere to route playback to until then. */
-  deviceId: string | null;
-  /** Called synchronously on a play click, before the async playback
-   * request - see usePlayer.ts's activateElement doc comment. */
-  onActivate: () => void;
-}
-
-export function LibraryView({ deviceId, onActivate }: Props) {
+export function LibraryView() {
   const [subTab, setSubTab] = useState<SubTabId>("tracks");
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
@@ -58,6 +49,7 @@ export function LibraryView({ deviceId, onActivate }: Props) {
   const [albums, setAlbums] = useState<AlbumSummary[] | null>(null);
   const [artists, setArtists] = useState<ArtistSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [libraryError, setLibraryError] = useState<string | null>(null);
 
   const [playingUri, setPlayingUri] = useState<string | null>(null);
   const [collectionPlaying, setCollectionPlaying] = useState(false);
@@ -72,11 +64,12 @@ export function LibraryView({ deviceId, onActivate }: Props) {
       return;
     }
     setSearching(true);
+    setLibraryError(null);
     const id = setTimeout(() => {
-      searchSpotify(query).then((results) => {
-        setSearchResults(results);
-        setSearching(false);
-      });
+      searchSpotify(query)
+        .then((results) => setSearchResults(results))
+        .catch((err) => setLibraryError(err instanceof Error ? err.message : "Couldn't search."))
+        .finally(() => setSearching(false));
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [query, isSearching]);
@@ -85,6 +78,7 @@ export function LibraryView({ deviceId, onActivate }: Props) {
     if (isSearching || openCollection) return;
     let cancelled = false;
     setLoading(true);
+    setLibraryError(null);
     const load =
       subTab === "tracks"
         ? getSavedTracks(PAGE_SIZE, 0).then((r) => !cancelled && setTracks(r ?? []))
@@ -93,7 +87,12 @@ export function LibraryView({ deviceId, onActivate }: Props) {
           : subTab === "albums"
             ? getSavedAlbums().then((r) => !cancelled && setAlbums(r))
             : getFollowedArtists().then((r) => !cancelled && setArtists(r));
-    load.finally(() => !cancelled && setLoading(false));
+    load
+      .catch((err) => {
+        if (cancelled) return;
+        setLibraryError(err instanceof Error ? err.message : "Couldn't load this.");
+      })
+      .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
@@ -106,11 +105,18 @@ export function LibraryView({ deviceId, onActivate }: Props) {
     }
     let cancelled = false;
     setLoading(true);
-    openCollection.loadTracks().then((result) => {
-      if (cancelled) return;
-      setCollectionTracks(result);
-      setLoading(false);
-    });
+    setLibraryError(null);
+    openCollection
+      .loadTracks()
+      .then((result) => {
+        if (cancelled) return;
+        setCollectionTracks(result);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLibraryError(err instanceof Error ? err.message : "Couldn't load this.");
+      })
+      .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
@@ -119,15 +125,14 @@ export function LibraryView({ deviceId, onActivate }: Props) {
   const anyPlaybackBusy = playingUri !== null || collectionPlaying;
 
   async function handlePlayTrack(uri: string, contextUri?: string) {
-    if (!deviceId || anyPlaybackBusy) return;
-    onActivate();
+    if (anyPlaybackBusy) return;
     setPlayingUri(uri);
     setPlayError(null);
     try {
       if (contextUri) {
-        await playContextHere(deviceId, contextUri, uri);
+        await playContextHere(contextUri, uri);
       } else {
-        await playTrackHere(deviceId, uri);
+        await playTrackHere(uri);
       }
     } catch (err) {
       setPlayError(err instanceof Error ? err.message : "Couldn't start playback.");
@@ -137,12 +142,11 @@ export function LibraryView({ deviceId, onActivate }: Props) {
   }
 
   async function handlePlayCollection(contextUri: string) {
-    if (!deviceId || anyPlaybackBusy) return;
-    onActivate();
+    if (anyPlaybackBusy) return;
     setCollectionPlaying(true);
     setPlayError(null);
     try {
-      await playContextHere(deviceId, contextUri);
+      await playContextHere(contextUri);
     } catch (err) {
       setPlayError(err instanceof Error ? err.message : "Couldn't start playback.");
     } finally {
@@ -196,10 +200,11 @@ export function LibraryView({ deviceId, onActivate }: Props) {
       {isSearching ? (
         searching ? (
           <p className="spotify-widget__empty">Searching…</p>
+        ) : libraryError ? (
+          <p className="spotify-widget__error">{libraryError}</p>
         ) : (
           <SearchResultsView
             results={searchResults}
-            deviceId={deviceId}
             playingUri={playingUri}
             onPlayTrack={(uri) => handlePlayTrack(uri)}
             onOpenPlaylist={openPlaylist}
@@ -226,21 +231,21 @@ export function LibraryView({ deviceId, onActivate }: Props) {
                 type="button"
                 className="spotify-widget__library-play spotify-widget__library-play--wide"
                 onClick={() => handlePlayCollection(openCollection.contextUri)}
-                disabled={!deviceId || anyPlaybackBusy}
-                title={deviceId ? "Play all" : "Player isn't ready yet"}
+                disabled={anyPlaybackBusy}
+                title="Play all"
               >
                 {collectionPlaying ? "…" : "▶ Play all"}
               </button>
             </div>
           </div>
           {loading && <p className="spotify-widget__empty">Loading…</p>}
-          {!loading && collectionTracks && collectionTracks.length === 0 && (
+          {!loading && libraryError && <p className="spotify-widget__error">{libraryError}</p>}
+          {!loading && !libraryError && collectionTracks && collectionTracks.length === 0 && (
             <p className="spotify-widget__empty">Nothing here.</p>
           )}
-          {!loading && collectionTracks && collectionTracks.length > 0 && (
+          {!loading && !libraryError && collectionTracks && collectionTracks.length > 0 && (
             <TrackList
               tracks={collectionTracks}
-              deviceId={deviceId}
               playingUri={playingUri}
               busy={collectionPlaying}
               onPlay={(uri) => handlePlayTrack(uri, openCollection.contextUri)}
@@ -264,17 +269,19 @@ export function LibraryView({ deviceId, onActivate }: Props) {
 
           {loading && <p className="spotify-widget__empty">Loading…</p>}
 
-          {!loading && subTab === "tracks" && tracks && tracks.length === 0 && (
+          {!loading && libraryError && <p className="spotify-widget__error">{libraryError}</p>}
+
+          {!loading && !libraryError && subTab === "tracks" && tracks && tracks.length === 0 && (
             <p className="spotify-widget__empty">No saved tracks found.</p>
           )}
-          {!loading && subTab === "tracks" && tracks && tracks.length > 0 && (
-            <TrackList tracks={tracks} deviceId={deviceId} playingUri={playingUri} onPlay={(uri) => handlePlayTrack(uri)} />
+          {!loading && !libraryError && subTab === "tracks" && tracks && tracks.length > 0 && (
+            <TrackList tracks={tracks} playingUri={playingUri} onPlay={(uri) => handlePlayTrack(uri)} />
           )}
 
-          {!loading && subTab === "playlists" && playlists && playlists.length === 0 && (
+          {!loading && !libraryError && subTab === "playlists" && playlists && playlists.length === 0 && (
             <p className="spotify-widget__empty">No playlists found.</p>
           )}
-          {!loading && subTab === "playlists" && playlists && playlists.length > 0 && (
+          {!loading && !libraryError && subTab === "playlists" && playlists && playlists.length > 0 && (
             <div className="spotify-widget__grid">
               {playlists.map((p) => (
                 <MediaCard key={p.id} imageUrl={p.imageUrl} title={p.name} subtitle={`${p.trackCount} tracks`} onClick={() => openPlaylist(p)} />
@@ -282,10 +289,10 @@ export function LibraryView({ deviceId, onActivate }: Props) {
             </div>
           )}
 
-          {!loading && subTab === "albums" && albums && albums.length === 0 && (
+          {!loading && !libraryError && subTab === "albums" && albums && albums.length === 0 && (
             <p className="spotify-widget__empty">No saved albums found.</p>
           )}
-          {!loading && subTab === "albums" && albums && albums.length > 0 && (
+          {!loading && !libraryError && subTab === "albums" && albums && albums.length > 0 && (
             <div className="spotify-widget__grid">
               {albums.map((a) => (
                 <MediaCard key={a.id} imageUrl={a.imageUrl} title={a.name} subtitle={a.artist} onClick={() => openAlbum(a)} />
@@ -293,10 +300,10 @@ export function LibraryView({ deviceId, onActivate }: Props) {
             </div>
           )}
 
-          {!loading && subTab === "artists" && artists && artists.length === 0 && (
+          {!loading && !libraryError && subTab === "artists" && artists && artists.length === 0 && (
             <p className="spotify-widget__empty">No followed artists found.</p>
           )}
-          {!loading && subTab === "artists" && artists && artists.length > 0 && (
+          {!loading && !libraryError && subTab === "artists" && artists && artists.length > 0 && (
             <div className="spotify-widget__grid">
               {artists.map((a) => (
                 <MediaCard key={a.id} imageUrl={a.imageUrl} title={a.name} round onClick={() => openArtist(a)} />

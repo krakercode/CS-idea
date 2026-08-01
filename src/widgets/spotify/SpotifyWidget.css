@@ -59,6 +59,13 @@
   margin-top: 2px;
 }
 
+.spotify-widget__device {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+  opacity: 0.7;
+}
+
 .spotify-widget__progress-bar {
   height: 4px;
   background: var(--color-border);
