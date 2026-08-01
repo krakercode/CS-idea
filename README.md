@@ -71,6 +71,11 @@ apps check for and apply new versions themselves via Tauri's
 update, or automatically - nothing currently triggers a background check on
 launch, so today it's a manual "Check for updates" click).
 
+Windows-only, deliberately - this app only runs on the maintainer's Windows
+machine, so building/signing macOS and Linux installers nobody uses was
+wasted CI time. `tauri.conf.json`'s `bundle.targets` is `"nsis"` and the
+release workflow runs a single `windows-latest` job (no build matrix).
+
 ### Cutting a release
 
 1. Bump the version in **both** `package.json` and `src-tauri/tauri.conf.json`
@@ -80,10 +85,12 @@ launch, so today it's a manual "Check for updates" click).
    git tag app-v0.2.0
    git push origin app-v0.2.0
    ```
-3. The workflow builds a Windows installer (.msi/.exe), macOS installers
-   (.dmg, both Intel and Apple Silicon), and Linux packages
-   (.deb/.rpm/.AppImage), and opens a **draft** GitHub Release with all of
-   them attached plus a signed `latest.json` update manifest.
+   (or trigger `release.yml` manually via Actions -> Release -> Run
+   workflow, filling in the same tag name - useful if a direct tag push
+   isn't possible in your environment).
+3. The workflow builds a Windows NSIS installer (.exe) and opens a
+   **draft** GitHub Release with it attached plus a signed `latest.json`
+   update manifest.
 4. Review the draft, then publish it. Existing installs pick up the new
    version the next time they check - the updater endpoint always points at
    this repo's *latest published* release, which GitHub only resolves to a
@@ -120,29 +127,20 @@ installer instead.
 
 ### What this doesn't cover
 
-- **OS code-signing/notarization** is unrelated to the update-signing above
-  and isn't set up - unsigned Windows/macOS builds still show a SmartScreen
-  or Gatekeeper warning on first install (see below). That needs a paid
-  code-signing certificate (Windows) or an Apple Developer account (macOS
-  notarization); tauri-action supports both once you have them.
-- Auto-update covers Windows, macOS, and the Linux `.AppImage` target.
-  `.deb`/`.rpm` installs are expected to be updated via the distro's own
-  package manager instead.
+- **OS code-signing** is unrelated to the update-signing above and isn't
+  set up - an unsigned build still shows a SmartScreen "unrecognized app"
+  warning on first install (see below). That needs a paid Windows
+  code-signing certificate; tauri-action supports it once you have one.
 
 ### How installing this looks on a PC
 
-- **Windows**: run the `.msi` or `.exe` (NSIS) installer like any other app.
-  Since it isn't code-signed, SmartScreen shows an "unrecognized app"
-  warning the first time - click "More info" -> "Run anyway".
-- **macOS**: open the `.dmg` and drag the app to Applications. Since it
-  isn't notarized, Gatekeeper blocks the first launch - right-click the
-  app -> Open, then confirm.
-- **Linux**: install the `.deb`/`.rpm` with your package manager, or make
-  the `.AppImage` executable and run it directly.
+Run the `.exe` (NSIS) installer like any other app. Since it isn't
+code-signed, SmartScreen shows an "unrecognized app" warning the first
+time - click "More info" -> "Run anyway".
 
-No separate runtime to install on any platform - Tauri uses the OS's
-built-in webview (WebView2/WKWebView/WebKitGTK) instead of bundling
-Chromium, so these installers stay small (typically 5-15 MB).
+No separate runtime to install - Tauri uses Windows' built-in WebView2
+instead of bundling Chromium, so the installer stays small (typically
+5-15 MB).
 
 ## Architecture
 
@@ -466,14 +464,14 @@ anything.
   (`src-tauri/src/system_health.rs`, using the `sysinfo` crate). Color
   thresholds (green/yellow/red at 70%/90%) are in `SystemHealthWidget.tsx`.
 - **Quotes** - a small local, curated set (`widgets/quotes/data/quotes.ts`),
-  currently three sources: Napoleon Bonaparte, Vladimir Lenin, and Volition
-  (a skill/inner voice from Disco Elysium, ZA/UM 2019 - fictional, and
-  labeled as such in the UI so it's never presented as a historical
-  quote). Filter chips (one per speaker) narrow which pool it draws from;
-  the shell's ⟳ button and a 10-minute auto-rotate both just pick a new
-  random quote from that pool - see "Sourcing the quotes" below for how
-  these were chosen and verified.
-- **Of the Day** - three keyless-where-possible daily picks, tabbed with the
+  around twenty sources spanning science, philosophy, literature, computing,
+  civil rights, and art, plus Volition (a skill/inner voice from Disco
+  Elysium, ZA/UM 2019 - fictional, and labeled as such in the UI so it's
+  never presented as a historical quote). Filter chips (one per speaker)
+  narrow which pool it draws from; the shell's ⟳ button and a 10-minute
+  auto-rotate both just pick a new random quote from that pool - see
+  "Sourcing the quotes" below for how these were chosen and verified.
+- **Of the Day** - five keyless-where-possible daily picks, tabbed with the
   same `ViewSwitcher` as CS2 Database (`src-tauri/src/of_the_day.rs`):
   - *Article* and *Picture* - Wikipedia's featured article and picture of
     the day, both from Wikimedia's public Feed REST API in one request, no
@@ -485,6 +483,31 @@ anything.
     top tracks (needs Spotify connected and the `user-top-read` scope).
     The pick is stable for the whole day (seeded off the date), not random
     on every refresh. Empty/prompts to connect if Spotify isn't linked.
+  - *Recipe* - via TheMealDB (`recipe_of_the_day.rs`, keyless): a
+    vegan/non-vegan toggle picks which category rotation it draws from
+    (`Vegan` only vs. a fixed set of ordinary categories - TheMealDB's other
+    categories, including "Vegetarian", aren't reliably free of animal
+    products, so the non-vegan side doesn't try to guess), then a
+    same-day-stable meal from that category via the same seeded-pick
+    pattern as Song. Shows the full ingredient list and instructions.
+  - *Games* - not a daily pick like the others, just a curated, user-editable
+    list of links to actual daily puzzle games (Wordle, Worldle, TimeGuessr,
+    Pokedoku, and a couple more by default) via the shared `itemListStore`
+    pattern - add/remove your own, same as Shortcuts below.
+- **Shortcuts** - a plain user-managed list of name+URL bookmarks, opened
+  via `<ExternalLink>` in the OS browser. `shortcutsStore.ts` uses the
+  shared `src/shared/itemListStore.ts` helper (capped, deduped,
+  localStorage-persisted) - the same helper backs Of the Day's Games list.
+- **Entertainment Centre** - launches a local executable (an emulator, a
+  game, anything) with optional arguments straight from the dashboard,
+  instead of digging through menus first. Add a shortcut (name, path,
+  optional args) - a native "Browse..." file picker (`tauri-plugin-dialog`)
+  fills in the path for you - then hit Launch. Backed by a plain Rust
+  command, `launch_shortcut` (`src-tauri/src/main.rs`), which just calls
+  `std::process::Command::new(path).args(args).spawn()` - deliberately not
+  `tauri-plugin-shell`'s scoped `Command` API, since that's meant for a
+  fixed, developer-declared allowlist of binaries the app itself wants to
+  run, not "whatever the user points it at."
 
 ## CS2 Analysis backend (Leetify)
 

@@ -21,8 +21,18 @@ export interface SongOfDay {
   externalUrl?: string;
 }
 
+export interface RecipeOfDay {
+  name: string;
+  category: string;
+  thumbnailUrl?: string;
+  ingredients: string[];
+  instructions: string;
+  sourceUrl?: string;
+}
+
 export interface OfTheDay {
   article: FeaturedArticle | null;
   picture: PictureOfDay | null;
   song: SongOfDay | null;
+  recipe: RecipeOfDay | null;
 }

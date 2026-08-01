@@ -98,3 +98,117 @@
   font-size: 11px;
   width: 120px;
 }
+
+.oftheday-widget__recipe-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.oftheday-widget__diet-toggle {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  align-self: flex-start;
+}
+
+.oftheday-widget__diet-option {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  padding: 3px var(--space-2);
+  font-size: 11px;
+}
+
+.oftheday-widget__diet-option--active {
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+}
+
+.oftheday-widget__recipe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.oftheday-widget__ingredients {
+  margin: 0;
+  padding-left: var(--space-3);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.oftheday-widget__instructions {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.oftheday-widget__source {
+  font-size: 11px;
+  align-self: flex-start;
+  color: var(--color-accent);
+}
+
+.oftheday-widget__puzzles-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.oftheday-widget__puzzle-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.oftheday-widget__puzzle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.oftheday-widget__puzzle-item:last-child {
+  border-bottom: none;
+}
+
+.oftheday-widget__puzzle-link {
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.oftheday-widget__puzzle-link:hover {
+  color: var(--color-accent);
+}
+
+.oftheday-widget__puzzle-form {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.oftheday-widget__puzzle-add {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+  font-size: 11px;
+}
+
+.oftheday-widget__puzzle-add:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}

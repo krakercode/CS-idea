@@ -3,6 +3,45 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.6] - 2026-08-01
+
+### Added
+
+- New **Shortcuts** widget - a plain user-managed list of name+URL
+  bookmarks, opened via the OS browser. Backed by a new shared helper,
+  `src/shared/itemListStore.ts`, extracted since three separate lists
+  (this, Of the Day's Games, Entertainment Centre) all needed the same
+  capped/deduped/localStorage-persisted CRUD logic.
+- Of the Day: a **Recipe** view (TheMealDB, keyless) with a vegan/
+  non-vegan toggle, and a **Games** view - a curated, user-editable list of
+  daily puzzle game links (Wordle, Worldle, TimeGuessr, Pokedoku, and a
+  couple more by default).
+- New **Entertainment Centre** widget - add a local shortcut (name, path to
+  an executable, optional arguments) and launch it straight from the
+  dashboard instead of digging through menus first. A native "Browse..."
+  file picker (new `tauri-plugin-dialog` dependency) fills in the path.
+  Backed by a new plain Rust command, `launch_shortcut`, deliberately not
+  `tauri-plugin-shell` - see the README's Entertainment Centre section for
+  why.
+- Quotes: roughly seventeen new real, individually verified entries
+  (science, philosophy, literature, computing, civil rights, art -
+  Sagan, Feynman, Ada Lovelace, Woolf, de Beauvoir, Turing, Douglass,
+  Baldwin, Morrison, Le Guin, Wollstonecraft, Wittgenstein, Kahlo, Carson,
+  Lorde, Darwin, Anthony), each cross-checked against a primary or
+  scholarly source during a live search rather than pulled from memory -
+  several commonly-misattributed candidates (a Marie Curie line with no
+  traceable original source, a Maya Angelou quote actually traced to Carl
+  W. Buehner) were deliberately left out after failing that check, same
+  bar the existing Napoleon/Lenin entries were held to.
+
+### Changed
+
+- Release pipeline is Windows-only now - this app only runs on the
+  maintainer's Windows machine, so building/signing macOS and Linux
+  installers nobody used was wasted CI time on every release.
+  `release.yml`'s build matrix collapses to a single `windows-latest` job,
+  and `tauri.conf.json`'s bundle target is `"nsis"` instead of `"all"`.
+
 ## [0.1.5] - 2026-08-01
 
 ### Changed

@@ -7,6 +7,7 @@ mod leetify_client;
 mod news;
 mod of_the_day;
 mod pandascore;
+mod recipe_of_the_day;
 mod spotify;
 mod stocks;
 mod suggestions;
@@ -174,6 +175,7 @@ struct OfTheDayResponse {
     article: Option<of_the_day::FeaturedArticle>,
     picture: Option<of_the_day::PictureOfDay>,
     song: Option<spotify::SongOfDay>,
+    recipe: Option<recipe_of_the_day::RecipeOfDay>,
 }
 
 #[tauri::command]
@@ -181,11 +183,15 @@ async fn fetch_of_the_day(
     app: tauri::AppHandle,
     state: tauri::State<'_, HttpState>,
     favorite_artists: Vec<String>,
+    vegan: bool,
 ) -> Result<OfTheDayResponse, ()> {
-    let (wiki, song) =
-        tokio::join!(of_the_day::fetch(&state.client), spotify::song_of_day(&app, &state.client, &favorite_artists));
+    let (wiki, song, recipe) = tokio::join!(
+        of_the_day::fetch(&state.client),
+        spotify::song_of_day(&app, &state.client, &favorite_artists),
+        recipe_of_the_day::fetch(&state.client, vegan)
+    );
     let (article, picture) = wiki;
-    Ok(OfTheDayResponse { article, picture, song: song.unwrap_or(None) })
+    Ok(OfTheDayResponse { article, picture, song: song.unwrap_or(None), recipe })
 }
 
 #[tauri::command]
@@ -229,12 +235,30 @@ async fn spotify_saved_tracks(
     spotify::saved_tracks(&app, &state.client, limit, offset).await
 }
 
+/// Entertainment Centre's "Launch" button - spawns a user-configured local
+/// executable (an emulator, a game, anything) with optional arguments (e.g.
+/// a ROM/save path), fire-and-forget. Deliberately not going through
+/// `tauri-plugin-shell`'s scoped `Command` API: that plugin is meant for a
+/// fixed, developer-declared allowlist of binaries the *app itself* wants
+/// to run, whereas this needs to run whatever the *user* points it at -
+/// `std::process::Command` directly is the right tool here, and (being a
+/// plain app command, not a plugin-provided one) needs no capability grant.
+#[tauri::command]
+fn launch_shortcut(path: String, args: Vec<String>) -> Result<(), String> {
+    std::process::Command::new(&path)
+        .args(&args)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Couldn't launch \"{path}\": {e}"))
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let data_dir = app
                 .path()
@@ -266,7 +290,8 @@ fn main() {
             spotify_is_connected,
             spotify_now_playing,
             spotify_get_access_token,
-            spotify_saved_tracks
+            spotify_saved_tracks,
+            launch_shortcut
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -81,6 +81,26 @@ export const WIDGETS: WidgetDefinition[] = [
     defaultRowSpan: 1,
     Component: lazy(() => import("../widgets/oftheday/OfTheDayWidget").then((m) => ({ default: m.OfTheDayWidget }))),
   },
+  {
+    id: "shortcuts",
+    label: "Shortcuts",
+    defaultColSpan: 1,
+    defaultRowSpan: 1,
+    Component: lazy(() =>
+      import("../widgets/shortcuts/ShortcutsWidget").then((m) => ({ default: m.ShortcutsWidget })),
+    ),
+  },
+  {
+    id: "entertainment",
+    label: "Entertainment Centre",
+    defaultColSpan: 1,
+    defaultRowSpan: 1,
+    Component: lazy(() =>
+      import("../widgets/entertainment/EntertainmentCentreWidget").then((m) => ({
+        default: m.EntertainmentCentreWidget,
+      })),
+    ),
+  },
 ];
 
 export function getDefaultSettings(): Record<string, WidgetUserSettings> {
