@@ -99,9 +99,11 @@ export function Dashboard() {
       return;
     }
     setOrder((current) => {
-      const next = current.filter((id) => id !== draggedId);
-      const targetIndex = next.indexOf(targetId);
-      next.splice(targetIndex, 0, draggedId);
+      const from = current.indexOf(draggedId);
+      const to = current.indexOf(targetId);
+      if (from === -1 || to === -1) return current;
+      const next = [...current];
+      [next[from], next[to]] = [next[to], next[from]];
       saveWidgetOrder(next);
       return next;
     });

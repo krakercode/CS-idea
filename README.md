@@ -768,3 +768,8 @@ this list for exactly that reason).
   `capabilities/default.json` (already there). Every external link in the
   app goes through it for this reason - if a new one gets added as a plain
   `<a>` instead, it'll look fine in review and then just not work.
+
+## License
+
+MIT - see [LICENSE](LICENSE). Fork it, modify it, ship your own build; just
+keep the copyright notice and license text intact.

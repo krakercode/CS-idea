@@ -1,4 +1,5 @@
 import { Overlay } from "../shared/Overlay";
+import { ExternalLink } from "../shared/ExternalLink";
 import { WIDGETS, getDefaultSettings } from "./widgets.config";
 import {
   updateWidgetSettings,
@@ -135,6 +136,12 @@ export function DashboardSettings({ settings, onChange, onClose }: Props) {
             );
           })}
         </div>
+
+        <footer className="dashboard-settings__footer">
+          <ExternalLink href="https://github.com/krakercode/CS-idea" className="dashboard-settings__github-link">
+            View on GitHub ↗
+          </ExternalLink>
+        </footer>
       </section>
     </Overlay>
   );
