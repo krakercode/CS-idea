@@ -1,4 +1,4 @@
-import { Suspense, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, Suspense, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { WidgetDefinition } from "./widgets.config";
 
 const MIN_COL = 1;
@@ -29,20 +29,23 @@ interface Props {
   colSpan: 1 | 2 | 3;
   rowSpan: 1 | 2;
   isDragOver: boolean;
-  onResize: (colSpan: 1 | 2 | 3, rowSpan: 1 | 2) => void;
-  onDragStart: () => void;
+  onResize: (widgetId: string, colSpan: 1 | 2 | 3, rowSpan: 1 | 2) => void;
+  onDragStart: (widgetId: string) => void;
   onDragEnd: () => void;
-  onDragOver: () => void;
-  onDragLeave: () => void;
-  onDrop: () => void;
+  onDragOver: (widgetId: string) => void;
+  onDragLeave: (widgetId: string) => void;
+  onDrop: (widgetId: string) => void;
 }
 
 /** One grid cell on the dashboard: a drag handle (top-left, reorders
  * widgets via native drag-and-drop - drop target is the whole cell) and a
  * resize handle (bottom-right, drag to change how many grid columns/rows
  * it spans). Both used to only be settable via dropdowns in
- * DashboardSettings; that panel now only handles visibility/scheduling. */
-export function WidgetCell({
+ * DashboardSettings; that panel now only handles visibility/scheduling.
+ * Wrapped in `memo` - callbacks are id-parameterized rather than
+ * closed-over-per-widget precisely so this can bail out on unrelated
+ * Dashboard re-renders (e.g. the 60s schedule recheck tick). */
+export const WidgetCell = memo(function WidgetCell({
   widget,
   colSpan,
   rowSpan,
@@ -94,7 +97,7 @@ export function WidgetCell({
     const state = resizeState.current;
     if (!state || e.pointerId !== state.pointerId) return;
     resizeState.current = null;
-    if (preview) onResize(preview.colSpan, preview.rowSpan);
+    if (preview) onResize(widget.id, preview.colSpan, preview.rowSpan);
     setPreview(null);
   }
 
@@ -105,12 +108,12 @@ export function WidgetCell({
       style={{ gridColumn: `span ${effectiveColSpan}`, gridRow: `span ${effectiveRowSpan}` }}
       onDragOver={(e) => {
         e.preventDefault();
-        onDragOver();
+        onDragOver(widget.id);
       }}
-      onDragLeave={onDragLeave}
+      onDragLeave={() => onDragLeave(widget.id)}
       onDrop={(e) => {
         e.preventDefault();
-        onDrop();
+        onDrop(widget.id);
       }}
     >
       <button
@@ -124,7 +127,7 @@ export function WidgetCell({
           // tracks it via React state instead), this call just has to happen.
           e.dataTransfer.setData("text/plain", widget.id);
           e.dataTransfer.effectAllowed = "move";
-          onDragStart();
+          onDragStart(widget.id);
         }}
         onDragEnd={onDragEnd}
         title={`Drag to move ${label}`}
@@ -147,4 +150,4 @@ export function WidgetCell({
       />
     </div>
   );
-}
+});

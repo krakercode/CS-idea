@@ -24,7 +24,14 @@ const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"];
 /** Formats a byte count as a human-readable size ("1.2 GB"). */
 export function formatBytes(bytes: number): string {
   if (bytes <= 0) return "0 B";
-  const exponent = Math.min(Math.floor(Math.log2(bytes) / 10), BYTE_UNITS.length - 1);
-  const value = bytes / 1024 ** exponent;
+  let exponent = Math.min(Math.floor(Math.log2(bytes) / 10), BYTE_UNITS.length - 1);
+  let value = bytes / 1024 ** exponent;
+  // A value just under a unit boundary (e.g. 1023.96 MB) rounds up to
+  // "1024.0" at the display precision below - bump to the next unit so it
+  // reads "1.0 GB" instead.
+  if (value >= 1023.95 && exponent < BYTE_UNITS.length - 1) {
+    exponent += 1;
+    value = bytes / 1024 ** exponent;
+  }
   return `${value.toFixed(exponent === 0 ? 0 : 1)} ${BYTE_UNITS[exponent]}`;
 }

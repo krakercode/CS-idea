@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WIDGETS, getDefaultSettings, type WidgetDefinition } from "./widgets.config";
 import {
@@ -75,40 +75,71 @@ export function Dashboard() {
   const gridWidgets = visibleWidgets.filter((w) => settings[w.id].sizeMode !== "free");
   const freeWidgets = visibleWidgets.filter((w) => settings[w.id].sizeMode === "free");
 
-  function handleResize(widgetId: string, colSpan: 1 | 2 | 3, rowSpan: 1 | 2) {
-    setSettings(updateWidgetSettings(widgetId, { colSpan, rowSpan }, defaults));
-  }
+  // Stable (useCallback) and keyed by widget id passed in from the child,
+  // rather than a fresh closure built per widget per render - lets
+  // WidgetCell/FreeWidgetCell be wrapped in React.memo and actually skip
+  // re-rendering when an unrelated state change (e.g. the 60s schedule
+  // recheck tick) touches Dashboard but not that widget's own props.
+  const handleResize = useCallback(
+    (widgetId: string, colSpan: 1 | 2 | 3, rowSpan: 1 | 2) => {
+      setSettings(updateWidgetSettings(widgetId, { colSpan, rowSpan }, defaults));
+    },
+    [defaults],
+  );
 
-  function handleFreeMove(widgetId: string, freeX: number, freeY: number) {
-    setSettings(updateWidgetSettings(widgetId, { freeX, freeY }, defaults));
-  }
+  const handleFreeMove = useCallback(
+    (widgetId: string, freeX: number, freeY: number) => {
+      setSettings(updateWidgetSettings(widgetId, { freeX, freeY }, defaults));
+    },
+    [defaults],
+  );
 
-  function handleFreeResize(widgetId: string, freeWidth: number, freeHeight: number) {
-    setSettings(updateWidgetSettings(widgetId, { freeWidth, freeHeight }, defaults));
-  }
+  const handleFreeResize = useCallback(
+    (widgetId: string, freeWidth: number, freeHeight: number) => {
+      setSettings(updateWidgetSettings(widgetId, { freeWidth, freeHeight }, defaults));
+    },
+    [defaults],
+  );
 
-  function bringFreeWidgetToFront(widgetId: string) {
+  const bringFreeWidgetToFront = useCallback((widgetId: string) => {
     freeZCounter.current += 1;
     setFreeZIndices((current) => ({ ...current, [widgetId]: freeZCounter.current }));
-  }
+  }, []);
 
-  function handleDrop(targetId: string) {
-    setDragOverId(null);
-    if (!draggedId || draggedId === targetId) {
-      setDraggedId(null);
-      return;
-    }
-    setOrder((current) => {
-      const from = current.indexOf(draggedId);
-      const to = current.indexOf(targetId);
-      if (from === -1 || to === -1) return current;
-      const next = [...current];
-      [next[from], next[to]] = [next[to], next[from]];
-      saveWidgetOrder(next);
-      return next;
-    });
+  const handleDragStart = useCallback((widgetId: string) => setDraggedId(widgetId), []);
+
+  const handleDragEnd = useCallback(() => {
     setDraggedId(null);
-  }
+    setDragOverId(null);
+  }, []);
+
+  const handleDragOver = useCallback((widgetId: string) => setDragOverId(widgetId), []);
+
+  const handleDragLeave = useCallback(
+    (widgetId: string) => setDragOverId((current) => (current === widgetId ? null : current)),
+    [],
+  );
+
+  const handleDrop = useCallback(
+    (targetId: string) => {
+      setDragOverId(null);
+      if (!draggedId || draggedId === targetId) {
+        setDraggedId(null);
+        return;
+      }
+      setOrder((current) => {
+        const from = current.indexOf(draggedId);
+        const to = current.indexOf(targetId);
+        if (from === -1 || to === -1) return current;
+        const next = [...current];
+        [next[from], next[to]] = [next[to], next[from]];
+        saveWidgetOrder(next);
+        return next;
+      });
+      setDraggedId(null);
+    },
+    [draggedId],
+  );
 
   return (
     <div className="dashboard-root">
@@ -139,15 +170,12 @@ export function Dashboard() {
             colSpan={settings[widget.id].colSpan}
             rowSpan={settings[widget.id].rowSpan}
             isDragOver={dragOverId === widget.id && draggedId !== widget.id}
-            onResize={(colSpan, rowSpan) => handleResize(widget.id, colSpan, rowSpan)}
-            onDragStart={() => setDraggedId(widget.id)}
-            onDragEnd={() => {
-              setDraggedId(null);
-              setDragOverId(null);
-            }}
-            onDragOver={() => setDragOverId(widget.id)}
-            onDragLeave={() => setDragOverId((current) => (current === widget.id ? null : current))}
-            onDrop={() => handleDrop(widget.id)}
+            onResize={handleResize}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           />
         ))}
 
@@ -164,9 +192,9 @@ export function Dashboard() {
             width={settings[widget.id].freeWidth}
             height={settings[widget.id].freeHeight}
             zIndex={freeZIndices[widget.id] ?? FREE_CELL_BASE_Z_INDEX}
-            onMove={(freeX, freeY) => handleFreeMove(widget.id, freeX, freeY)}
-            onResize={(freeWidth, freeHeight) => handleFreeResize(widget.id, freeWidth, freeHeight)}
-            onBringToFront={() => bringFreeWidgetToFront(widget.id)}
+            onMove={handleFreeMove}
+            onResize={handleFreeResize}
+            onBringToFront={bringFreeWidgetToFront}
           />
         ))}
       </div>

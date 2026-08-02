@@ -27,6 +27,7 @@ export function usePolling<T>(fetcher: () => Promise<T>, intervalMs: number): Po
   fetcherRef.current = fetcher;
 
   const requestIdRef = useRef(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const runFetch = useCallback(() => {
     const requestId = ++requestIdRef.current;
@@ -49,9 +50,19 @@ export function usePolling<T>(fetcher: () => Promise<T>, intervalMs: number): Po
 
   useEffect(() => {
     runFetch();
-    const id = setInterval(runFetch, intervalMs);
-    return () => clearInterval(id);
+    intervalRef.current = setInterval(runFetch, intervalMs);
+    return () => {
+      if (intervalRef.current !== null) clearInterval(intervalRef.current);
+    };
   }, [runFetch, intervalMs]);
 
-  return { data, error, loading, refresh: runFetch };
+  // Actually resets the interval timer (not just an extra fetch) so a
+  // manual refresh right before a scheduled tick doesn't fire twice in a row.
+  const refresh = useCallback(() => {
+    runFetch();
+    if (intervalRef.current !== null) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(runFetch, intervalMs);
+  }, [runFetch, intervalMs]);
+
+  return { data, error, loading, refresh };
 }

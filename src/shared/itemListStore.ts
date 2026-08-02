@@ -1,8 +1,8 @@
 /**
- * Generic version of the capped/deduped, localStorage-persisted list
- * pattern already used piecemeal across the app (news keywords, favorite
- * artists, CS2 profiles) - for id-keyed object items rather than bare
- * strings. `isItem` is a runtime type guard so a corrupted/foreign value in
+ * Generic version of the capped, localStorage-persisted list pattern
+ * already used piecemeal across the app (news keywords, favorite artists,
+ * CS2 profiles) - for id-keyed object items rather than bare strings.
+ * `isItem` is a runtime type guard so a corrupted/foreign value in
  * localStorage can't leak an invalid shape into the widget; `defaults` only
  * applies the very first time (no stored key at all), never overriding a
  * deliberately emptied list.
@@ -42,7 +42,7 @@ export function createItemListStore<T extends { id: string }>(
 
   function add(item: T): T[] {
     const current = get();
-    if (current.length >= maxItems || current.some((existing) => existing.id === item.id)) return current;
+    if (current.length >= maxItems) return current;
     const next = [...current, item];
     save(next);
     return next;

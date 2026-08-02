@@ -52,9 +52,11 @@ impl From<rusqlite::Error> for ErrorPayload {
 /// CS2 analysis (Leetify) state - the one part of this app that talks to a
 /// real external API and keeps a local database, alongside everything
 /// else's mock data. See src/widgets/cs2db/analysis/ on the frontend side.
+/// `db` is `Arc`-wrapped so `fetch_profile` can clone a `'static` handle
+/// into `spawn_blocking` for the synchronous SQLite write.
 struct AnalysisState {
     leetify: LeetifyClient,
-    db: Db,
+    db: std::sync::Arc<Db>,
 }
 
 fn extract_ranks_and_rating(profile: &Value) -> (Value, Value) {
@@ -77,7 +79,18 @@ async fn fetch_profile(
 
     let (ranks, rating) = extract_ranks_and_rating(&profile);
     if !rating.is_null() || !ranks.is_null() {
-        db::insert_snapshot(&state.db, &player_id, &rating, &ranks)?;
+        // Synchronous SQLite write (mutex lock + disk I/O) moved off the
+        // async runtime's worker thread - a stalled disk (AV scan, network
+        // drive, memory pressure) would otherwise tie up a thread shared
+        // with every other concurrent command (news/stocks/calendar
+        // fetches, Spotify polling, etc.).
+        let db = state.db.clone();
+        tokio::task::spawn_blocking(move || db::insert_snapshot(&db, &player_id, &rating, &ranks))
+            .await
+            .map_err(|e| ErrorPayload {
+                kind: "internal".to_string(),
+                message: e.to_string(),
+            })??;
     }
 
     Ok(profile)
@@ -210,14 +223,6 @@ fn spotify_is_connected(app: tauri::AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command]
-async fn spotify_now_playing(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, HttpState>,
-) -> Result<Option<spotify::NowPlaying>, String> {
-    spotify::now_playing(&app, &state.client).await
-}
-
-#[tauri::command]
 async fn spotify_get_access_token(
     app: tauri::AppHandle,
     state: tauri::State<'_, HttpState>,
@@ -271,10 +276,11 @@ fn main() {
             let db = db::open(&data_dir).expect("failed to open local stats db");
             app.manage(AnalysisState {
                 leetify: LeetifyClient::new(),
-                db,
+                db: std::sync::Arc::new(db),
             });
             app.manage(system_health::SystemHealthState::new());
             app.manage(HttpState::new());
+            app.manage(spotify::SpotifyState::new());
             Ok(())
         })
         // Register new #[tauri::command] functions here as native features get added.
@@ -292,7 +298,6 @@ fn main() {
             spotify_login,
             spotify_logout,
             spotify_is_connected,
-            spotify_now_playing,
             spotify_get_access_token,
             spotify_saved_tracks,
             launch_shortcut

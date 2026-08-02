@@ -45,14 +45,24 @@ export function updateTask(id: string, name: string, points: number): HabitTask[
 
 type HabitLog = Record<string, string[]>;
 
+/** Local calendar date as "YYYY-MM-DD" - deliberately not `toISOString()`,
+ * which is always UTC and would roll "today" over at UTC midnight instead
+ * of the user's actual midnight. */
+function toLocalIso(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalIso(new Date());
 }
 
 function isoDaysAgo(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
+  return toLocalIso(d);
 }
 
 function getLog(): HabitLog {

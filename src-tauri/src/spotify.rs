@@ -5,9 +5,27 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_store::StoreExt;
+
+/// Serializes token refresh so concurrent callers (multiple widgets polling
+/// around the same expiry - routine, not hypothetical, since `useNowPlaying`
+/// polls every 5s while the user might also be browsing the library) don't
+/// all race to exchange the same refresh token at once. Spotify sometimes
+/// rotates the refresh token on exchange, so a losing concurrent exchange
+/// using the now-stale token would fail with `invalid_grant`.
+pub struct SpotifyState {
+    refresh_lock: tokio::sync::Mutex<()>,
+}
+
+impl SpotifyState {
+    pub fn new() -> Self {
+        Self {
+            refresh_lock: tokio::sync::Mutex::new(()),
+        }
+    }
+}
 
 /// Not a secret - Spotify's Authorization Code + PKCE flow (the right fit
 /// for a desktop app, since there's no way to keep a client secret safe in
@@ -42,17 +60,6 @@ const SCOPES: &str = "user-read-currently-playing user-read-playback-state user-
 /// single-user desktop dashboard, but worth knowing if that matters to you.
 const STORE_FILE: &str = "spotify-auth.json";
 
-#[derive(Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct NowPlaying {
-    pub track_name: String,
-    pub artist: String,
-    pub album_name: String,
-    pub is_playing: bool,
-    pub progress_ms: u64,
-    pub duration_ms: u64,
-}
-
 #[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SongOfDay {
@@ -69,20 +76,11 @@ struct TokenResponse {
     expires_in: u64,
 }
 
-#[derive(Debug, Deserialize)]
-struct CurrentlyPlayingResponse {
-    is_playing: bool,
-    progress_ms: Option<u64>,
-    item: Option<TrackItem>,
-}
-
-// Same track-object shape Spotify returns from currently-playing, search,
-// and top-tracks alike - one struct covers all three call sites.
+// Same track-object shape Spotify returns from search and top-tracks alike -
+// one struct covers both call sites.
 #[derive(Debug, Deserialize, Clone)]
 struct TrackItem {
     name: String,
-    #[serde(default)]
-    duration_ms: u64,
     artists: Vec<ArtistItem>,
     album: AlbumItem,
     #[serde(default)]
@@ -96,7 +94,6 @@ struct ArtistItem {
 
 #[derive(Debug, Deserialize, Clone)]
 struct AlbumItem {
-    name: String,
     #[serde(default)]
     images: Vec<AlbumImage>,
 }
@@ -217,10 +214,19 @@ pub async fn login(app: &AppHandle, client: &reqwest::Client) -> Result<(), Stri
         .open_url(authorize_url.to_string(), None::<&str>)
         .map_err(|e| e.to_string())?;
 
-    let redirected_url = tokio::time::timeout(Duration::from_secs(300), rx)
-        .await
-        .map_err(|_| "Spotify login timed out - please try again.".to_string())?
-        .map_err(|_| "Spotify login was cancelled.".to_string())?;
+    let redirected_url = match tokio::time::timeout(Duration::from_secs(300), rx).await {
+        Ok(result) => result.map_err(|_| "Spotify login was cancelled.".to_string())?,
+        Err(_) => {
+            // Nothing arrived within the timeout, so the background listener
+            // thread is still blocked waiting for a connection (e.g. the
+            // browser tab was closed before completing the redirect) -
+            // explicitly cancel it, or the port stays bound for the rest of
+            // the process's life and every later login attempt fails to
+            // bind it.
+            let _ = tauri_plugin_oauth::cancel(REDIRECT_PORT);
+            return Err("Spotify login timed out - please try again.".to_string());
+        }
+    };
 
     let parsed = reqwest::Url::parse(&redirected_url).map_err(|e| e.to_string())?;
     let params: HashMap<String, String> = parsed.query_pairs().into_owned().collect();
@@ -271,9 +277,9 @@ pub fn is_connected(app: &AppHandle) -> Result<bool, String> {
 async fn ensure_fresh_token(app: &AppHandle, client: &reqwest::Client) -> Result<Option<String>, String> {
     let store = app.store(STORE_FILE).map_err(|e| e.to_string())?;
 
-    let Some(refresh_token) = store.get("refresh_token").and_then(|v| v.as_str().map(str::to_string)) else {
+    if store.get("refresh_token").and_then(|v| v.as_str().map(str::to_string)).is_none() {
         return Ok(None);
-    };
+    }
 
     let expires_at = store.get("expires_at").and_then(|v| v.as_u64()).unwrap_or(0);
     let cached_access_token = store.get("access_token").and_then(|v| v.as_str().map(str::to_string));
@@ -282,6 +288,25 @@ async fn ensure_fresh_token(app: &AppHandle, client: &reqwest::Client) -> Result
     if !needs_refresh {
         return Ok(cached_access_token);
     }
+
+    // Concurrent callers can all observe `needs_refresh` at once near an
+    // expiry - serialize the actual refresh so only one request hits
+    // Spotify's token endpoint (see `SpotifyState`'s doc comment).
+    let spotify_state = app.state::<SpotifyState>();
+    let _guard = spotify_state.refresh_lock.lock().await;
+
+    // Re-check now that we hold the lock - another caller may have already
+    // refreshed while this one was waiting for it.
+    let expires_at = store.get("expires_at").and_then(|v| v.as_u64()).unwrap_or(0);
+    let cached_access_token = store.get("access_token").and_then(|v| v.as_str().map(str::to_string));
+    if cached_access_token.is_some() && now_unix() + 60 < expires_at {
+        return Ok(cached_access_token);
+    }
+
+    let refresh_token = store
+        .get("refresh_token")
+        .and_then(|v| v.as_str().map(str::to_string))
+        .ok_or_else(|| "Spotify session was logged out while refreshing.".to_string())?;
 
     let tokens = exchange_token(
         client,
@@ -296,40 +321,6 @@ async fn ensure_fresh_token(app: &AppHandle, client: &reqwest::Client) -> Result
     let access_token = tokens.access_token.clone();
     save_tokens(app, &tokens)?;
     Ok(Some(access_token))
-}
-
-/// `Ok(None)` covers both "not connected" and "connected but nothing is
-/// currently playing" - the widget doesn't need to tell those apart, it
-/// just shows the disconnected/idle state either way.
-pub async fn now_playing(app: &AppHandle, client: &reqwest::Client) -> Result<Option<NowPlaying>, String> {
-    let Some(access_token) = ensure_fresh_token(app, client).await? else {
-        return Ok(None);
-    };
-
-    let response = client
-        .get("https://api.spotify.com/v1/me/player/currently-playing")
-        .bearer_auth(access_token)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if response.status() == reqwest::StatusCode::NO_CONTENT || !response.status().is_success() {
-        return Ok(None);
-    }
-
-    let body: CurrentlyPlayingResponse = response.json().await.map_err(|e| e.to_string())?;
-    let Some(item) = body.item else {
-        return Ok(None);
-    };
-
-    Ok(Some(NowPlaying {
-        track_name: item.name,
-        artist: item.artists.into_iter().map(|a| a.name).collect::<Vec<_>>().join(", "),
-        album_name: item.album.name,
-        is_playing: body.is_playing,
-        progress_ms: body.progress_ms.unwrap_or(0),
-        duration_ms: item.duration_ms,
-    }))
 }
 
 /// Hands a valid, freshly-refreshed access token to the frontend. This is a

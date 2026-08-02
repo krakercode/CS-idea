@@ -40,8 +40,12 @@ export function CS2DatabaseWidget() {
   useEffect(() => {
     if (SELF_MANAGED_VIEWS.has(activeId)) return;
     let cancelled = false;
-    setLoading(true);
 
+    // Deliberately not `setLoading(true)` here - `loading` should stay true
+    // only for the very first fetch (WidgetShell swaps children, search
+    // input included, for a "Loading..." placeholder while it's true, so
+    // re-arming it on every search/filter change would unmount the input
+    // mid-keystroke and drop focus).
     const load =
       activeId === "lineups"
         ? repo

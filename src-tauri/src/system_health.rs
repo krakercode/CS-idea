@@ -62,11 +62,16 @@ pub struct SystemHealth {
 
 /// Held in app state so CPU usage is measured as a delta between polls
 /// (sysinfo needs two refreshes apart in time for accurate percentages)
-/// rather than blocking each call with a sleep. NVML is initialized once
-/// here too - it's a fairly heavyweight driver handshake, and Nvml itself
-/// is Send + Sync so it's fine to hold across calls.
+/// rather than blocking each call with a sleep. Disks/Components are held
+/// here for the same reason - `Disks::refresh`/`Components::refresh` update
+/// the existing list in place, far cheaper than re-enumerating every disk
+/// and sensor from the OS on every 3s poll the frontend does. NVML is
+/// initialized once here too - it's a fairly heavyweight driver handshake,
+/// and Nvml itself is Send + Sync so it's fine to hold across calls.
 pub struct SystemHealthState {
     sys: Mutex<System>,
+    disks: Mutex<Disks>,
+    components: Mutex<Components>,
     nvml: Option<Nvml>,
 }
 
@@ -74,6 +79,8 @@ impl SystemHealthState {
     pub fn new() -> Self {
         Self {
             sys: Mutex::new(System::new_all()),
+            disks: Mutex::new(Disks::new_with_refreshed_list()),
+            components: Mutex::new(Components::new_with_refreshed_list()),
             nvml: Nvml::init().ok(),
         }
     }
@@ -122,7 +129,9 @@ pub fn collect(state: &SystemHealthState) -> SystemHealth {
         used_swap_bytes: sys.used_swap(),
     };
 
-    let disks = Disks::new_with_refreshed_list()
+    let mut disks_state = state.disks.lock().expect("disks mutex poisoned");
+    disks_state.refresh(true);
+    let disks = disks_state
         .iter()
         .map(|disk| DiskInfo {
             name: disk.name().to_string_lossy().into_owned(),
@@ -132,14 +141,18 @@ pub fn collect(state: &SystemHealthState) -> SystemHealth {
             is_removable: disk.is_removable(),
         })
         .collect();
+    drop(disks_state);
 
-    let components = Components::new_with_refreshed_list()
+    let mut components_state = state.components.lock().expect("components mutex poisoned");
+    components_state.refresh(true);
+    let components = components_state
         .iter()
         .map(|component| ComponentInfo {
             label: component.label().to_string(),
             temperature_celsius: component.temperature(),
         })
         .collect();
+    drop(components_state);
 
     let gpus = state.nvml.as_ref().map(collect_gpus).unwrap_or_default();
 

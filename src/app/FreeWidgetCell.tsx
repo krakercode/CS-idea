@@ -1,4 +1,4 @@
-import { Suspense, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, Suspense, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { WidgetDefinition } from "./widgets.config";
 
 const MIN_WIDTH = 240;
@@ -39,9 +39,9 @@ interface Props {
   y: number;
   width: number;
   height: number;
-  onMove: (x: number, y: number) => void;
-  onResize: (width: number, height: number) => void;
-  onBringToFront: () => void;
+  onMove: (widgetId: string, x: number, y: number) => void;
+  onResize: (widgetId: string, width: number, height: number) => void;
+  onBringToFront: (widgetId: string) => void;
   zIndex: number;
 }
 
@@ -53,8 +53,19 @@ interface Props {
  * out, just without the "round to nearest grid unit" step, and applies the
  * same pattern to repositioning too (grid-mode reorder uses native HTML5
  * DnD instead, which doesn't make sense for a widget that isn't part of
- * any ordered list). */
-export function FreeWidgetCell({ widget, x, y, width, height, onMove, onResize, onBringToFront, zIndex }: Props) {
+ * any ordered list). Wrapped in `memo` for the same reason as WidgetCell -
+ * see its doc comment. */
+export const FreeWidgetCell = memo(function FreeWidgetCell({
+  widget,
+  x,
+  y,
+  width,
+  height,
+  onMove,
+  onResize,
+  onBringToFront,
+  zIndex,
+}: Props) {
   const { label, Component } = widget;
   const dragState = useRef<DragState | null>(null);
   const resizeState = useRef<ResizeState | null>(null);
@@ -64,7 +75,7 @@ export function FreeWidgetCell({ widget, x, y, width, height, onMove, onResize, 
 
   function handleDragPointerDown(e: ReactPointerEvent) {
     e.stopPropagation();
-    onBringToFront();
+    onBringToFront(widget.id);
     e.currentTarget.setPointerCapture(e.pointerId);
     dragState.current = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, startLeft: x, startTop: y };
   }
@@ -84,13 +95,13 @@ export function FreeWidgetCell({ widget, x, y, width, height, onMove, onResize, 
     const state = dragState.current;
     if (!state || e.pointerId !== state.pointerId) return;
     dragState.current = null;
-    if (preview) onMove(preview.x, preview.y);
+    if (preview) onMove(widget.id, preview.x, preview.y);
     setPreview(null);
   }
 
   function handleResizePointerDown(e: ReactPointerEvent) {
     e.stopPropagation();
-    onBringToFront();
+    onBringToFront(widget.id);
     e.currentTarget.setPointerCapture(e.pointerId);
     resizeState.current = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, startWidth: width, startHeight: height };
   }
@@ -110,7 +121,7 @@ export function FreeWidgetCell({ widget, x, y, width, height, onMove, onResize, 
     const state = resizeState.current;
     if (!state || e.pointerId !== state.pointerId) return;
     resizeState.current = null;
-    if (preview) onResize(preview.width, preview.height);
+    if (preview) onResize(widget.id, preview.width, preview.height);
     setPreview(null);
   }
 
@@ -118,7 +129,7 @@ export function FreeWidgetCell({ widget, x, y, width, height, onMove, onResize, 
     <div
       className="dashboard__free-cell"
       style={{ left: effective.x, top: effective.y, width: effective.width, height: effective.height, zIndex }}
-      onPointerDownCapture={onBringToFront}
+      onPointerDownCapture={() => onBringToFront(widget.id)}
     >
       <button
         type="button"
@@ -146,4 +157,4 @@ export function FreeWidgetCell({ widget, x, y, width, height, onMove, onResize, 
       />
     </div>
   );
-}
+});

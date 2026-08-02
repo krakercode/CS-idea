@@ -3,6 +3,71 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.1] - 2026-08-02
+
+A fix-and-optimization pass across the whole app, plus a couple of small
+additions. No new widgets or themes this round.
+
+### Fixed
+
+- **Widget drag-reorder still didn't actually swap positions** after
+  v0.3.0's `dragDropEnabled` fix got the drag events firing again - the
+  remaining bug was in the reorder logic itself: it removed the dragged
+  widget from the order array, then re-inserted it right before the drop
+  target, which is a silent no-op specifically when dragging a widget onto
+  its immediate right/below neighbor (dropping it back exactly where it
+  started). `Dashboard.tsx` now swaps the two widgets' array indices
+  directly.
+- Habits & Reminders' "today" rolled over at UTC midnight instead of your
+  local midnight, since it used `toISOString()` - anyone outside UTC could
+  have a task logged (or read back) under the wrong calendar day, which
+  also skewed the 7-day Vitals score.
+- CS2 Database's search box lost focus after every keystroke - typing set
+  the widget's `loading` flag, which swaps the whole widget body (search
+  input included) for a "Loading…" placeholder, so the input remounted and
+  dropped focus on every character. `loading` is now only ever true for
+  the very first fetch, matching how every other widget already behaves.
+- Switching several widgets to free-size mode for the first time could
+  stack pairs of them exactly on top of each other - the default staggered
+  position wrapped every 6 widgets, and there are more than 6 widgets.
+- `formatBytes` (System Health's disk/memory/VRAM readouts) could round a
+  value just under a unit boundary up to the next one and misdisplay it,
+  e.g. "1024.0 MB" instead of "1.0 GB".
+- Spotify reconnect could get permanently stuck after a login that timed
+  out or was abandoned (closing the browser tab): the local OAuth callback
+  listener stayed bound to its fixed port forever, so every later "Connect
+  Spotify" attempt failed to bind it. The timeout path now explicitly
+  cancels the listener.
+- Concurrent Spotify token refreshes (routine given how often the widget
+  polls) could race and invalidate the session, since Spotify sometimes
+  rotates the refresh token on exchange and a losing concurrent request
+  would use the now-stale one. Refreshes are now serialized.
+
+### Changed
+
+- **Settings page**: added a link to the GitHub repo in the footer.
+- **License**: added an MIT `LICENSE` - fork it, modify it, ship your own
+  build, just keep the copyright notice and license text intact.
+- `usePolling`'s manual `refresh()` now actually resets the interval timer
+  (it previously just fetched immediately without doing so, so a manual
+  refresh right before a scheduled tick could fire two fetches back to
+  back - the opposite of what its own doc comment promised).
+- Dashboard widget cells (`WidgetCell`/`FreeWidgetCell`) are now memoized
+  and driven by stable, id-parameterized callbacks, so the 60s schedule
+  recheck tick no longer re-renders every mounted widget's whole subtree.
+- System Health's disk/sensor readings now refresh the existing
+  `Disks`/`Components` lists in place instead of re-enumerating every disk
+  and sensor from the OS on every 3s poll.
+- CS2 Analysis's local stats snapshots: writes now skip inserting a
+  duplicate row when nothing actually changed since the last check, the
+  trend chart's query is capped to the most recent 180 snapshots, and the
+  SQLite write itself moved off the async runtime's worker thread
+  (`spawn_blocking`) so a slow disk can't stall other concurrent commands.
+- Removed a dead, unused Rust command (`spotify_now_playing` / a leftover
+  from before the frontend switched to fetching now-playing directly) and
+  a dead-code duplicate-id check in the shared `itemListStore` helper
+  (unreachable given every caller already generates a fresh UUID).
+
 ## [0.3.0] - 2026-08-02
 
 First wave of a v0.3 batch - three items (a jesspring.io-inspired theme,
