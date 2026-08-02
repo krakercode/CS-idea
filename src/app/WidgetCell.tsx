@@ -117,7 +117,15 @@ export function WidgetCell({
         type="button"
         className="dashboard__drag-handle"
         draggable
-        onDragStart={onDragStart}
+        onDragStart={(e) => {
+          // Some engines won't treat a drag as valid (and never fire
+          // dragover/drop anywhere) unless dataTransfer actually carries
+          // something - the id itself isn't read back on drop (Dashboard
+          // tracks it via React state instead), this call just has to happen.
+          e.dataTransfer.setData("text/plain", widget.id);
+          e.dataTransfer.effectAllowed = "move";
+          onDragStart();
+        }}
         onDragEnd={onDragEnd}
         title={`Drag to move ${label}`}
         aria-label={`Drag to move ${label}`}

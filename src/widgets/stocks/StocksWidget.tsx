@@ -102,6 +102,11 @@ export function StocksWidget() {
         )}
       </div>
 
+      <p className="stocks-widget__period-note">
+        % change is vs. previous close (<span className="stocks-widget__period-tag">1D</span>) · charts show the
+        trailing month (<span className="stocks-widget__period-tag">1M</span>)
+      </p>
+
       <ul className="stocks-widget__list">
         {data?.map((quote) => {
           const isUp = quote.change >= 0;
@@ -110,7 +115,10 @@ export function StocksWidget() {
               <span className="stocks-widget__symbol">{quote.symbol}</span>
               {showCharts && <Sparkline history={quote.history} isUp={isUp} />}
               <span className="stocks-widget__price">{formatCurrency(quote.price, quote.currency)}</span>
-              <span className={`stocks-widget__change ${isUp ? "stocks-widget__change--up" : "stocks-widget__change--down"}`}>
+              <span
+                className={`stocks-widget__change ${isUp ? "stocks-widget__change--up" : "stocks-widget__change--down"}`}
+                title="vs. previous close (1D)"
+              >
                 {formatSignedPercent(quote.change_percent)}
               </span>
             </li>

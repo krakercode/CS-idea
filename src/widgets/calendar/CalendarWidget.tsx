@@ -104,11 +104,12 @@ export function CalendarWidget() {
 
       {!pandaScoreKey && !showSettings && (
         <p className="calendar-widget__hint">
-          No esports source configured -{" "}
+          No esports source configured - CS2/esports matches need a free key from{" "}
+          <ExternalLink href="https://pandascore.co">pandascore.co</ExternalLink>, then{" "}
           <button type="button" className="calendar-widget__hint-link" onClick={() => setShowSettings(true)}>
-            add a PandaScore key
-          </button>{" "}
-          to see CS2 matches here too.
+            paste it here
+          </button>
+          . General sports already work with no key.
         </p>
       )}
 

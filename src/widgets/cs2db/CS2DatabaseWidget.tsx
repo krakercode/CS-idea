@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { WidgetShell } from "../../shared/WidgetShell";
 import { ViewSwitcher } from "../../shared/ViewSwitcher";
 import { useWidgetViews } from "../../shared/useWidgetViews";
+import { ExternalLink } from "../../shared/ExternalLink";
 import { getCs2Repository } from "./cs2Service";
 import { LineupList } from "./LineupList";
 import { ProfilesView } from "./profiles/ProfilesView";
@@ -17,9 +18,10 @@ const VIEWS = [
   { id: "proplays", label: "Pro Plays" },
   { id: "profiles", label: "Profiles" },
   { id: "analysis", label: "Analysis" },
+  { id: "nades", label: "Nade Site" },
 ];
 
-const SELF_MANAGED_VIEWS = new Set(["analysis", "profiles"]);
+const SELF_MANAGED_VIEWS = new Set(["analysis", "profiles", "nades"]);
 
 export function CS2DatabaseWidget() {
   const repo = getCs2Repository();
@@ -133,6 +135,26 @@ export function CS2DatabaseWidget() {
         <Suspense fallback={<p className="cs2-widget__empty">Loading analysis…</p>}>
           <AnalysisView />
         </Suspense>
+      )}
+
+      {activeId === "nades" && (
+        <div className="cs2-widget__nade-site">
+          <div className="cs2-widget__nade-site-bar">
+            <span className="cs2-widget__nade-site-note">
+              Embedded from csnades.gg - some sites block being framed like this, so if nothing loads below, use
+              this instead:
+            </span>
+            <ExternalLink href="https://csnades.gg" className="cs2-widget__nade-site-link">
+              Open in browser ↗
+            </ExternalLink>
+          </div>
+          <iframe
+            src="https://csnades.gg"
+            title="csnades.gg"
+            className="cs2-widget__nade-site-frame"
+            referrerPolicy="no-referrer"
+          />
+        </div>
       )}
     </WidgetShell>
   );

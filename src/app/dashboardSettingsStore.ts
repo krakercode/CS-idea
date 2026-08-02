@@ -7,11 +7,23 @@ export interface WidgetSchedule {
   endTime: string; // "HH:MM", 24h - if before startTime, the window wraps past midnight
 }
 
+export type SizeMode = "grid" | "free";
+
 export interface WidgetUserSettings {
   visibility: VisibilityMode;
   schedule: WidgetSchedule;
   colSpan: 1 | 2 | 3;
   rowSpan: 1 | 2;
+  /** "grid" (default) keeps the widget snapped into the CSS Grid, sized in
+   * col/row spans, reordered by dragging - existing behavior, untouched.
+   * "free" takes it out of grid flow entirely and floats it at an
+   * arbitrary pixel position/size instead, resized and repositioned by
+   * direct pointer-drag rather than snapping. */
+  sizeMode: SizeMode;
+  freeX: number;
+  freeY: number;
+  freeWidth: number;
+  freeHeight: number;
 }
 
 export type DashboardSettings = Record<string, WidgetUserSettings>;

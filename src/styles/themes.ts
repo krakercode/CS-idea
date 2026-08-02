@@ -199,4 +199,62 @@ export const THEME_PRESETS: ThemePreset[] = [
       warning: "#d9822b",
     },
   },
+  {
+    id: "halo3",
+    label: "Halo 3",
+    colors: {
+      // From the reference screenshot of the Anniversary main menu - deep
+      // navy-purple with a gold-highlighted selected item.
+      bg: "#080b16",
+      surface: "#12172b",
+      surfaceRaised: "#1a2140",
+      border: "#2c3557",
+      text: "#e3e8f5",
+      textMuted: "#8791b3",
+      accent: "#e0a840",
+      positive: "#5ecf9e",
+      negative: "#e2544f",
+      warning: "#f2c14e",
+    },
+  },
+  {
+    id: "mgsv-idroid",
+    label: "MGSV: iDroid",
+    colors: {
+      // From the reference screenshot of Mother Base's development menu -
+      // cyan-on-navy, the game's own field-terminal color scheme.
+      bg: "#050a0d",
+      surface: "#0a1418",
+      surfaceRaised: "#0e1e24",
+      border: "#1a4a52",
+      text: "#d4f5f5",
+      textMuted: "#5c8a90",
+      accent: "#3ddbe8",
+      positive: "#3de8a0",
+      negative: "#e8483d",
+      warning: "#e8b83d",
+    },
+  },
+  {
+    id: "mgs1",
+    label: "Metal Gear Solid",
+    colors: {
+      // Best-effort, not from a reference screenshot (couldn't
+      // independently verify the exact codec-screen color-cycling look via
+      // search) - a period-appropriate teal/olive PS1-HUD base that the
+      // matching flair rule slowly hue-cycles, same as the original menu's
+      // shifting background. Most likely of the newer presets to need a
+      // follow-up pass.
+      bg: "#04100c",
+      surface: "#08201a",
+      surfaceRaised: "#0c2b22",
+      border: "#1f5c4a",
+      text: "#c8f5e6",
+      textMuted: "#5a9484",
+      accent: "#33e6a8",
+      positive: "#33e6a8",
+      negative: "#e35b4a",
+      warning: "#e0b23d",
+    },
+  },
 ];

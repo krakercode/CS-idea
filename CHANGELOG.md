@@ -3,6 +3,67 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-08-02
+
+First wave of a v0.3 batch - three items (a jesspring.io-inspired theme,
+ambient/click audio, and a hidden easter-egg button that needs that audio)
+are deferred until network access allows sourcing reference screenshots
+and audio, not included here.
+
+### Added
+
+- **Fullscreen**, two levels: the whole app window (⛶ button or F11) via
+  Tauri's window API, and per-widget (a new ⛶ next to each widget's
+  existing ⤢ Expand) - fills the entire window with just that widget,
+  distinct from Expand's smaller centered modal.
+- **Free-size widget mode** - a per-widget "Snap to grid / Free size"
+  toggle in Settings. Free-size widgets leave the CSS Grid entirely and
+  float at an arbitrary pixel position/size, dragged and resized directly
+  rather than snapping to grid units - in addition to (not instead of) the
+  existing grid-snap resize/reorder.
+- CS2 Database: a new **Nade Site** view embedding csnades.gg directly via
+  `<iframe>`, alongside (not replacing) the existing homegrown Lineups
+  database - with an always-visible "Open in browser instead" link next to
+  it either way, since this sandbox can't verify whether the site allows
+  being framed.
+- **Run on startup** toggle (new "General" settings row), via
+  `tauri-plugin-autostart`.
+- Three new theme presets, built directly against reference screenshots
+  where provided: **Halo 3** (translucent navy menu panels, gold-highlighted
+  selection), **MGSV: iDroid** (cyan field-terminal grid), and **Metal Gear
+  Solid** (a period-appropriate teal palette that slowly color-cycles via
+  `filter: hue-rotate()` - the least-verified of the three, since the exact
+  cycling look on the original couldn't be independently confirmed).
+
+### Fixed
+
+- Dragging a widget to reorder it didn't actually work. Root cause: Tauri's
+  `dragDropEnabled` window option defaults to `true`, and by Tauri's own
+  documentation that has to be `false` for in-page HTML5 drag-and-drop to
+  work on Windows (this app's only build target) - it was never set, so
+  Tauri's own native drag-drop handling was swallowing the page's drag
+  events the whole time. Also added a `dataTransfer.setData()` call the
+  drag handler was missing, since some engines won't treat a drag as valid
+  without it - cheap defense-in-depth alongside the real fix.
+- Stocks: the % change and the sparkline next to it are two different time
+  windows on the same row (day-over-day vs. trailing month) and neither was
+  labeled, so "down 20%" gave no sense of over what period. Both figures
+  were already accurate - audited end to end to confirm - just needed
+  `(1D)`/`(1M)` tags making the window explicit.
+
+### Changed
+
+- PandaScore stays user-supplied, not baked into the app - a shared key
+  committed to this public repo would be extractable from the installer by
+  anyone the moment it shipped. Smoothed onboarding instead: the "no
+  esports source configured" hint now links straight to PandaScore's
+  signup page instead of requiring a click into Settings first to find it.
+- Habits & Reminders: redid the Vitals silhouette from a solid-filled shape
+  to a stroke-only outline (closer to a med-bay body-scan readout, per
+  reference screenshots), and wrapped the whole readout in a small sci-fi
+  HUD frame - corner brackets, a "SCANNING…" label, and a few generated
+  flavor-text lines that shift wording across the three vitality bands.
+
 ## [0.2.1] - 2026-08-01
 
 ### Fixed

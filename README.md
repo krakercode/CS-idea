@@ -155,6 +155,9 @@ src/
     ThemeSettings.tsx         - preset picker + custom color editor, shown in DashboardSettings
     updateService.ts         - wraps the Tauri updater plugin (check/download/install)
     UpdateSettings.tsx        - version display + "check for updates" UI, shown in DashboardSettings
+    GeneralSettings.tsx       - app-wide toggles (run-on-startup), shown in DashboardSettings
+    WidgetCell.tsx            - one grid-mode widget cell: resize handle, native-DnD reorder handle
+    FreeWidgetCell.tsx        - one free-size-mode widget cell: pixel resize/reposition, bring-to-front
   styles/
     theme.css       - the default (Dark) CSS custom properties every widget's CSS uses
     themes.ts       - preset palettes + the field list that drives the custom color editor
@@ -206,18 +209,29 @@ builds itself:
 
 Click the ⚙ button (fixed top-right) to open the settings panel.
 
+**General** (also top of the panel, `GeneralSettings.tsx`) - currently just
+one toggle: launch JESSPR-EAST automatically when Windows starts, via
+`tauri-plugin-autostart`. Applies immediately, same "no save button"
+pattern as Appearance below.
+
 **Appearance** (top of the panel) - pick a theme, or build your own:
 
 - **Presets**: Dark (default), Light, Midnight (true black, OLED-friendly),
-  High Contrast, plus five "for testing" themes riffing on specific games'/
+  High Contrast, plus eight "for testing" themes riffing on specific games'/
   films' visual identities (researched, not official palettes) - **Disco
   Elysium** (muted, painterly sepia with a deep maroon accent), **Marathon**
   (Bungie's 2025 reboot - steely dark blue/black with neon pink and
   yellow), **Ultrakill** (black/white/blood-red/gold, high contrast),
   **Alien** (the Nostromo/Sulaco's own computer terminals - phosphor-green
-  CRT text on near-black), and **Deus Ex: Human Revolution** (black and
-  gold, built directly from reference screenshots of the game's own menu/
-  augmentation UI).
+  CRT text on near-black), **Deus Ex: Human Revolution** (black and gold,
+  built directly from reference screenshots of the game's own menu/
+  augmentation UI), **Halo 3** (translucent navy menu panels with a
+  gold-highlighted selection, from a reference screenshot), **MGSV: iDroid**
+  (cyan-on-navy field terminal, from a reference screenshot of Mother
+  Base's development menu), and **Metal Gear Solid** (a period-appropriate
+  teal PS1-HUD palette that slowly color-cycles, echoing the original's
+  codec screens - the least-verified of the eight, since its exact
+  color-cycling look couldn't be independently confirmed).
 - **Custom**: picking it reveals a color picker for each of the 10 themeable
   roles (background, surface, border, text, accent, positive/negative/
   warning, etc.) - see `THEME_COLOR_FIELDS` in `src/styles/themes.ts` for
@@ -232,7 +246,7 @@ the rest. Applied on startup before the first render (see `main.tsx`) so
 there's no flash of the default theme before your saved one loads.
 Persisted to `localStorage` (key `dashboard-theme`).
 
-These five game-inspired presets go a step further than color: `applyTheme`
+These eight game-inspired presets go a step further than color: `applyTheme`
 also stamps `data-theme-style="<preset id>"` on `<html>`, and
 `src/styles/theme-flair.css` uses that to layer on non-color UI touches
 scoped to just those presets (Dark/Light/Midnight/High Contrast/Custom are
@@ -254,14 +268,25 @@ untouched by this file - pure color, as before):
   `clip-path` clips a plain border along with everything else; a subtle
   gold radial glow in the corner; bold uppercase titles with a soft gold
   text-shadow.
+- **Halo 3** - a soft gold radial glow in the corner, a gold accent border
+  under the header, and a bold condensed title font.
+- **MGSV: iDroid** - a faint cyan grid-line texture, monospace titles, and a
+  `▸` prefix on each widget name.
+- **Metal Gear Solid** - a double border (like Disco Elysium's, echoing
+  military-HUD readouts) that slowly animates `filter: hue-rotate()`
+  through a full cycle - pure CSS, no JS per-frame updates, layers cleanly
+  on top of the color system without touching the `--color-*` variables
+  themselves.
 
-Disco Elysium/Marathon/Ultrakill are a best-effort approximation from
-research (search results, art direction interviews), not a pixel-accurate
-recreation of any game's real UI. Alien and Deus Ex: Human Revolution were
-built directly against reference screenshots instead, so those are a
-closer match. Everything here targets `.widget-shell`, so any future theme
-can add its own flair the same
-way just by adding a new `[data-theme-style="..."]` block.
+Disco Elysium/Marathon/Ultrakill/Metal Gear Solid are a best-effort
+approximation from research (search results, art direction interviews),
+not a pixel-accurate recreation of any game's real UI - Metal Gear Solid
+especially, since its exact color-cycling behavior couldn't be
+independently verified either. Alien, Deus Ex: Human Revolution, Halo 3,
+and MGSV: iDroid were built directly against reference screenshots
+instead, so those are a closer match. Everything here targets
+`.widget-shell`, so any future theme can add its own flair the same way
+just by adding a new `[data-theme-style="..."]` block.
 
 Per widget, you can set:
 
@@ -272,28 +297,55 @@ Per widget, you can set:
   crosses the boundary - no reload needed. An overnight window like
   22:00-02:00 works too (`isWidgetVisibleNow` in `dashboardSettingsStore.ts`
   handles the wraparound).
+- **Size mode** - *Snap to grid* (default) or *Free size*. Grid mode is
+  everything below; free size takes a widget out of the CSS Grid entirely
+  and floats it at an arbitrary pixel position/size instead (see below).
 
-Size and position aren't in the settings panel - they're mouse-driven,
-directly on the dashboard (`WidgetCell.tsx`):
+Position/size themselves aren't set from a form - they're mouse-driven,
+directly on the dashboard:
 
-- **Resize**: hover a widget, grab the ⌟ handle that appears in its
-  bottom-right corner, and drag. Self-calibrating against the cell's own
-  current rendered size (rather than assuming a fixed column width/row
-  height, which isn't constant - rows are `minmax(260px, 1fr)`), clamped to
-  1-3 columns and 1-2 rows, live-previewed as you drag and only written to
-  `localStorage` on release.
-- **Reposition**: grab the ⠿ handle that appears top-left, drag onto
-  another widget, and drop - it's inserted right before whatever you
-  dropped it on. Plain native HTML5 drag-and-drop, so it plays fine with
-  the rest of each widget staying normally interactive (links, buttons,
-  text selection) - only that small handle initiates a drag.
+- **Grid mode** (`WidgetCell.tsx`) - **Resize**: hover a widget, grab the
+  ⌟ handle bottom-right, and drag; self-calibrating against the cell's own
+  current rendered size (rows are `minmax(260px, 1fr)`, not a fixed
+  height), clamped to 1-3 columns/1-2 rows, live-previewed and only
+  written to `localStorage` on release. **Reposition**: grab the ⠿ handle
+  top-left, drag onto another widget, and drop - inserted right before
+  whatever you dropped it on, via native HTML5 drag-and-drop. (If this
+  ever stops working: Tauri's `dragDropEnabled` window option defaults to
+  `true`, and per Tauri's own docs that has to be `false` for in-page
+  HTML5 drag-and-drop to work on Windows - already set in
+  `tauri.conf.json`, but worth knowing if a future Tauri upgrade resets
+  it.)
+- **Free mode** (`FreeWidgetCell.tsx`) - same ⌟/⠿ handles, same
+  self-calibrating pointer-capture technique, but resize tracks raw pixel
+  width/height instead of snapping to grid units, and the drag handle
+  repositions by direct pixel offset instead of native drag-and-drop
+  (there's no ordered list to insert into - it just floats wherever you
+  drop it). Clicking/dragging a free widget brings it to the front of the
+  stack. Free widgets are still children of the same scrollable dashboard
+  container, so they scroll with the grid rather than staying fixed to the
+  window.
 
-All of this is per-device, persisted to `localStorage` (`dashboard-widget-settings`
-for size, `dashboard-widget-order` for position) - there's no sync or
-account system, matching everything else in this app being local-first.
-`widgets.config.ts`'s `defaultColSpan`/`defaultRowSpan` and the widget
-list's own order are just the starting point before you've touched
-anything.
+All of this is per-device, persisted to `localStorage`
+(`dashboard-widget-settings` for size/size-mode, `dashboard-widget-order`
+for grid position) - there's no sync or account system, matching
+everything else in this app being local-first. `widgets.config.ts`'s
+`defaultColSpan`/`defaultRowSpan` and the widget list's own order are just
+the starting point before you've touched anything.
+
+### Fullscreen
+
+Two independent levels: the ⛶ button (top-right, next to ⚙) or F11
+toggles the whole app window fullscreen via Tauri's window API
+(`getCurrentWindow().setFullscreen()`) - needs `core:window:allow-set-
+fullscreen` in `capabilities/default.json`, since read-only fullscreen
+state is granted by default but changing it isn't. Separately, every
+widget's own ⛶ header button (next to ⤢ Expand) fills the *entire window*
+with just that widget, not just a centered modal - `Overlay.tsx` gained a
+`fullBleed` option for this (zero backdrop padding, panel sized 100%×100%
+instead of the existing expand view's capped `1100px × 800px`), so it's a
+small additive change to the existing expand-to-overlay mechanism rather
+than a new one.
 
 ### Widget notes
 
@@ -319,7 +371,13 @@ anything.
   (color-coded with the same green/red as the change figure), toggleable
   via the 📈/📉 button in the header if you'd rather keep it text-only.
   Polls every 60s (deliberately not faster, since it's an unauthenticated
-  endpoint). A symbol that fails to resolve is dropped, not fatal.
+  endpoint). A symbol that fails to resolve is dropped, not fatal. The %
+  change and the sparkline are two genuinely different time windows on the
+  same row - % change is day-over-day (Yahoo's `previousClose` vs. current
+  price), the sparkline is the trailing month (`range=1mo&interval=1d`) -
+  both were already accurate, just unlabeled, so a small `(1D)`/`(1M)` tag
+  next to each now makes that explicit instead of leaving "down 20%"
+  ambiguous about what it's down over.
 - **Calendar** - real data from two independent sources
   (`src-tauri/src/calendar.rs`), fetched concurrently and merged so one
   failing doesn't take down the other. Shows anything upcoming within 90
@@ -336,7 +394,12 @@ anything.
     account and API key (pandascore.co), entered via the ⚙ button in the
     widget's header - persisted locally (`pandascoreKeyStore.ts`), never
     baked into the app since it's a per-account secret unlike Spotify's
-    client ID. Without a key, only general sports show up. CS2 still lives
+    client ID (and this repo is public - a shared key committed to source
+    would be extractable from the installer by anyone the moment it
+    shipped). Without a key, only general sports show up - both the
+    settings form and the "no esports source configured" hint link
+    straight to the signup page so getting one doesn't need a second
+    search. CS2 still lives
     under PandaScore's `csgo` videogame slug (kept for API stability
     across the CS:GO → CS2 rename). This module's response parsing hasn't
     been verified against a live call from the sandboxed environment this
@@ -353,7 +416,7 @@ anything.
     it provides one, otherwise a search query, since there's no reliable
     single source for general sports streams. Neither is a scraped/
     rehosted stream link.
-- **CS2 Database** - four views, cycled with `useWidgetViews`/`ViewSwitcher`:
+- **CS2 Database** - five views, cycled with `useWidgetViews`/`ViewSwitcher`:
   - *Lineups* and *Pro Plays* - searchable/filterable by map, sample data in
     `widgets/cs2db/data/`, meant to be replaced/expanded (lineup positions
     can shift between patches, and the pro-play entries are placeholder
@@ -389,6 +452,18 @@ anything.
     which otherwise never touches the main bundle) and backed by Rust
     (`src-tauri/src/leetify_client.rs`, `db.rs`, `suggestions.rs`) - see
     below.
+  - *Nade Site* - csnades.gg embedded directly in an `<iframe>`, since the
+    homegrown Lineups database above is unverified starter content and a
+    real, actively-maintained site is a better source of truth for actual
+    throw techniques. Can't verify from this sandboxed dev environment
+    whether csnades.gg sends headers that block being framed (and reliably
+    detecting a silent frame-block via JS is inconsistent across browser
+    engines, so this isn't gated on a check) - there's always a visible
+    "Open in browser instead ↗" link right next to the embed regardless of
+    whether it loads, not just as an error fallback. The Lineups/Pro Plays/
+    Profiles/Analysis views are untouched for now; whether to retire the
+    homegrown database in favor of this is a call for once it's actually
+    been seen working (or not) in the real app.
 - **Spotify** - a remote control for whatever's already playing on Spotify
   elsewhere (your phone, the real desktop app, spotify.com in a browser
   tab), not a player that outputs audio itself. Auth is entirely on the
@@ -536,13 +611,19 @@ anything.
     7-day rolling window is ever needed).
   - *Vitals* - a "vitality" score (0-100), a rolling average of the last 7
     *completed* days' checked-off ratio (today doesn't count against you
-    until it's actually over) - driving a schematic human silhouette and a
+    until it's actually over) - driving a schematic, **outline-style**
+    human silhouette (redone from an earlier solid-filled version to read
+    closer to a med-bay body-scan readout, per reference screenshots) and a
     heartbeat-style pulse trace that both shift color/shape across three
     bands (stable/fatigued/critical, using the theme's own
     positive/warning/negative colors so it re-themes automatically) as
-    vitality rises or falls. The heart rate number and pulse shape are
-    purely cosmetic flavor, not a real physiological model - explicitly
-    labeled as such in the widget itself.
+    vitality rises or falls. Wrapped in a small sci-fi HUD frame (corner
+    brackets, a "SCANNING…" label, a short list of generated flavor-text
+    readout lines like "› Cardiac output: NOMINAL" that shift wording per
+    band) - the flavor lines are wording only, derived from the same single
+    vitality score, not a separate per-body-part data model. The heart
+    rate number and pulse shape are purely cosmetic flavor, not a real
+    physiological model - explicitly labeled as such in the widget itself.
 
 ## CS2 Analysis backend (Leetify)
 

@@ -4,6 +4,7 @@
 }
 
 .dashboard {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: minmax(260px, 1fr);
@@ -17,6 +18,19 @@
   position: relative;
   min-width: 0;
   min-height: 0;
+}
+
+/* Free-mode widgets are absolutely-positioned children of `.dashboard` -
+   CSS Grid ignores out-of-flow children entirely, so these float over/
+   around the grid without taking a slot or affecting it. Positioned
+   relative to `.dashboard`'s own padding box (it's `position: relative`
+   above) rather than the viewport, so they scroll with the grid content. */
+.dashboard__free-cell {
+  position: absolute;
+  min-width: 0;
+  min-height: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-md);
 }
 
 .dashboard__cell--drag-over {
@@ -102,6 +116,10 @@
   background: var(--color-surface);
   color: var(--color-text-muted);
   font-size: 14px;
+}
+
+.dashboard__fullscreen-button {
+  right: calc(var(--space-3) + 30px + var(--space-2));
 }
 
 .dashboard__settings-button:hover {

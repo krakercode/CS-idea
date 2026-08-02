@@ -15,12 +15,17 @@ export interface WidgetShellProps {
   children: ReactNode;
 }
 
+type ViewMode = "normal" | "expanded" | "fullscreen";
+
 /** Common card chrome (title bar, refresh button, expand-to-overlay,
  * loading/error states) that every widget wraps its content in. Every
  * widget gets a large-view mode for free just by using this shell - it's
- * a property of the shell, not something each widget builds itself. */
+ * a property of the shell, not something each widget builds itself.
+ * Two large-view modes: "Expand" (⤢) is a comfortably-sized centered
+ * modal, capped well under the full window; "Fullscreen" (⛶) fills the
+ * entire window edge-to-edge via Overlay's `fullBleed` option. */
 export function WidgetShell({ title, loading, error, onRefresh, headerActions, children }: WidgetShellProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("normal");
 
   const body = (
     <div className="widget-shell__body">
@@ -29,16 +34,16 @@ export function WidgetShell({ title, loading, error, onRefresh, headerActions, c
     </div>
   );
 
-  if (expanded) {
+  if (viewMode !== "normal") {
     return (
       <>
         <section className="widget-shell widget-shell--placeholder">
           <span className="widget-shell__title">{title}</span>
-          <button type="button" className="widget-shell__restore" onClick={() => setExpanded(false)}>
-            ⤡ Expanded — restore
+          <button type="button" className="widget-shell__restore" onClick={() => setViewMode("normal")}>
+            ⤡ {viewMode === "fullscreen" ? "Fullscreen" : "Expanded"} — restore
           </button>
         </section>
-        <Overlay onClose={() => setExpanded(false)}>
+        <Overlay onClose={() => setViewMode("normal")} fullBleed={viewMode === "fullscreen"}>
           <section className="widget-shell widget-shell--expanded">
             <header className="widget-shell__header">
               <h2 className="widget-shell__title">{title}</h2>
@@ -52,7 +57,7 @@ export function WidgetShell({ title, loading, error, onRefresh, headerActions, c
                 <button
                   type="button"
                   className="widget-shell__icon-button"
-                  onClick={() => setExpanded(false)}
+                  onClick={() => setViewMode("normal")}
                   title="Collapse"
                   aria-label={`Collapse ${title}`}
                 >
@@ -81,7 +86,16 @@ export function WidgetShell({ title, loading, error, onRefresh, headerActions, c
           <button
             type="button"
             className="widget-shell__icon-button"
-            onClick={() => setExpanded(true)}
+            onClick={() => setViewMode("fullscreen")}
+            title="Fullscreen"
+            aria-label={`Fullscreen ${title}`}
+          >
+            ⛶
+          </button>
+          <button
+            type="button"
+            className="widget-shell__icon-button"
+            onClick={() => setViewMode("expanded")}
             title="Expand"
             aria-label={`Expand ${title}`}
           >

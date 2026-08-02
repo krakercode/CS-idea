@@ -47,6 +47,18 @@
   text-transform: uppercase;
 }
 
+.stocks-widget__period-note {
+  margin: 0 0 var(--space-2);
+  font-size: 10px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.stocks-widget__period-tag {
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+
 .stocks-widget__list {
   list-style: none;
   margin: 0;

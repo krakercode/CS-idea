@@ -3,11 +3,13 @@ import { WIDGETS, getDefaultSettings } from "./widgets.config";
 import {
   updateWidgetSettings,
   type DashboardSettings as SettingsMap,
+  type SizeMode,
   type VisibilityMode,
   type WidgetUserSettings,
 } from "./dashboardSettingsStore";
 import { ThemeSettings } from "./ThemeSettings";
 import { UpdateSettings } from "./UpdateSettings";
+import { GeneralSettings } from "./GeneralSettings";
 import "./DashboardSettings.css";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -18,10 +20,11 @@ interface Props {
   onClose: () => void;
 }
 
-/** Per-widget visibility (always / scheduled / hidden) and schedule - the
- * runtime counterpart to widgets.config.ts's static defaults. Size and
- * position are drag-driven on the dashboard itself (see WidgetCell.tsx)
- * rather than settings here. */
+/** Per-widget visibility (always / scheduled / hidden), schedule, and size
+ * mode - the runtime counterpart to widgets.config.ts's static defaults.
+ * The actual size/position values are drag-driven on the dashboard itself
+ * (see WidgetCell.tsx / FreeWidgetCell.tsx) - this panel only picks which
+ * of the two drag interactions a widget uses. */
 export function DashboardSettings({ settings, onChange, onClose }: Props) {
   const defaults = getDefaultSettings();
 
@@ -56,6 +59,11 @@ export function DashboardSettings({ settings, onChange, onClose }: Props) {
             <UpdateSettings />
           </div>
 
+          <div className="dashboard-settings__row">
+            <div className="dashboard-settings__widget-name">General</div>
+            <GeneralSettings />
+          </div>
+
           {WIDGETS.map((widget) => {
             const s = settings[widget.id];
             if (!s) return null;
@@ -74,6 +82,17 @@ export function DashboardSettings({ settings, onChange, onClose }: Props) {
                       <option value="always">Always shown</option>
                       <option value="scheduled">Scheduled</option>
                       <option value="hidden">Hidden</option>
+                    </select>
+                  </label>
+
+                  <label className="dashboard-settings__field">
+                    Size
+                    <select
+                      value={s.sizeMode}
+                      onChange={(e) => patch(widget.id, { sizeMode: e.target.value as SizeMode })}
+                    >
+                      <option value="grid">Snap to grid</option>
+                      <option value="free">Free size</option>
                     </select>
                   </label>
                 </div>

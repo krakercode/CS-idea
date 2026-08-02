@@ -112,7 +112,7 @@ export const WIDGETS: WidgetDefinition[] = [
 
 export function getDefaultSettings(): Record<string, WidgetUserSettings> {
   const defaults: Record<string, WidgetUserSettings> = {};
-  for (const widget of WIDGETS) {
+  WIDGETS.forEach((widget, index) => {
     defaults[widget.id] = {
       visibility: "always",
       // Each widget needs its own schedule object - sharing DEFAULT_SCHEDULE
@@ -120,7 +120,14 @@ export function getDefaultSettings(): Record<string, WidgetUserSettings> {
       schedule: { ...DEFAULT_SCHEDULE, days: [...DEFAULT_SCHEDULE.days] },
       colSpan: widget.defaultColSpan,
       rowSpan: widget.defaultRowSpan,
+      sizeMode: "grid",
+      // Staggered so switching several widgets to free mode without moving
+      // them yet doesn't just stack them exactly on top of each other.
+      freeX: 40 + (index % 6) * 24,
+      freeY: 40 + (index % 6) * 24,
+      freeWidth: 360,
+      freeHeight: 300,
     };
-  }
+  });
   return defaults;
 }

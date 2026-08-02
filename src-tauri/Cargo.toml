@@ -1,6 +1,6 @@
 [package]
 name = "jesspr-east"
-version = "0.2.1"
+version = "0.3.0"
 description = "Always-on second-monitor dashboard: news, stocks, sports/esports calendar, CS2 nade/pro-play database, Spotify."
 edition = "2021"
 
@@ -26,6 +26,7 @@ nvml-wrapper = "0.12.1"
 tauri-plugin-oauth = "2.1.0"
 tauri-plugin-opener = "2.5.4"
 tauri-plugin-dialog = "2"
+tauri-plugin-autostart = "2"
 rand = "0.10.2"
 sha2 = "0.11.0"
 base64 = "0.23.0"

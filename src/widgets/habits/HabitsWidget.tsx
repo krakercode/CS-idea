@@ -41,6 +41,19 @@ const PULSE_PATH: Record<VitalityBand, string> = {
     "M0,20 L8,20 L11,30 L14,4 L17,34 L20,2 L23,26 L26,14 L29,20 L46,20 L49,30 L52,4 L55,34 L58,2 L61,26 L64,14 L67,20 L84,20 L87,30 L90,4 L93,34 L96,2 L100,20",
 };
 
+// Flavor readout lines, not separately tracked data - purely wording that
+// shifts with the same single vitality score everything else here derives
+// from, in the spirit of a sci-fi terminal scan rather than a real
+// per-body-part health model.
+const FLAVOR_LINES: Record<VitalityBand, string[]> = {
+  healthy: ["› Cardiac output: NOMINAL", "› Cognitive load: STABLE", "› Recovery rate: OPTIMAL"],
+  warning: ["› Cardiac output: ELEVATED", "› Cognitive load: STRAINED", "› Recovery rate: DELAYED"],
+  critical: ["› Cardiac output: CRITICAL", "› Cognitive load: OVERLOADED", "› Recovery rate: STALLED"],
+};
+
+// Stroke-only outline (not filled), closer to a med-bay body-scan readout
+// than a solid silhouette - same schematic shapes as before, just drawn as
+// an outline instead of a block.
 function VitalsSilhouette({ band }: { band: VitalityBand }) {
   return (
     <svg viewBox="0 0 100 200" className={`habits-widget__silhouette habits-widget__silhouette--${band}`} aria-hidden>
@@ -228,18 +241,34 @@ export function HabitsWidget() {
 
       {activeId === "vitals" && (
         <div className="habits-widget__vitals-view">
-          <div className="habits-widget__vitals-readout">
-            <VitalsSilhouette band={band} />
-            <div className="habits-widget__vitals-stats">
-              <div className={`habits-widget__vitals-status habits-widget__vitals-status--${band}`}>
-                {BAND_LABEL[band]}
+          <div className="habits-widget__hud-frame">
+            <span className="habits-widget__corner habits-widget__corner--tl" aria-hidden="true" />
+            <span className="habits-widget__corner habits-widget__corner--tr" aria-hidden="true" />
+            <span className="habits-widget__corner habits-widget__corner--bl" aria-hidden="true" />
+            <span className="habits-widget__corner habits-widget__corner--br" aria-hidden="true" />
+
+            <div className="habits-widget__scan-label">SCANNING…</div>
+
+            <div className="habits-widget__vitals-readout">
+              <VitalsSilhouette band={band} />
+              <div className="habits-widget__vitals-stats">
+                <div className={`habits-widget__vitals-status habits-widget__vitals-status--${band}`}>
+                  {BAND_LABEL[band]}
+                </div>
+                <div className="habits-widget__vitals-score">{vitality}</div>
+                <div className="habits-widget__vitals-label">vitality (7-day)</div>
+                <div className="habits-widget__vitals-hr">{heartRate} bpm</div>
+                <PulseLine band={band} />
               </div>
-              <div className="habits-widget__vitals-score">{vitality}</div>
-              <div className="habits-widget__vitals-label">vitality (7-day)</div>
-              <div className="habits-widget__vitals-hr">{heartRate} bpm</div>
-              <PulseLine band={band} />
             </div>
+
+            <ul className="habits-widget__flavor-list">
+              {FLAVOR_LINES[band].map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
           </div>
+
           <p className="habits-widget__vitals-note">
             A flavor readout, not a real health metric - it tracks your last 7 days of checked-off tasks, not
             today's (today doesn't count against you until it's over).
