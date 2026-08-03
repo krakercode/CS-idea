@@ -105,7 +105,13 @@ export function CS2DatabaseWidget() {
           <button
             type="button"
             className="cs2-widget__easter-egg"
-            onClick={() => playMeow()}
+            onClick={(e) => {
+              // Stops here rather than also bubbling to App.tsx's
+              // document-level click-sound listener - otherwise every
+              // meow overlapped with a second, generic UI click sound.
+              e.stopPropagation();
+              playMeow();
+            }}
             aria-label="?"
             tabIndex={-1}
           />

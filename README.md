@@ -366,32 +366,54 @@ than a new one.
 
 ### Sound
 
-UI clicks app-wide and a per-theme ambient loop, both entirely synthesized
-at runtime with the Web Audio API (`src/shared/sound.ts`) - not a
-licensing workaround, a better fit: zero bundle size, and it composes
-cleanly with per-theme differentiation (varying oscillator waveform/
-frequency/filter is easy; sourcing and rights-clearing a dozen separate
-sample packs is not). Clicks are wired via one delegated `click` listener
-at the document level (`App.tsx`) rather than touching every button in
-every widget individually - it covers every current and future one for
-free. Ambient is tied into the existing theme system: `themeStore.ts`'s
-`applyTheme` (the single choke point every theme change already runs
-through) calls `sound.setAmbientTheme()`, which crossfades to a profile
-grouping the 9 flavor presets into 5 distinct characters rather than 9
-shallow bespoke ones - a cold "hum" (Alien, MGSV: iDroid, Deus Ex, Marathon),
-a warm "melancholy" pad (Disco Elysium, Metal Gear Solid), a driving
-"aggressive" tone (Ultrakill), a spacious harmonic "epic" chord (Halo 3),
-and a soft "chiptune" arpeggio (jesspring.io). Dark/Light/Midnight/High
-Contrast/Custom get no ambient at all - picking a plain theme for a quiet,
-plain look shouldn't come with forced background noise. An "Enable
-sounds" toggle + volume slider live in Settings → General.
+UI clicks app-wide and a per-theme ambient loop, played via the Web Audio
+API (`src/shared/sound.ts`). An earlier version generated every sound
+procedurally instead (sidesteps licensing questions entirely, zero bundle
+size) - it worked, but sounded cheap and thin, so it was replaced with
+real recordings before shipping. Every file is CC0 or dedicated to the
+public domain, individually verified:
 
-The one thing here that *isn't* synthesized: the hidden "meow" button
-tucked into the CS2 Database widget's filter bar (a tiny, unlabeled dot -
-look for it) plays a real recording, since a synthesized cat sound would
-read as a joke rather than a cat. It's ["Meow of a pleading
-cat"](https://commons.wikimedia.org/wiki/File:Meow_of_a_pleading_cat.oga),
-dedicated to the public domain (CC0) on Wikimedia Commons.
+- `click.mp3` - ["Diamond Click (Luxury UI
+  Click)"](https://freesound.org/people/LilMati/sounds/703884/) by LilMati
+- `ambient-hum.mp3` - ["Industrial Factory/Fans
+  Loop"](https://freesound.org/people/IanStarGem/sounds/271096/) by
+  IanStarGem
+- `ambient-melancholy.mp3` -
+  ["AmbientLoop.wav"](https://freesound.org/people/IgalBlech/sounds/399164/)
+  by IgalBlech
+- `ambient-aggressive.mp3` - ["Experimental
+  Drone"](https://freesound.org/people/Jedo/sounds/396864/) by Jedo
+- `ambient-epic.mp3` - ["Em Pentatonic Pads
+  80bpm"](https://freesound.org/people/BuytheField/sounds/436130/) by
+  BuytheField - opens with a ~4s silent fade-in in the source recording,
+  so playback starts a few seconds in and loops from that same point
+  (`AudioBufferSourceNode.loopStart`), not back to the silent intro
+- `ambient-chiptune.mp3` - ["8 bit arpeggio 001 major 120 bpm square 037
+  C4"](https://freesound.org/people/josefpres/sounds/660386/) by josefpres
+- `meow.ogg` - ["Meow of a pleading
+  cat"](https://commons.wikimedia.org/wiki/File:Meow_of_a_pleading_cat.oga)
+  on Wikimedia Commons
+
+Clicks are wired via one delegated `click` listener at the document level
+(`App.tsx`) rather than touching every button in every widget individually
+- it covers every current and future one for free. Ambient is tied into
+the existing theme system: `themeStore.ts`'s `applyTheme` (the single
+choke point every theme change already runs through) calls
+`sound.setAmbientTheme()`, which crossfades to a profile grouping the 9
+flavor presets into 5 distinct characters rather than 9 shallow bespoke
+ones - a cold "hum" (Alien, MGSV: iDroid, Deus Ex, Marathon), a warm
+"melancholy" pad (Disco Elysium, Metal Gear Solid), a driving "aggressive"
+tone (Ultrakill), a spacious harmonic "epic" chord (Halo 3), and a soft
+"chiptune" arpeggio (jesspring.io). Dark/Light/Midnight/High Contrast/
+Custom get no ambient at all - picking a plain theme for a quiet, plain
+look shouldn't come with forced background noise. An "Enable sounds"
+toggle + volume slider live in Settings → General.
+
+The hidden "meow" button tucked into the CS2 Database widget's filter bar
+(a tiny, unlabeled dot - look for it) plays `meow.ogg` and nothing else -
+it stops the click straight from bubbling to the app-wide click listener,
+so it doesn't also trigger a second, unrelated click sound on top of the
+meow.
 
 ### Widget notes
 

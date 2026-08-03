@@ -1,3 +1,9 @@
+import clickUrl from "../assets/click.mp3";
+import ambientHumUrl from "../assets/ambient-hum.mp3";
+import ambientMelancholyUrl from "../assets/ambient-melancholy.mp3";
+import ambientAggressiveUrl from "../assets/ambient-aggressive.mp3";
+import ambientEpicUrl from "../assets/ambient-epic.mp3";
+import ambientChiptuneUrl from "../assets/ambient-chiptune.mp3";
 import meowUrl from "../assets/meow.ogg";
 
 export interface SoundSettings {
@@ -54,13 +60,35 @@ export function setSoundVolume(volume: number): SoundSettings {
   return settings;
 }
 
-// Every click/ambient sound is synthesized at runtime via the Web Audio
-// API - not a licensing workaround, a better fit: zero bundle size, zero
-// attribution/redistribution questions, and trivial to vary per theme
-// (frequency/waveform/filter) which is exactly what the ambient profiles
-// below need. The one exception is `playMeow` - a synthesized cat sound
-// would read as a joke, not a cat, so that one is a real sample (see its
-// doc comment for the source/license).
+/**
+ * Every click/ambient sound here is a real recording, not synthesized -
+ * an earlier version of this module generated them procedurally via the
+ * Web Audio API to sidestep licensing questions, but they sounded cheap
+ * and thin in practice. All bundled files are CC0 (public domain) or
+ * dedicated to the public domain, sourced and verified individually:
+ *
+ * - click.mp3: "Diamond Click (Luxury UI Click)" by LilMati, Freesound
+ *   https://freesound.org/people/LilMati/sounds/703884/
+ * - ambient-hum.mp3: "Industrial Factory/Fans Loop" by IanStarGem, Freesound
+ *   https://freesound.org/people/IanStarGem/sounds/271096/
+ * - ambient-melancholy.mp3: "AmbientLoop.wav" by IgalBlech, Freesound
+ *   https://freesound.org/people/IgalBlech/sounds/399164/
+ * - ambient-aggressive.mp3: "Experimental Drone" by Jedo, Freesound
+ *   https://freesound.org/people/Jedo/sounds/396864/
+ * - ambient-epic.mp3: "Em Pentatonic Pads 80bpm" by BuytheField, Freesound
+ *   https://freesound.org/people/BuytheField/sounds/436130/
+ * - ambient-chiptune.mp3: "8 bit arpeggio 001 major 120 bpm square 037 C4"
+ *   by josefpres, Freesound
+ *   https://freesound.org/people/josefpres/sounds/660386/
+ * - meow.ogg: "Meow of a pleading cat", dedicated to the public domain,
+ *   Wikimedia Commons
+ *   https://commons.wikimedia.org/wiki/File:Meow_of_a_pleading_cat.oga
+ *
+ * Playback goes through the Web Audio API (not plain <audio> elements) so
+ * every sound - click, ambient, meow - shares one master gain node driven
+ * by the volume/enabled settings below, and ambient can crossfade between
+ * theme profiles.
+ */
 let ctx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 
@@ -75,6 +103,15 @@ function getContext(): { audioCtx: AudioContext; master: GainNode } {
     masterGain = ctx.createGain();
     masterGain.gain.value = settings.enabled ? settings.volume : 0;
     masterGain.connect(ctx.destination);
+    // Kicks off fetch+decode for every ambient track now (decoding doesn't
+    // need the context to be running, just to exist) rather than waiting
+    // for a theme switch to request one - the biggest file (epic, ~3.7MB)
+    // otherwise has a noticeable silent gap the first time a user ever
+    // switches to Halo 3, since decode hasn't even started yet at that
+    // point.
+    for (const url of Object.values(AMBIENT_URLS)) {
+      loadBuffer(ctx, url).catch(() => {});
+    }
   }
   if (ctx.state === "suspended") {
     void ctx.resume();
@@ -87,26 +124,36 @@ function applyMasterGain(): void {
   masterGain.gain.setTargetAtTime(settings.enabled ? settings.volume : 0, ctx.currentTime, 0.05);
 }
 
-/** One short synthesized blip, the same everywhere - not themed per
- * preset, reused for every interactive element app-wide (see the
- * click-delegation listener in App.tsx). */
+// Decoded once per URL and reused - every subsequent play/loop just spins
+// up a cheap new AudioBufferSourceNode against the same decoded buffer.
+const bufferCache = new Map<string, Promise<AudioBuffer>>();
+
+function loadBuffer(audioCtx: AudioContext, url: string): Promise<AudioBuffer> {
+  let promise = bufferCache.get(url);
+  if (!promise) {
+    promise = fetch(url)
+      .then((res) => res.arrayBuffer())
+      .then((data) => audioCtx.decodeAudioData(data));
+    bufferCache.set(url, promise);
+  }
+  return promise;
+}
+
+/** One short click sound, the same everywhere - not themed per preset,
+ * reused for every interactive element app-wide (see the click-delegation
+ * listener in App.tsx). */
 export function playClick(): void {
   const { audioCtx, master } = getContext();
-  const now = audioCtx.currentTime;
-
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "triangle";
-  osc.frequency.setValueAtTime(900, now);
-  osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.35, now + 0.005);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
-
-  osc.connect(gain);
-  gain.connect(master);
-  osc.start(now);
-  osc.stop(now + 0.12);
+  loadBuffer(audioCtx, clickUrl)
+    .then((buffer) => {
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(master);
+      source.start();
+    })
+    .catch(() => {
+      // Best-effort - e.g. decode failure.
+    });
 }
 
 type AmbientProfile = "hum" | "melancholy" | "aggressive" | "epic" | "chiptune" | "none";
@@ -128,6 +175,24 @@ const THEME_AMBIENT_PROFILES: Record<string, AmbientProfile> = {
   "jesspring-io": "chiptune",
 };
 
+const AMBIENT_URLS: Record<Exclude<AmbientProfile, "none">, string> = {
+  hum: ambientHumUrl,
+  melancholy: ambientMelancholyUrl,
+  aggressive: ambientAggressiveUrl,
+  epic: ambientEpicUrl,
+  chiptune: ambientChiptuneUrl,
+};
+
+// The "epic" track (a pentatonic pad piece) opens with a ~4s silent
+// fade-in - confirmed by sampling its decoded channel data directly, not
+// guessed. Every other track has audible content from t=0. Playback for
+// this one profile starts partway in and loops from that same point (not
+// back to the silent intro), so switching to Halo 3 doesn't sound like
+// nothing happened for the first several seconds.
+const AMBIENT_START_OFFSET_SECONDS: Partial<Record<Exclude<AmbientProfile, "none">, number>> = {
+  epic: 5,
+};
+
 function profileForTheme(presetId: string): AmbientProfile {
   return THEME_AMBIENT_PROFILES[presetId] ?? "none";
 }
@@ -137,110 +202,39 @@ interface AmbientHandle {
   stop: () => void;
 }
 
-function createNoiseBuffer(audioCtx: AudioContext, seconds: number): AudioBuffer {
-  const length = Math.floor(audioCtx.sampleRate * seconds);
-  const buffer = audioCtx.createBuffer(1, length, audioCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
-  return buffer;
-}
-
 function buildAmbientProfile(audioCtx: AudioContext, profile: AmbientProfile, destination: GainNode): AmbientHandle {
   const gain = audioCtx.createGain();
   gain.gain.value = 0; // faded in by the caller (setAmbientTheme)
   gain.connect(destination);
 
-  const now = audioCtx.currentTime;
-  const stopFns: Array<() => void> = [];
+  let source: AudioBufferSourceNode | null = null;
+  let cancelled = false;
 
-  function addOscillator(freq: number, type: OscillatorType, level: number) {
-    const osc = audioCtx.createOscillator();
-    const oscGain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    oscGain.gain.value = level;
-    osc.connect(oscGain);
-    oscGain.connect(gain);
-    osc.start(now);
-    stopFns.push(() => osc.stop());
-  }
-
-  function addFilteredNoise(level: number, filterFreq: number) {
-    const source = audioCtx.createBufferSource();
-    source.buffer = createNoiseBuffer(audioCtx, 2);
-    source.loop = true;
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.value = filterFreq;
-    const noiseGain = audioCtx.createGain();
-    noiseGain.gain.value = level;
-    source.connect(filter);
-    filter.connect(noiseGain);
-    noiseGain.connect(gain);
-    source.start(now);
-    stopFns.push(() => source.stop());
-  }
-
-  // A slow, quantized square-wave arpeggio - rescheduled on an interval
-  // (rather than a long precomputed Web Audio schedule) so it keeps
-  // looping indefinitely for however long the app stays open.
-  function addChiptuneArpeggio(notesHz: number[], stepMs: number, level: number) {
-    const osc = audioCtx.createOscillator();
-    const oscGain = audioCtx.createGain();
-    osc.type = "square";
-    oscGain.gain.value = level;
-    osc.connect(oscGain);
-    oscGain.connect(gain);
-    osc.start(now);
-    let step = 0;
-    const intervalId = window.setInterval(() => {
-      osc.frequency.setValueAtTime(notesHz[step % notesHz.length], audioCtx.currentTime);
-      step += 1;
-    }, stepMs);
-    stopFns.push(() => {
-      window.clearInterval(intervalId);
-      osc.stop();
-    });
-  }
-
-  switch (profile) {
-    case "hum":
-      // A cold, idling-terminal feel - a low sine drone under filtered noise.
-      addOscillator(60, "sine", 0.5);
-      addFilteredNoise(0.15, 400);
-      break;
-    case "melancholy":
-      // Two slightly detuned sine pads for a slow, warm, wide texture.
-      addOscillator(110, "sine", 0.35);
-      addOscillator(110 * 1.005, "sine", 0.35);
-      break;
-    case "aggressive":
-      addOscillator(55, "sawtooth", 0.25);
-      addFilteredNoise(0.3, 900);
-      break;
-    case "epic":
-      // A harmonic chord (root/fifth/octave) for a warm, spacious feel.
-      addOscillator(65.4, "sine", 0.3); // C2
-      addOscillator(98.0, "sine", 0.22); // G2
-      addOscillator(130.8, "sine", 0.18); // C3
-      break;
-    case "chiptune":
-      addChiptuneArpeggio([261.63, 329.63, 392.0, 329.63], 500, 0.12);
-      break;
-    case "none":
-    default:
-      break;
+  if (profile !== "none") {
+    loadBuffer(audioCtx, AMBIENT_URLS[profile])
+      .then((buffer) => {
+        if (cancelled) return;
+        const offset = AMBIENT_START_OFFSET_SECONDS[profile] ?? 0;
+        source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        source.loopStart = offset;
+        source.connect(gain);
+        source.start(0, offset);
+      })
+      .catch(() => {
+        // Best-effort - e.g. decode failure, ambient just stays silent.
+      });
   }
 
   return {
     gain,
     stop: () => {
-      for (const fn of stopFns) {
-        try {
-          fn();
-        } catch {
-          // Already stopped - fine.
-        }
+      cancelled = true;
+      try {
+        source?.stop();
+      } catch {
+        // Already stopped - fine.
       }
     },
   };
@@ -277,24 +271,17 @@ export function setAmbientTheme(presetId: string): void {
   currentAmbient = { profile, handle };
 }
 
-let meowAudio: HTMLAudioElement | null = null;
-
-/**
- * The hidden "meow" button's whole feature - see CS2DatabaseWidget.tsx.
- * Sourced from Wikimedia Commons' "Meow of a pleading cat" recording,
- * dedicated to the public domain (CC0) - saved here as meow.ogg (same Ogg
- * Vorbis container, renamed from the original .oga extension since Vite's
- * built-in asset types don't recognize .oga):
- * https://commons.wikimedia.org/wiki/File:Meow_of_a_pleading_cat.oga
- */
+/** The hidden "meow" button's whole feature - see CS2DatabaseWidget.tsx. */
 export function playMeow(): void {
-  if (!settings.enabled) return;
-  if (!meowAudio) {
-    meowAudio = new Audio(meowUrl);
-  }
-  meowAudio.volume = settings.volume;
-  meowAudio.currentTime = 0;
-  void meowAudio.play().catch(() => {
-    // Best-effort - e.g. autoplay still blocked for some reason.
-  });
+  const { audioCtx, master } = getContext();
+  loadBuffer(audioCtx, meowUrl)
+    .then((buffer) => {
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(master);
+      source.start();
+    })
+    .catch(() => {
+      // Best-effort - e.g. decode failure.
+    });
 }

@@ -3,6 +3,28 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.1] - 2026-08-03
+
+### Changed
+
+- **Sound is now real recordings, not synthesized** - v0.4.0 shipped every
+  click/ambient sound procedurally generated via the Web Audio API to
+  sidestep licensing questions, but it sounded cheap and thin in practice.
+  Replaced with real, individually license-verified CC0/public-domain
+  audio (see "Sound" in the README for the full credit list and sources).
+  The one thing that was already a real sample, the meow easter egg, is
+  unchanged. One of the new ambient tracks ("epic", used for Halo 3) opens
+  with a ~4s silent fade-in in the source recording - playback now starts
+  a few seconds in and loops from that same point, so switching to that
+  theme doesn't sound like nothing happened for the first several seconds.
+
+### Fixed
+
+- The hidden meow button also triggered the app-wide UI click sound
+  (it's a `<button>`, so it matched the same document-level click
+  listener everything else does), so every meow overlapped with a second,
+  unrelated click - it now only plays the meow.
+
 ## [0.4.0] - 2026-08-03
 
 The three items deferred from v0.3 - all three needed either broader
