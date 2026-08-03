@@ -108,6 +108,15 @@ export const WIDGETS: WidgetDefinition[] = [
     defaultRowSpan: 1,
     Component: lazy(() => import("../widgets/habits/HabitsWidget").then((m) => ({ default: m.HabitsWidget }))),
   },
+  {
+    id: "pokemontcg",
+    label: "Pokémon TCG",
+    defaultColSpan: 2,
+    defaultRowSpan: 2,
+    Component: lazy(() =>
+      import("../widgets/pokemontcg/PokemonTcgWidget").then((m) => ({ default: m.PokemonTcgWidget })),
+    ),
+  },
 ];
 
 export function getDefaultSettings(): Record<string, WidgetUserSettings> {

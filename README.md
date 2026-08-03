@@ -155,7 +155,7 @@ src/
     ThemeSettings.tsx         - preset picker + custom color editor, shown in DashboardSettings
     updateService.ts         - wraps the Tauri updater plugin (check/download/install)
     UpdateSettings.tsx        - version display + "check for updates" UI, shown in DashboardSettings
-    GeneralSettings.tsx       - app-wide toggles (run-on-startup), shown in DashboardSettings
+    GeneralSettings.tsx       - app-wide toggles (run-on-startup, sound enable/volume)
     WidgetCell.tsx            - one grid-mode widget cell: resize handle, native-DnD reorder handle
     FreeWidgetCell.tsx        - one free-size-mode widget cell: pixel resize/reposition, bring-to-front
   styles/
@@ -170,8 +170,12 @@ src/
     ViewSwitcher.tsx        - tab + cycle-arrow UI for a widget's views, pairs with the hook above
     hooks/usePolling.ts    - fetch-once-then-poll hook every widget's data uses
     mock.ts, format.ts     - small helpers used by the mock providers/widgets
+    sound.ts               - synthesized click/ambient audio, volume settings, the meow sample
+  assets/
+    meow.ogg - the one real (not synthesized) sound file - see "Sound" below
   widgets/
     news/       stocks/       calendar/       cs2db/        spotify/       systemhealth/    quotes/
+    pokemontcg/
 ```
 
 Each widget follows the same shape:
@@ -209,29 +213,34 @@ builds itself:
 
 Click the ⚙ button (fixed top-right) to open the settings panel.
 
-**General** (also top of the panel, `GeneralSettings.tsx`) - currently just
-one toggle: launch JESSPR-EAST automatically when Windows starts, via
-`tauri-plugin-autostart`. Applies immediately, same "no save button"
-pattern as Appearance below.
+**General** (also top of the panel, `GeneralSettings.tsx`) - launch
+JESSPR-EAST automatically when Windows starts, via `tauri-plugin-autostart`;
+and an "Enable sounds" toggle + volume slider covering both UI clicks and
+theme ambience (see "Sound" below). Applies immediately, same "no save
+button" pattern as Appearance below.
 
 **Appearance** (top of the panel) - pick a theme, or build your own:
 
 - **Presets**: Dark (default), Light, Midnight (true black, OLED-friendly),
-  High Contrast, plus eight "for testing" themes riffing on specific games'/
-  films' visual identities (researched, not official palettes) - **Disco
-  Elysium** (muted, painterly sepia with a deep maroon accent), **Marathon**
-  (Bungie's 2025 reboot - steely dark blue/black with neon pink and
-  yellow), **Ultrakill** (black/white/blood-red/gold, high contrast),
-  **Alien** (the Nostromo/Sulaco's own computer terminals - phosphor-green
-  CRT text on near-black), **Deus Ex: Human Revolution** (black and gold,
-  built directly from reference screenshots of the game's own menu/
-  augmentation UI), **Halo 3** (translucent navy menu panels with a
-  gold-highlighted selection, from a reference screenshot), **MGSV: iDroid**
-  (cyan-on-navy field terminal, from a reference screenshot of Mother
-  Base's development menu), and **Metal Gear Solid** (a period-appropriate
-  teal PS1-HUD palette that slowly color-cycles, echoing the original's
-  codec screens - the least-verified of the eight, since its exact
-  color-cycling look couldn't be independently confirmed).
+  High Contrast, plus nine "for testing" themes riffing on specific games'/
+  sites' visual identities (researched, not official palettes, except
+  jesspring.io - see below) - **Disco Elysium** (muted, painterly sepia
+  with a deep maroon accent), **Marathon** (Bungie's 2025 reboot - steely
+  dark blue/black with neon pink and yellow), **Ultrakill**
+  (black/white/blood-red/gold, high contrast), **Alien** (the
+  Nostromo/Sulaco's own computer terminals - phosphor-green CRT text on
+  near-black), **Deus Ex: Human Revolution** (black and gold, built
+  directly from reference screenshots of the game's own menu/augmentation
+  UI), **Halo 3** (translucent navy menu panels with a gold-highlighted
+  selection, from a reference screenshot), **MGSV: iDroid** (cyan-on-navy
+  field terminal, from a reference screenshot of Mother Base's development
+  menu), **Metal Gear Solid** (a period-appropriate teal PS1-HUD palette
+  that slowly color-cycles, echoing the original's codec screens - the
+  least-verified of these, since its exact color-cycling look couldn't be
+  independently confirmed), and **jesspring.io** (built by fetching the
+  site's actual HTML/CSS directly rather than a screenshot - a darkened
+  version of its own bright magenta as the base, with its real accent/
+  button colors carried over unchanged).
 - **Custom**: picking it reveals a color picker for each of the 10 themeable
   roles (background, surface, border, text, accent, positive/negative/
   warning, etc.) - see `THEME_COLOR_FIELDS` in `src/styles/themes.ts` for
@@ -277,6 +286,13 @@ untouched by this file - pure color, as before):
   through a full cycle - pure CSS, no JS per-frame updates, layers cleanly
   on top of the color system without touching the `--color-*` variables
   themselves.
+- **jesspring.io** - zero border-radius and a hard, non-blurred offset
+  drop shadow (the site's own CSS literally uses `box-shadow: <color>
+  10px 10px` with no blur, on every card/button/image - reproduced here),
+  a subtle diagonal magenta stripe in the header echoing its real dither
+  texture, and widget titles in "Press Start 2P" (a properly-licensed
+  Google/Fontsource pixel font - the site's own "PixelCraft" is a paid
+  font just hosted through a font-conversion CDN, so it wasn't used).
 
 Disco Elysium/Marathon/Ultrakill/Metal Gear Solid are a best-effort
 approximation from research (search results, art direction interviews),
@@ -284,9 +300,10 @@ not a pixel-accurate recreation of any game's real UI - Metal Gear Solid
 especially, since its exact color-cycling behavior couldn't be
 independently verified either. Alien, Deus Ex: Human Revolution, Halo 3,
 and MGSV: iDroid were built directly against reference screenshots
-instead, so those are a closer match. Everything here targets
-`.widget-shell`, so any future theme can add its own flair the same way
-just by adding a new `[data-theme-style="..."]` block.
+instead, so those are a closer match; jesspring.io was built directly
+against the site's own fetched source, closer still. Everything here
+targets `.widget-shell`, so any future theme can add its own flair the
+same way just by adding a new `[data-theme-style="..."]` block.
 
 Per widget, you can set:
 
@@ -346,6 +363,35 @@ with just that widget, not just a centered modal - `Overlay.tsx` gained a
 instead of the existing expand view's capped `1100px × 800px`), so it's a
 small additive change to the existing expand-to-overlay mechanism rather
 than a new one.
+
+### Sound
+
+UI clicks app-wide and a per-theme ambient loop, both entirely synthesized
+at runtime with the Web Audio API (`src/shared/sound.ts`) - not a
+licensing workaround, a better fit: zero bundle size, and it composes
+cleanly with per-theme differentiation (varying oscillator waveform/
+frequency/filter is easy; sourcing and rights-clearing a dozen separate
+sample packs is not). Clicks are wired via one delegated `click` listener
+at the document level (`App.tsx`) rather than touching every button in
+every widget individually - it covers every current and future one for
+free. Ambient is tied into the existing theme system: `themeStore.ts`'s
+`applyTheme` (the single choke point every theme change already runs
+through) calls `sound.setAmbientTheme()`, which crossfades to a profile
+grouping the 9 flavor presets into 5 distinct characters rather than 9
+shallow bespoke ones - a cold "hum" (Alien, MGSV: iDroid, Deus Ex, Marathon),
+a warm "melancholy" pad (Disco Elysium, Metal Gear Solid), a driving
+"aggressive" tone (Ultrakill), a spacious harmonic "epic" chord (Halo 3),
+and a soft "chiptune" arpeggio (jesspring.io). Dark/Light/Midnight/High
+Contrast/Custom get no ambient at all - picking a plain theme for a quiet,
+plain look shouldn't come with forced background noise. An "Enable
+sounds" toggle + volume slider live in Settings → General.
+
+The one thing here that *isn't* synthesized: the hidden "meow" button
+tucked into the CS2 Database widget's filter bar (a tiny, unlabeled dot -
+look for it) plays a real recording, since a synthesized cat sound would
+read as a joke rather than a cat. It's ["Meow of a pleading
+cat"](https://commons.wikimedia.org/wiki/File:Meow_of_a_pleading_cat.oga),
+dedicated to the public domain (CC0) on Wikimedia Commons.
 
 ### Widget notes
 
@@ -464,6 +510,25 @@ than a new one.
     Profiles/Analysis views are untouched for now; whether to retire the
     homegrown database in favor of this is a call for once it's actually
     been seen working (or not) in the real app.
+- **Pokémon TCG** - three views, cycled with `useWidgetViews`/`ViewSwitcher`:
+  - *Prices* - search any card by name against
+    [api.pokemontcg.io](https://pokemontcg.io)
+    (`src-tauri/src/pokemon_tcg.rs`), a free API that works with no key at
+    all (an optional free key just raises the rate limit, same handling as
+    PandaScore's). Each result shows TCGPlayer (US) and Cardmarket (EU)
+    prices side by side, straight from that one response - a genuine
+    comparison between two independent markets, not two separate
+    integrations.
+  - *Collection* - check off cards you own with a quantity stepper
+    (`collectionStore.ts`, `localStorage`, no artificial cap the way the
+    smaller list-stores elsewhere have - a real collection can run into
+    the hundreds), a running estimated total value, and a "Refresh prices"
+    action that re-fetches current prices for everything you own.
+  - *Spend Tracker* - log pack/box purchases (product + cost) and, per
+    purchase, the individual cards pulled with a value each
+    (`spendStore.ts`) - an optional 🔍 lookup reuses the Prices search to
+    fill in a pull's value instead of typing it by hand. Running totals
+    for spent / pulled value / net gain-or-loss.
 - **Spotify** - a remote control for whatever's already playing on Spotify
   elsewhere (your phone, the real desktop app, spotify.com in a browser
   tab), not a player that outputs audio itself. Auth is entirely on the

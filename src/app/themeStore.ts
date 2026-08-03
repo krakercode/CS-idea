@@ -1,5 +1,6 @@
 import { DEFAULT_PRESET_ID, THEME_COLOR_FIELDS, THEME_PRESETS, type ThemeColors } from "../styles/themes";
 import { DEFAULT_FONT_ID, FONT_OPTIONS } from "../styles/fonts";
+import { setAmbientTheme } from "../shared/sound";
 
 export interface ThemeState {
   /** A THEME_PRESETS id, or "custom" to use customColors instead. */
@@ -63,6 +64,7 @@ export function applyTheme(state: ThemeState): void {
   }
   root.setProperty("--font-sans", resolveFontCssValue(state.fontId));
   document.documentElement.setAttribute("data-theme-style", state.presetId);
+  setAmbientTheme(state.presetId);
 }
 
 export function setPreset(presetId: string): ThemeState {

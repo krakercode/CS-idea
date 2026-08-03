@@ -204,6 +204,43 @@
   color: var(--color-accent);
 }
 
+/* ---------- jesspring.io: chunky pixel-art personal site, hard drop shadows ----------
+   Unlike the other presets above, this one was built by fetching the
+   site's actual HTML/CSS directly (not researched/approximated, and not a
+   screenshot) - see themes.ts's comment on the "jesspring-io" preset for
+   which values came from where. The real site's signature look is a hard,
+   non-blurred, offset drop shadow (its own CSS literally uses
+   `box-shadow: <color> 10px 10px` with zero blur, on every card/button/
+   image) and zero border-radius anywhere - both reproduced here. */
+
+[data-theme-style="jesspring-io"] .widget-shell {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: 6px 6px 0 var(--color-border);
+}
+
+[data-theme-style="jesspring-io"] .widget-shell__header {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(204, 0, 204, 0.15) 0px,
+    rgba(204, 0, 204, 0.15) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+}
+
+[data-theme-style="jesspring-io"] .widget-shell__title {
+  font-family: "Press Start 2P", "Cascadia Code", monospace;
+  font-size: 0.7em;
+  letter-spacing: 0.04em;
+  text-shadow: 2px 2px 0 var(--color-border);
+}
+
+[data-theme-style="jesspring-io"] .widget-shell__title::before {
+  content: "\25A0\0020"; /* ■ - a nod to the site's chunky pixel-block imagery */
+  color: var(--color-accent);
+}
+
 /* ---------- Metal Gear Solid: PS1-era codec screen, slow color-cycle ----------
    Best-effort, not from a reference screenshot - see themes.ts's comment on
    the "mgs1" preset for why. */

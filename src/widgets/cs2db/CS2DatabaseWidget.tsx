@@ -3,6 +3,7 @@ import { WidgetShell } from "../../shared/WidgetShell";
 import { ViewSwitcher } from "../../shared/ViewSwitcher";
 import { useWidgetViews } from "../../shared/useWidgetViews";
 import { ExternalLink } from "../../shared/ExternalLink";
+import { playMeow } from "../../shared/sound";
 import { getCs2Repository } from "./cs2Service";
 import { LineupList } from "./LineupList";
 import { ProfilesView } from "./profiles/ProfilesView";
@@ -101,6 +102,13 @@ export function CS2DatabaseWidget() {
               ))}
             </select>
           )}
+          <button
+            type="button"
+            className="cs2-widget__easter-egg"
+            onClick={() => playMeow()}
+            aria-label="?"
+            tabIndex={-1}
+          />
         </div>
       )}
 

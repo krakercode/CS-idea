@@ -5,3 +5,12 @@
   font-size: 12px;
   color: var(--color-text);
 }
+
+.general-settings__volume {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  color: var(--color-text);
+  margin-top: var(--space-2);
+}

@@ -11,6 +11,11 @@ import "@fontsource/inter/600.css";
 import "@fontsource/space-grotesk/400.css";
 import "@fontsource/space-grotesk/500.css";
 import "@fontsource/space-grotesk/600.css";
+// Not in the user-facing font picker - only used by theme-flair.css's
+// "jesspring-io" preset for its widget titles (same pattern as Marathon/
+// Alien/MGSV hardcoding a system monospace font for theirs, except this
+// one isn't a system font, so it needs to actually ship the file).
+import "@fontsource/press-start-2p/400.css";
 
 // Applied before the first render so the saved theme is in place from the
 // very first paint instead of flashing the default (theme.css's :root)

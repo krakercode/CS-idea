@@ -4,6 +4,23 @@
   margin-bottom: var(--space-3);
 }
 
+.cs2-widget__easter-egg {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  margin-left: auto;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-border);
+  opacity: 0.35;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.cs2-widget__easter-egg:hover {
+  opacity: 0.7;
+}
+
 .cs2-widget__filters select,
 .cs2-widget__search {
   background: var(--color-surface-raised);

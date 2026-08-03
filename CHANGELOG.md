@@ -3,6 +3,48 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.0] - 2026-08-03
+
+The three items deferred from v0.3 - all three needed either broader
+network access or a decision on how to handle audio, both resolved this
+round - plus a whole new widget.
+
+### Added
+
+- **Pokémon TCG widget**: a **Prices** tab to search cards and compare
+  TCGPlayer (US) and Cardmarket (EU) prices side by side, in the same
+  response from `api.pokemontcg.io`; a **Collection** tab to check off
+  owned cards with a quantity stepper, a running estimated collection
+  value, and a "Refresh prices" action; and a **Spend Tracker** tab to log
+  pack/box purchases with per-pull value tracking (an optional lookup
+  reuses the same price search to fill in a pull's value) and a running
+  spent/pulled/net total. Works with no API key at all; an optional free
+  key from pokemontcg.io just raises the rate limit, same shape as
+  PandaScore's key handling.
+- **jesspring.io theme preset** - built directly from the site's own
+  fetched HTML/CSS (colors, the signature hard non-blurred drop shadow,
+  zero border-radius) rather than a screenshot, since this was the one
+  theme blocked on network access last round. Background/surface are
+  darkened versions of the site's actual (very bright) magenta rather
+  than a literal copy - fine for an occasional-visit personal site, too
+  intense for something on-screen all day.
+- **Sound**: UI clicks app-wide and a distinct ambient loop per theme
+  preset, an "Enable sounds" toggle + volume slider in Settings, and a
+  hidden easter-egg button in the CS2 Database widget that just meows.
+  Every click/ambient sound is synthesized at runtime with the Web Audio
+  API - not a licensing workaround, a better fit here: zero bundle size,
+  zero attribution/redistribution questions, and easy to vary per theme
+  (oscillator waveform/frequency/filter). The 9 flavor presets are grouped
+  into 5 distinct ambient characters (a cold "hum" for Alien/MGSV
+  iDroid/Deus Ex/Marathon, a warm "melancholy" pad for Disco Elysium/MGS1,
+  a driving "aggressive" tone for Ultrakill, a spacious harmonic "epic"
+  chord for Halo 3, a soft "chiptune" arpeggio for jesspring.io); the
+  plain utility presets (Dark/Light/Midnight/High Contrast/Custom) get no
+  ambient at all. The one exception to "everything is synthesized" is the
+  meow sound itself - a real recording ("Meow of a pleading cat",
+  dedicated to the public domain / CC0, from Wikimedia Commons), since a
+  synthesized cat sound would read as a joke rather than a cat.
+
 ## [0.3.1] - 2026-08-02
 
 A fix-and-optimization pass across the whole app, plus a couple of small

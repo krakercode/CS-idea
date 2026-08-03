@@ -7,6 +7,7 @@ mod leetify_client;
 mod news;
 mod of_the_day;
 mod pandascore;
+mod pokemon_tcg;
 mod recipe_of_the_day;
 mod spotify;
 mod stocks;
@@ -240,6 +241,24 @@ async fn spotify_saved_tracks(
     spotify::saved_tracks(&app, &state.client, limit, offset).await
 }
 
+#[tauri::command]
+async fn search_pokemon_cards(
+    state: tauri::State<'_, HttpState>,
+    query: String,
+    api_key: Option<String>,
+) -> Result<Vec<pokemon_tcg::PokemonCard>, ()> {
+    Ok(pokemon_tcg::search_cards(&state.client, &query, api_key.as_deref()).await)
+}
+
+#[tauri::command]
+async fn get_pokemon_card(
+    state: tauri::State<'_, HttpState>,
+    card_id: String,
+    api_key: Option<String>,
+) -> Result<Option<pokemon_tcg::PokemonCard>, ()> {
+    Ok(pokemon_tcg::get_card(&state.client, &card_id, api_key.as_deref()).await)
+}
+
 /// Entertainment Centre's "Launch" button - spawns a user-configured local
 /// executable (an emulator, a game, anything) with optional arguments (e.g.
 /// a ROM/save path), fire-and-forget. Deliberately not going through
@@ -300,6 +319,8 @@ fn main() {
             spotify_is_connected,
             spotify_get_access_token,
             spotify_saved_tracks,
+            search_pokemon_cards,
+            get_pokemon_card,
             launch_shortcut
         ])
         .run(tauri::generate_context!())

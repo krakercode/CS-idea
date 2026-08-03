@@ -1,0 +1,270 @@
+.pokemontcg-widget__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pokemontcg-widget__settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.pokemontcg-widget__settings label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.pokemontcg-widget__settings-hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.pokemontcg-widget__settings-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.pokemontcg-widget__settings-row input {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 12px;
+}
+
+.pokemontcg-widget__search-form,
+.pokemontcg-widget__spend-form,
+.pokemontcg-widget__pull-form {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.pokemontcg-widget__search-input,
+.pokemontcg-widget__product-input,
+.pokemontcg-widget__pull-name-input {
+  flex: 1;
+  min-width: 0;
+}
+
+input.pokemontcg-widget__search-input,
+input.pokemontcg-widget__product-input,
+input.pokemontcg-widget__cost-input,
+input.pokemontcg-widget__pull-name-input,
+input.pokemontcg-widget__pull-value-input {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 12px;
+}
+
+.pokemontcg-widget__cost-input,
+.pokemontcg-widget__pull-value-input {
+  width: 80px;
+}
+
+.pokemontcg-widget__error {
+  color: var(--color-negative);
+  font-size: 12px;
+}
+
+.pokemontcg-widget__empty {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.pokemontcg-widget__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pokemontcg-widget__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pokemontcg-widget__row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.pokemontcg-widget__thumb {
+  width: 44px;
+  height: 61px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+}
+
+.pokemontcg-widget__row-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pokemontcg-widget__card-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pokemontcg-widget__card-meta {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.pokemontcg-widget__price-compare {
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.pokemontcg-widget__add-button {
+  flex-shrink: 0;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.pokemontcg-widget__collection-summary,
+.pokemontcg-widget__spend-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.pokemontcg-widget__net--positive {
+  color: var(--color-positive);
+}
+
+.pokemontcg-widget__net--negative {
+  color: var(--color-negative);
+}
+
+.pokemontcg-widget__qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.pokemontcg-widget__qty-stepper button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+}
+
+.pokemontcg-widget__remove {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.pokemontcg-widget__remove:hover {
+  color: var(--color-negative);
+}
+
+.pokemontcg-widget__spend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pokemontcg-widget__spend-entry {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+}
+
+.pokemontcg-widget__spend-entry-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  margin-bottom: var(--space-2);
+}
+
+.pokemontcg-widget__spend-entry-header > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.pokemontcg-widget__pulls {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pokemontcg-widget__pull {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 11px;
+}
+
+.pokemontcg-widget__pull > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.pokemontcg-widget__pull-form {
+  margin-bottom: 0;
+}
+
+.pokemontcg-widget__lookup-results {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.pokemontcg-widget__lookup-results button {
+  font-size: 11px;
+  text-align: left;
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+}
+
+.pokemontcg-widget__spend-entry-footer {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+  text-align: right;
+}

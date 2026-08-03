@@ -236,6 +236,33 @@ export const THEME_PRESETS: ThemePreset[] = [
     },
   },
   {
+    id: "jesspring-io",
+    label: "jesspring.io",
+    colors: {
+      // Pulled directly from the site's own stylesheet (fetched and read,
+      // not eyeballed off a screenshot) rather than researched/approximated
+      // like most of the other game-inspired presets. The site's actual
+      // background is a *very* bright rgb(165,0,165) magenta with rgb(204,
+      // 0,204) card panels - fine for an occasional-visit personal site,
+      // too intense as an all-day dashboard background, so bg/surface here
+      // are darkened versions of that same hue instead of a literal copy.
+      // accent/positive/negative/warning ARE the site's real values
+      // unchanged: accent is its header/card magenta (204,0,204), positive
+      // is its primary button green (0,191,0), negative is its red-card
+      // red (191,0,0), warning is its yellow title/card yellow (223,223,0).
+      bg: "#140714",
+      surface: "#200d20",
+      surfaceRaised: "#2c142c",
+      border: "#3f003f",
+      text: "#f5e6f5",
+      textMuted: "#a878a8",
+      accent: "#cc00cc",
+      positive: "#00bf00",
+      negative: "#bf0000",
+      warning: "#dfdf00",
+    },
+  },
+  {
     id: "mgs1",
     label: "Metal Gear Solid",
     colors: {
