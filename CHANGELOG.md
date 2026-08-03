@@ -3,6 +3,25 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0] - 2026-08-03
+
+### Added
+
+- **Transit Tracker widget** - a departure-board-style tracker, two tabs:
+  - *Transit* (trains/buses/ferries) - search and track stops worldwide via
+    [Transitland](https://transit.land) (needs a free user-supplied API
+    key, same handling as PandaScore's), showing upcoming departures with
+    route, headsign, mode, and real-time delay where the feed provides one.
+  - *Flights* - search and track any of ~3,300 airports with scheduled
+    service (offline search over a bundled, filtered
+    [OurAirports](https://ourairports.com/data) dataset), showing recent
+    arrivals/departures via [OpenSky Network](https://opensky-network.org) -
+    free, no key needed. This is logged flight activity, not a live
+    schedule board: no gate info, and arrivals specifically only cover
+    "yesterday" since that's how OpenSky's free tier updates that endpoint;
+    departures are much closer to real-time. See the README's "Transit
+    Tracker" section for the full detail.
+
 ## [0.4.1] - 2026-08-03
 
 ### Changed

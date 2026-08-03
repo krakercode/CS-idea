@@ -712,6 +712,43 @@ meow.
     rate number and pulse shape are purely cosmetic flavor, not a real
     physiological model - explicitly labeled as such in the widget itself.
 
+- **Transit Tracker** - a departure-board-style widget, two tabs:
+  - *Transit* (trains/buses/ferries) - search any stop worldwide by name via
+    [Transitland](https://transit.land) (`src-tauri/src/transit.rs`), which
+    aggregates GTFS + GTFS-realtime feeds from thousands of agencies across
+    50+ countries - one integration instead of one per transit agency. Needs
+    a free API key (per-account secret, so it's user-supplied via the ⚙
+    button, same handling as PandaScore's, never baked in). Track up to 10
+    stops (`trackedStopsStore.ts`); each shows upcoming departures with
+    route, headsign, mode, and real-time delay where the underlying feed
+    provides one. Like `pandascore.rs`, this module's response shape
+    couldn't be verified against a live call (getting a real key needs an
+    interactive signup this environment can't complete) - built from
+    Transitland's documented REST API + GTFS field names, read defensively
+    (every field optional, a shape mismatch drops a field or a departure,
+    never panics).
+  - *Flights* - recent arrivals/departures for any of ~3,300 airports with
+    scheduled service, via [OpenSky Network](https://opensky-network.org)
+    (`src-tauri/src/opensky.rs`) - free and keyless (a modest daily credit
+    budget applies, well within what an on-demand, not auto-polled, fetch
+    needs). Airport search is instant and offline: `airportsData.ts` bundles
+    a filtered copy of [OurAirports](https://ourairports.com/data)' airport
+    database (public domain), trimmed from ~85k rows to large/medium
+    airports with scheduled airline service. Worth being clear about what
+    this actually is: OpenSky is built from real ADS-B tracking data, not
+    an airline schedule feed, so there's no gate info, no delay status, and
+    it can only show flights that already happened - departures cover
+    roughly the last few hours, but arrivals specifically only ever have
+    data through "yesterday" since that's how OpenSky's own nightly batch
+    process updates that endpoint. It's a recent-activity log, not a live
+    departure board, and the widget labels it that way rather than implying
+    real-time gate/schedule info. The flight-object response fields
+    (callsign/firstSeen/lastSeen/estDepartureAirport/estArrivalAirport) are
+    OpenSky's long-standing public schema, not re-confirmed live this round
+    either - the docs page's own property table wasn't rendering any
+    content when checked, an apparent gap on their end - so this is read
+    defensively the same way.
+
 ## CS2 Analysis backend (Leetify)
 
 Unlike the rest of the app, the Analysis view talks to a real external API
