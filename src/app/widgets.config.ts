@@ -117,6 +117,13 @@ export const WIDGETS: WidgetDefinition[] = [
       import("../widgets/pokemontcg/PokemonTcgWidget").then((m) => ({ default: m.PokemonTcgWidget })),
     ),
   },
+  {
+    id: "transit",
+    label: "Transit Tracker",
+    defaultColSpan: 2,
+    defaultRowSpan: 2,
+    Component: lazy(() => import("../widgets/transit/TransitWidget").then((m) => ({ default: m.TransitWidget }))),
+  },
 ];
 
 export function getDefaultSettings(): Record<string, WidgetUserSettings> {

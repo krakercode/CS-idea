@@ -6,6 +6,7 @@ mod db;
 mod leetify_client;
 mod news;
 mod of_the_day;
+mod opensky;
 mod pandascore;
 mod pokemon_tcg;
 mod recipe_of_the_day;
@@ -13,6 +14,7 @@ mod spotify;
 mod stocks;
 mod suggestions;
 mod system_health;
+mod transit;
 
 use db::Db;
 use leetify_client::{LeetifyClient, LeetifyError};
@@ -259,6 +261,40 @@ async fn get_pokemon_card(
     Ok(pokemon_tcg::get_card(&state.client, &card_id, api_key.as_deref()).await)
 }
 
+#[tauri::command]
+async fn search_transit_stops(
+    state: tauri::State<'_, HttpState>,
+    api_key: String,
+    query: String,
+) -> Result<Vec<transit::TransitStop>, ()> {
+    Ok(transit::search_stops(&state.client, &api_key, &query).await)
+}
+
+#[tauri::command]
+async fn get_transit_departures(
+    state: tauri::State<'_, HttpState>,
+    api_key: String,
+    stop_id: String,
+) -> Result<Vec<transit::TransitDeparture>, ()> {
+    Ok(transit::get_departures(&state.client, &api_key, &stop_id).await)
+}
+
+#[tauri::command]
+async fn get_airport_arrivals(
+    state: tauri::State<'_, HttpState>,
+    icao: String,
+) -> Result<Vec<opensky::FlightMovement>, ()> {
+    Ok(opensky::get_arrivals(&state.client, &icao).await)
+}
+
+#[tauri::command]
+async fn get_airport_departures(
+    state: tauri::State<'_, HttpState>,
+    icao: String,
+) -> Result<Vec<opensky::FlightMovement>, ()> {
+    Ok(opensky::get_departures(&state.client, &icao).await)
+}
+
 /// Entertainment Centre's "Launch" button - spawns a user-configured local
 /// executable (an emulator, a game, anything) with optional arguments (e.g.
 /// a ROM/save path), fire-and-forget. Deliberately not going through
@@ -321,6 +357,10 @@ fn main() {
             spotify_saved_tracks,
             search_pokemon_cards,
             get_pokemon_card,
+            search_transit_stops,
+            get_transit_departures,
+            get_airport_arrivals,
+            get_airport_departures,
             launch_shortcut
         ])
         .run(tauri::generate_context!())
