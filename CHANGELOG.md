@@ -3,6 +3,23 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0] - 2026-08-04
+
+### Added
+
+- **GAELJANK SOFTWORKS widget** - an in-house "game label" widget: a small
+  launcher listing playable games, each opening fullscreen in its own
+  overlay. First cartridge: **One More Season**, a full football
+  career-mode sim (Sunday league to the very top, youth trials, transfers,
+  contract negotiations, international caps, a real simulated 38-game
+  league season per year, retirement at 38) in a retro
+  vidiprinter/teletext screen style. Ported from a standalone build (CDN
+  React + in-browser Babel) into this app's actual React 19/Vite/
+  TypeScript setup rather than loading a second React runtime - same game,
+  same data and formulas, native to the app instead of an embedded HTML
+  page. Built to hold more games later - adding one is a new entry in
+  `gamesCatalog.ts`, no changes to the widget itself.
+
 ## [0.5.2] - 2026-08-04
 
 Another full bug-fix/optimization pass: two parallel audits (frontend,

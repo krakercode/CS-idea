@@ -16,6 +16,16 @@ import "@fontsource/space-grotesk/600.css";
 // Alien/MGSV hardcoding a system monospace font for theirs, except this
 // one isn't a system font, so it needs to actually ship the file).
 import "@fontsource/press-start-2p/400.css";
+// Not in the user-facing font picker either - the "One More Season" game
+// (GAELJANK SOFTWORKS widget) uses these for its retro vidiprinter look.
+// Self-hosted for the same reason as everything else here: this app needs
+// to keep working with no network, so a live Google Fonts @import (what
+// the game originally shipped with as a standalone HTML file) isn't an
+// option.
+import "@fontsource/vt323/400.css";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/500.css";
+import "@fontsource/ibm-plex-mono/600.css";
 
 // Applied before the first render so the saved theme is in place from the
 // very first paint instead of flashing the default (theme.css's :root)

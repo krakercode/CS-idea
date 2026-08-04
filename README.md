@@ -749,6 +749,34 @@ meow.
     content when checked, an apparent gap on their end - so this is read
     defensively the same way.
 
+- **GAELJANK SOFTWORKS** - a small "game label" widget: a launcher listing
+  playable games (`src/widgets/gaeljank/gamesCatalog.ts`), each opening
+  fullscreen in its own `Overlay` when you hit Play, with a "quit to menu"
+  button to back out. Adding a future game is one new entry in that
+  catalog file - no changes needed to the widget itself.
+  - **One More Season** (`games/onemoreseason/`) - a full football
+    career-mode sim: pick a nation, position, and career ambition, work
+    through youth trials, sign your first contract, then live out
+    real 38-game simulated league seasons (a genuine 20-club table, a real
+    schedule, Poisson-sampled goals/assists so a striker's season reads as
+    believably streaky rather than a flat average) interspersed with
+    narrative events - transfer interest, contract standoffs, international
+    call-ups, discipline hearings, derby weeks, and more - all the way to
+    retirement at 38, with a legacy score and a final verdict on whether you
+    hit your original ambition. Rendered in a retro football-vidiprinter/
+    teletext screen style (self-hosted `VT323` + `IBM Plex Mono`, same
+    self-hosting reasoning as every other font here - this needs to keep
+    working without a network connection). Ported from a standalone,
+    hand-built HTML file (CDN React 18 + in-browser Babel, no bundler) into
+    this app's actual React 19/Vite/TypeScript setup - same data tables,
+    formulas, and copy, just compiled and bundled properly instead of
+    shipping a second React runtime and transpiling JSX at runtime inside
+    an already-bundled desktop app. Entirely self-contained and
+    deterministic-per-random-seed (no network calls, no API key) - the one
+    thing it doesn't do yet is persist an in-progress career across closing
+    the widget or restarting the app, unlike most of this app's other
+    per-widget state.
+
 ## CS2 Analysis backend (Leetify)
 
 Unlike the rest of the app, the Analysis view talks to a real external API

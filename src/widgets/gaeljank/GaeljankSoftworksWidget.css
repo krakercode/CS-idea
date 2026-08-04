@@ -1,0 +1,65 @@
+.gaeljank-widget__tagline {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 var(--space-3);
+}
+
+.gaeljank-widget__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.gaeljank-widget__game {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.gaeljank-widget__game-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.gaeljank-widget__game-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.gaeljank-widget__game-tagline {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: var(--space-2);
+}
+
+.gaeljank-widget__game-blurb {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+
+.gaeljank-widget__play {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: var(--space-2) var(--space-4);
+}
+
+/* The game itself keeps its own fixed retro palette regardless of the
+   active dashboard theme, same reasoning as the csnades.gg embed not
+   re-theming - it's someone else's (well, ours, but still fixed) screen
+   inside a window, not a dashboard surface. */
+.gaeljank-widget__overlay-panel {
+  background: #05060a;
+}

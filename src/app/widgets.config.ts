@@ -124,6 +124,15 @@ export const WIDGETS: WidgetDefinition[] = [
     defaultRowSpan: 2,
     Component: lazy(() => import("../widgets/transit/TransitWidget").then((m) => ({ default: m.TransitWidget }))),
   },
+  {
+    id: "gaeljank",
+    label: "GAELJANK SOFTWORKS",
+    defaultColSpan: 1,
+    defaultRowSpan: 1,
+    Component: lazy(() =>
+      import("../widgets/gaeljank/GaeljankSoftworksWidget").then((m) => ({ default: m.GaeljankSoftworksWidget })),
+    ),
+  },
 ];
 
 export function getDefaultSettings(): Record<string, WidgetUserSettings> {
