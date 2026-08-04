@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   GOALS,
-  MIDSEASON_EVENTS,
   NATIONS,
   NATION_KEYS,
   PAGES,
@@ -26,7 +25,7 @@ import {
   statTier,
   wageMultiplier,
 } from "./gameLogic";
-import type { Choice, Goal, Legacy, NationKey, Phase, Player, PositionKey, SeasonResult, StatKey, TableRow, ViewMode } from "./types";
+import type { Choice, Goal, Legacy, NarrativeEvent, NationKey, Phase, Player, Position, PositionKey, SeasonResult, StatKey, TableRow, ViewMode } from "./types";
 
 /* =========================================================
    THEME - old football vidiprinter / teletext screen
@@ -191,7 +190,7 @@ export function OneMoreSeasonGame({ onExit }: { onExit: () => void }) {
   const [youthIdx, setYouthIdx] = useState(0);
   const [ticker, setTicker] = useState<SeasonResult["ticks"]>([]);
   const [seasonResult, setSeasonResult] = useState<SeasonResult | null>(null);
-  const [currentEvent, setCurrentEvent] = useState<(typeof MIDSEASON_EVENTS)[number] | null>(null);
+  const [currentEvent, setCurrentEvent] = useState<NarrativeEvent | null>(null);
   const [legacy, setLegacy] = useState<Legacy | null>(null);
   const [view, setView] = useState<ViewMode>("career");
   const tickTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -478,7 +477,7 @@ function CreateScreen({
       </div>
       <div style={{ fontFamily: MONO, fontSize: 12, color: T.dim, marginBottom: 8, letterSpacing: 1 }}>PICK YOUR POSITION</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
-        {(Object.entries(POSITIONS) as [PositionKey, (typeof POSITIONS)[PositionKey]][]).map(([key, p]) => (
+        {(Object.entries(POSITIONS) as [PositionKey, Position][]).map(([key, p]) => (
           <button
             key={key}
             onClick={() => setPos(key)}
@@ -652,8 +651,7 @@ function SeasonResultScreen({ result, player, onContinue }: { result: SeasonResu
 
 function CoachScreen({ player, onContinue }: { player: Player; onContinue: () => void }) {
   const s = player.seasonHistory[player.seasonHistory.length - 1];
-  const resultForFeedback = { tableSpot: s.tableSpot, goals: s.goals, assists: s.assists, cleanSheets: s.cs, avgRating: parseFloat(s.rating), appearances: s.apps } as SeasonResult;
-  const feedback = generateCoachFeedback(player, resultForFeedback);
+  const feedback = generateCoachFeedback(player, { tableSpot: s.tableSpot, goals: s.goals, assists: s.assists, cleanSheets: s.cs, appearances: s.apps });
   const moodColor = feedback.mood === "pleased" ? T.green : feedback.mood === "concerned" ? T.red : T.yellow;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }} className="oms-layout-grid">

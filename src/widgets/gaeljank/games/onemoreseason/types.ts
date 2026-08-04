@@ -104,6 +104,10 @@ export interface Choice {
 }
 
 export interface NarrativeEvent {
+  /** Stable identifier for eligibility filtering (see `eligibleEvents`) -
+   * kept separate from `title` so editing the display copy can never
+   * silently break which events are gated to which career stage. */
+  id: string;
   title: string;
   text: (p: Player, club: ClubTier) => string;
   choices: Choice[];

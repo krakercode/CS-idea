@@ -3,6 +3,34 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.1] - 2026-08-04
+
+### Fixed
+
+- **GAELJANK SOFTWORKS / One More Season code review** - `CoachScreen` built
+  a fake `SeasonResult` object with an unsafe `as SeasonResult` cast just to
+  satisfy `generateCoachFeedback`'s parameter type, even though that
+  function only ever reads 5 of that type's dozen-plus fields - narrowed
+  the function to take exactly the fields it uses (`CoachFeedbackInput`),
+  so the cast (and the risk of it silently going stale if the function's
+  needs ever changed) is gone entirely.
+- Mid-season event eligibility (`eligibleEvents`) matched events against
+  each other by comparing `e.title` to hardcoded string literals - any
+  future copy edit to an event's title would silently disable its
+  age/reputation/tier gating with no warning anywhere. Every event now
+  carries a stable `id` separate from its display `title`, and eligibility
+  is a single lookup table keyed by `id` instead of 11 scattered
+  string-equality checks.
+- Minor type cleanup: `currentEvent`'s state type and the position-list
+  cast in `CreateScreen` both used indirect `typeof X[number]`/
+  `(typeof X)[Y]` derivations instead of importing the actual `NarrativeEvent`/
+  `Position` types directly - no behavior change, just clearer types.
+
+Reviewed the rest of the ported game closely for a similar pass (stat
+math, season simulation, league scheduling, event application) and didn't
+find anything else - re-verified with a full browser-driven playthrough
+across 4 simulated seasons after these changes, same as before them.
+
 ## [0.6.0] - 2026-08-04
 
 ### Added

@@ -298,6 +298,7 @@ export function bumpStats(player: Player, deltas: Partial<Stats>): Player {
 
 export const YOUTH_EVENTS: NarrativeEvent[] = [
   {
+    id: "tuesday-night-training",
     title: "Tuesday night training",
     text: (p) => `Your Sunday league coach pulls ${firstName(p)} aside after another 6am session. "You've got something. Question is what you do with it."`,
     choices: [
@@ -307,6 +308,7 @@ export const YOUTH_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "scout-day",
     title: "Scout day",
     text: (p) => `A scout from ${NATIONS[p.nation].clubs[1].name} is watching from the touchline with a clipboard. This is the trial that decides everything.`,
     choices: [
@@ -328,6 +330,7 @@ export const YOUTH_EVENTS: NarrativeEvent[] = [
 
 export const MIDSEASON_EVENTS: NarrativeEvent[] = [
   {
+    id: "injury-scare",
     title: "Injury scare",
     text: (p) => `${firstName(p)} pulls up sharp in training. The physio's face says it all.`,
     choices: [
@@ -344,6 +347,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "transfer-interest",
     title: "Transfer interest",
     text: (p, club) => `Word reaches the dressing room: a bigger club has been watching ${firstName(p)} for weeks. ${club.name} won't want to let you go easily.`,
     choices: [
@@ -362,6 +366,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "overseas-approach",
     title: "Overseas approach",
     text: (p, club) => `Scouts have flown in from abroad. There's real interest in taking ${firstName(p)} away from ${club.name} for a fresh start in a different country.`,
     choices: [
@@ -385,6 +390,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "media-storm",
     title: "Media storm",
     text: (p) => `A post-match interview clip of ${firstName(p)} is everywhere online. The phone won't stop buzzing.`,
     choices: [
@@ -393,6 +399,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "international-call-up",
     title: "International call-up",
     text: (p) => `A letter arrives from the national federation. They want ${firstName(p)} in the squad for the upcoming fixtures.`,
     choices: [
@@ -422,6 +429,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "new-manager-new-system",
     title: "New manager, new system",
     text: () => `A new manager walks in wanting to rebuild everything from set pieces to shape. Nobody's place is guaranteed.`,
     choices: [
@@ -440,6 +448,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "boot-deal-on-the-table",
     title: "Boot deal on the table",
     text: () => `A sportswear rep slides a contract across the table. Decent money, a bit of extra scrutiny.`,
     choices: [
@@ -448,6 +457,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "dressing-room-bust-up",
     title: "Dressing room bust-up",
     text: () => `Two senior players are toe-to-toe after training. Everyone's watching to see who steps in.`,
     choices: [
@@ -456,6 +466,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "contract-renewal",
     title: "Contract renewal",
     text: (p, club) => `${club.name} want to tie ${firstName(p)} down to a new deal before the vultures start circling.`,
     choices: [
@@ -473,6 +484,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "the-super-agent-comes-calling",
     title: "The super-agent comes calling",
     text: (p) => `A flashy super-agent takes ${firstName(p)} for dinner and promises the world.`,
     choices: [
@@ -481,6 +493,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "board-under-pressure",
     title: "Board under pressure",
     text: (_p, club) => `Results have been shaky and ${club.name}'s board are making noise in the papers.`,
     choices: [
@@ -489,6 +502,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "loss-of-form",
     title: "Loss of form",
     text: (p) => `The performances have dipped and pundits have started to notice. ${firstName(p)} needs an answer.`,
     choices: [
@@ -504,6 +518,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "breakout-performance",
     title: "Breakout performance",
     text: (p) => `A man-of-the-match display has pundits calling ${firstName(p)} the real deal.`,
     choices: [
@@ -512,6 +527,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "captaincy-offer",
     title: "Captaincy offer",
     text: (p) => `The manager pulls ${firstName(p)} aside: "How do you fancy wearing the armband?"`,
     choices: [
@@ -520,6 +536,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "discipline-hearing",
     title: "Discipline hearing",
     text: (p) => `A reckless tackle earns ${firstName(p)} a straight red in a huge game. The panel wants a word.`,
     choices: [
@@ -536,6 +553,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "testimonial-year",
     title: "Testimonial year",
     text: (p, club) => `${club.name} want to arrange a testimonial match to honour ${firstName(p)}'s service to the shirt.`,
     choices: [
@@ -544,6 +562,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "a-promising-kid-shadows-you",
     title: "A promising kid shadows you",
     text: (p) => `An academy prospect has been assigned to train alongside ${firstName(p)} every session.`,
     choices: [
@@ -552,6 +571,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "derby-week",
     title: "Derby week",
     text: (_p, club) => `The whole city is talking about nothing else. ${club.name}'s biggest rivals are in town, and the fans expect a result.`,
     choices: [
@@ -568,6 +588,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "a-rival-for-your-shirt",
     title: "A rival for your shirt",
     text: (_p, club) => `${club.name} have splashed the cash on a new signing in your exact position. The manager says the shirt is up for grabs.`,
     choices: [
@@ -585,6 +606,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "player-of-the-month",
     title: "Player of the Month",
     text: (p) => `${firstName(p)}'s recent form has the pundits talking, and the league's put your name up for Player of the Month.`,
     choices: [
@@ -593,6 +615,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "sports-science-overhaul",
     title: "Sports science overhaul",
     text: (_p, club) => `${club.name} bring in a new fitness department wanting to rebuild everyone's training load from scratch.`,
     choices: [
@@ -601,6 +624,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "release-clause-rumours",
     title: "Release clause rumours",
     text: (p) => `A number starts doing the rounds in the papers - supposedly ${firstName(p)}'s release clause. Nobody at the club will confirm it.`,
     choices: [
@@ -616,6 +640,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "pundit-criticism",
     title: "Pundit criticism",
     text: (p) => `A well-known ex-pro goes after ${firstName(p)} on TV, questioning whether you're really good enough for this level.`,
     choices: [
@@ -631,6 +656,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "an-old-teammate-lines-up-against-you",
     title: "An old teammate lines up against you",
     text: (p) => `Someone ${firstName(p)} came through the academy with is starting for the opposition this weekend. First time facing off since those early days.`,
     choices: [
@@ -646,6 +672,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "community-day",
     title: "Community day",
     text: (p, club) => `${club.name} ask ${firstName(p)} to spend a day visiting a local school and the children's hospital ward.`,
     choices: [
@@ -654,6 +681,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "cup-giant-killing-on-the-cards",
     title: "Cup giant-killing on the cards",
     text: (_p, club) => `The cup draw hasn't been kind - a top-flight side away from home, and every neutral fancying the upset for ${club.name}.`,
     choices: [
@@ -670,6 +698,7 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
     ],
   },
   {
+    id: "boot-deal-clash",
     title: "Boot deal clash",
     text: (p, club) => `Your personal boot sponsor wants ${firstName(p)} in their new silo, but it clashes with ${club.name}'s official kit supplier deal.`,
     choices: [
@@ -686,21 +715,25 @@ export const MIDSEASON_EVENTS: NarrativeEvent[] = [
   },
 ];
 
+// Keyed by each event's stable `id` (not its `title`) so editing an event's
+// display copy later can never silently disable or change its gating -
+// a typo in a title string used to fail closed with no warning.
+const EVENT_ELIGIBILITY: Partial<Record<string, (player: Player) => boolean>> = {
+  "testimonial-year": (p) => p.age >= 33,
+  "breakout-performance": (p) => p.age <= 22,
+  "captaincy-offer": (p) => p.reputation >= 45,
+  "a-promising-kid-shadows-you": (p) => p.age >= 27,
+  "loss-of-form": (p) => p.seasonsPlayed >= 1,
+  "a-rival-for-your-shirt": (p) => p.age >= 20,
+  "player-of-the-month": (p) => p.reputation >= 30,
+  "release-clause-rumours": (p) => p.reputation >= 40,
+  "an-old-teammate-lines-up-against-you": (p) => p.seasonsPlayed >= 2,
+  "cup-giant-killing-on-the-cards": (p) => p.clubTierIdx <= 3,
+  "international-call-up": (p) => p.reputation >= 25,
+};
+
 export function eligibleEvents(player: Player): NarrativeEvent[] {
-  const pool = MIDSEASON_EVENTS.filter((e) => {
-    if (e.title === "Testimonial year" && player.age < 33) return false;
-    if (e.title === "Breakout performance" && player.age > 22) return false;
-    if (e.title === "Captaincy offer" && player.reputation < 45) return false;
-    if (e.title === "A promising kid shadows you" && player.age < 27) return false;
-    if (e.title === "Loss of form" && player.seasonsPlayed < 1) return false;
-    if (e.title === "A rival for your shirt" && player.age < 20) return false;
-    if (e.title === "Player of the Month" && player.reputation < 30) return false;
-    if (e.title === "Release clause rumours" && player.reputation < 40) return false;
-    if (e.title === "An old teammate lines up against you" && player.seasonsPlayed < 2) return false;
-    if (e.title === "Cup giant-killing on the cards" && player.clubTierIdx > 3) return false;
-    if (e.title === "International call-up" && player.reputation < 25) return false;
-    return true;
-  });
+  const pool = MIDSEASON_EVENTS.filter((e) => (EVENT_ELIGIBILITY[e.id] ?? (() => true))(player));
   return pool.length ? pool : MIDSEASON_EVENTS;
 }
 
@@ -758,7 +791,9 @@ export function generatePerformanceNote(player: Player, result: SeasonResult): s
   return `${line} An overall of ${overall} pulled the side to a ${result.tableSpot.toLowerCase()} finish.`;
 }
 
-export function generateCoachFeedback(player: Player, result: SeasonResult): { mood: "pleased" | "level" | "concerned"; quote: string } {
+export type CoachFeedbackInput = Pick<SeasonResult, "tableSpot" | "goals" | "assists" | "cleanSheets" | "appearances">;
+
+export function generateCoachFeedback(player: Player, result: CoachFeedbackInput): { mood: "pleased" | "level" | "concerned"; quote: string } {
   const mood = result.tableSpot === "Champions" || result.tableSpot === "Continental spot" ? "pleased" : result.tableSpot === "Relegated" ? "concerned" : "level";
   const entries = Object.entries(player.stats) as [StatKey, number][];
   const strongest = entries.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
