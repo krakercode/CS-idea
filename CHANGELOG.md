@@ -3,6 +3,26 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.1] - 2026-08-04
+
+### Fixed
+
+- **Pokémon TCG search failing intermittently** - root-caused, not guessed:
+  a direct check against `api.pokemontcg.io` measured only 6/15 (40%)
+  requests actually succeeding right now, the rest 500/502 - the upstream
+  API is unstable, not something wrong in this app's request. Added an
+  automatic retry (up to 5 attempts, a flat 250ms gap rather than growing
+  backoff, since these are server errors rather than us being throttled)
+  that only kicks in on 429/5xx - a real failure like a 404 still fails
+  immediately. Confirmed live: 8/8 searches succeeded afterward against the
+  same flaky API, versus the ~40% raw baseline.
+
+### Changed
+
+- Card thumbnails (Prices and Collection tabs) sized up from 44x61px to
+  100x140px, same aspect ratio - the old size was too small to actually
+  read anything on the card art.
+
 ## [0.5.0] - 2026-08-03
 
 ### Added

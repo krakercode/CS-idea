@@ -108,8 +108,8 @@ input.pokemontcg-widget__pull-value-input {
 }
 
 .pokemontcg-widget__thumb {
-  width: 44px;
-  height: 61px;
+  width: 100px;
+  height: 140px;
   object-fit: contain;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
