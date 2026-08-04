@@ -94,9 +94,16 @@ let masterGain: GainNode | null = null;
 
 /** Lazily creates the shared AudioContext and resumes it if suspended.
  * Browsers block audio output until a real user gesture - every exported
- * function here is only ever reached from one (the click-delegation
- * handler, or a settings change the user just made), so this resume call
- * is always inside a valid gesture call stack. */
+ * function here is reached from one (the click-delegation handler, or a
+ * settings change the user just made) *except* the very first
+ * `setAmbientTheme` call, fired from `main.tsx` before the first render so
+ * the saved theme's ambient loop is already selected from the start - that
+ * one genuinely runs outside a gesture, so this `resume()` call is a no-op
+ * on browsers that enforce the restriction (Chromium/WebView2 among them)
+ * until the first real click resumes it via the click-delegation handler
+ * instead. Net effect: ambient audio on an ambient-having theme is silent
+ * for the first few seconds after launch, then starts once anything
+ * clickable is clicked - self-correcting, not a hang. */
 function getContext(): { audioCtx: AudioContext; master: GainNode } {
   if (!ctx || !masterGain) {
     ctx = new AudioContext();

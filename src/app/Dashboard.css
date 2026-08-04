@@ -61,6 +61,7 @@
 }
 
 .dashboard__cell:hover .dashboard__drag-handle,
+.dashboard__free-cell:hover .dashboard__drag-handle,
 .dashboard__drag-handle:focus-visible {
   opacity: 1;
 }
@@ -93,7 +94,8 @@
   border-bottom: 2px solid var(--color-text-muted);
 }
 
-.dashboard__cell:hover .dashboard__resize-handle {
+.dashboard__cell:hover .dashboard__resize-handle,
+.dashboard__free-cell:hover .dashboard__resize-handle {
   opacity: 1;
 }
 

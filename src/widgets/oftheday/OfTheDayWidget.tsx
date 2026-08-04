@@ -146,12 +146,15 @@ export function OfTheDayWidget() {
             )}
           </div>
 
-          {songBody ?? (
-            <p className="oftheday-widget__empty">
-              Connect Spotify (see the Spotify widget) to get a song of the day - personalized by the favorite
-              artists above once you've added any, otherwise pulled from your own top tracks.
-            </p>
-          )}
+          {songBody ??
+            (data?.songError ? (
+              <p className="oftheday-widget__empty">Couldn't get today's song: {data.songError}</p>
+            ) : (
+              <p className="oftheday-widget__empty">
+                Connect Spotify (see the Spotify widget) to get a song of the day - personalized by the favorite
+                artists above once you've added any, otherwise pulled from your own top tracks.
+              </p>
+            ))}
         </div>
       )}
 

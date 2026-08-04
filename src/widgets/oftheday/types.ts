@@ -34,5 +34,9 @@ export interface OfTheDay {
   article: FeaturedArticle | null;
   picture: PictureOfDay | null;
   song: SongOfDay | null;
+  /** Set only when fetching the song genuinely failed (network, or the
+   * Spotify session was lost mid-refresh) - distinct from `song` just being
+   * null because Spotify was never connected. */
+  songError: string | null;
   recipe: RecipeOfDay | null;
 }

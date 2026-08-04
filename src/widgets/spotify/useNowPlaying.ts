@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePolling } from "../../shared/hooks/usePolling";
 import {
   getNowPlaying,
@@ -43,6 +43,23 @@ export function useNowPlaying(enabled: boolean): UseNowPlayingResult {
     POLL_INTERVAL_MS,
   );
   const [controlError, setControlError] = useState<string | null>(null);
+
+  // usePolling's very first fetch fires synchronously on mount - before
+  // `enabled` (driven by SpotifyWidget's async isConnected() check one
+  // level up) has had a chance to flip from false to true. That first
+  // fetch sees `enabled === false`, resolves to null immediately, and
+  // nothing re-fetches until the next scheduled tick - so the widget shows
+  // "Nothing playing" for up to a full POLL_INTERVAL_MS after Spotify
+  // actually connects, every time (confirmed via a headless-browser
+  // timing test, not assumed). Explicitly refreshing right when `enabled`
+  // transitions to true closes that gap without touching usePolling's
+  // shared mount/interval logic at all - other widgets using it are
+  // unaffected.
+  const wasEnabled = useRef(enabled);
+  useEffect(() => {
+    if (enabled && !wasEnabled.current) refresh();
+    wasEnabled.current = enabled;
+  }, [enabled, refresh]);
 
   function runAndRefresh(action: () => Promise<void>) {
     setControlError(null);

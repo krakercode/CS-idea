@@ -113,20 +113,29 @@ async fn fetch_match_history(
 }
 
 #[tauri::command]
-fn get_trend(
+async fn get_trend(
     state: tauri::State<'_, AnalysisState>,
     player_id: String,
 ) -> Result<Vec<db::Snapshot>, ErrorPayload> {
-    Ok(db::get_trend(&state.db, &player_id)?)
+    // Same reasoning as fetch_profile's write: a synchronous Mutex lock +
+    // SQLite read shouldn't run inline on whatever thread services IPC -
+    // Tauri doesn't hop sync commands to a blocking thread automatically.
+    let db = state.db.clone();
+    Ok(tokio::task::spawn_blocking(move || db::get_trend(&db, &player_id))
+        .await
+        .map_err(|e| ErrorPayload { kind: "internal".to_string(), message: e.to_string() })??)
 }
 
 #[tauri::command]
-fn get_suggestions(
+async fn get_suggestions(
     state: tauri::State<'_, AnalysisState>,
     player_id: String,
     limit: Option<usize>,
 ) -> Result<Vec<suggestions::Suggestion>, ErrorPayload> {
-    let latest = db::get_latest(&state.db, &player_id)?;
+    let db = state.db.clone();
+    let latest = tokio::task::spawn_blocking(move || db::get_latest(&db, &player_id))
+        .await
+        .map_err(|e| ErrorPayload { kind: "internal".to_string(), message: e.to_string() })??;
     match latest {
         Some(snapshot) => Ok(suggestions::suggest(&snapshot.rating, limit.unwrap_or(3))),
         None => Ok(Vec::new()),
@@ -187,10 +196,18 @@ async fn fetch_calendar(
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct OfTheDayResponse {
     article: Option<of_the_day::FeaturedArticle>,
     picture: Option<of_the_day::PictureOfDay>,
     song: Option<spotify::SongOfDay>,
+    // `song_of_day`'s `Err` (a genuine failure - network, or Spotify session
+    // lost mid-refresh) used to be collapsed into the same `None` as "never
+    // connected" via `.unwrap_or(None)`, silently erasing a distinction
+    // `ensure_fresh_token`'s own doc comment calls out as meaningful.
+    // Additive field (frontend that ignores it still works exactly as
+    // before) so the UI can now tell "not connected" from "something broke".
+    song_error: Option<String>,
     recipe: Option<recipe_of_the_day::RecipeOfDay>,
 }
 
@@ -207,7 +224,11 @@ async fn fetch_of_the_day(
         recipe_of_the_day::fetch(&state.client, vegan)
     );
     let (article, picture) = wiki;
-    Ok(OfTheDayResponse { article, picture, song: song.unwrap_or(None), recipe })
+    let (song, song_error) = match song {
+        Ok(song) => (song, None),
+        Err(err) => (None, Some(err)),
+    };
+    Ok(OfTheDayResponse { article, picture, song, song_error, recipe })
 }
 
 #[tauri::command]
@@ -216,8 +237,8 @@ async fn spotify_login(app: tauri::AppHandle, state: tauri::State<'_, HttpState>
 }
 
 #[tauri::command]
-fn spotify_logout(app: tauri::AppHandle) -> Result<(), String> {
-    spotify::logout(&app)
+async fn spotify_logout(app: tauri::AppHandle) -> Result<(), String> {
+    spotify::logout(&app).await
 }
 
 #[tauri::command]

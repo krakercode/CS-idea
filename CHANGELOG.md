@@ -3,6 +3,55 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.2] - 2026-08-04
+
+Another full bug-fix/optimization pass: two parallel audits (frontend,
+Rust backend) plus manual verification of every behavior-changing fix via
+headless-browser testing - one additional real bug (the Spotify "Now
+Playing" poll timing issue below) was found during that verification, not
+by either audit.
+
+### Fixed
+
+- **Free-mode widgets' drag/resize handles were permanently invisible** -
+  the hover-reveal CSS only matched grid-mode's wrapper class, never
+  free-mode's. Confirmed via browser test (handle opacity 0 -> 1 on hover
+  after the fix, was stuck at 0 before).
+- **Spotify volume slider spammed the playback API mid-drag** - a range
+  input's `onChange` fires continuously while dragging, and each call hit
+  `controlPlayback`'s single-in-flight-request guard, throwing a spurious
+  "still working" error for most of them. Now only sends the request once,
+  on release/commit. Confirmed: 0 calls during a simulated 9-step drag, 1
+  on release.
+- **Spotify widget could show "Nothing playing" for up to 5 seconds after
+  every launch, even mid-playback** - found while verifying the fix above,
+  not by either audit. The "Now Playing" poll's very first fetch fires
+  synchronously on mount, before the async "is Spotify connected" check
+  has resolved, so that first fetch always saw "not connected" and nothing
+  re-fetched until the next scheduled tick. Now explicitly refreshes the
+  moment the connection check actually resolves.
+- **Logging out of Spotify during an in-flight background token refresh
+  could silently resurrect the session** - `logout()` wasn't synchronized
+  with the same lock `ensure_fresh_token` uses, so a refresh already in
+  flight could finish and write fresh tokens back right after logout
+  cleared them.
+- **A real Spotify error while fetching "Song of the Day" was
+  indistinguishable from "never connected"** - both collapsed to the same
+  `null`. Now surfaced as its own message in the UI.
+
+### Changed
+
+- Two DB-backed Tauri commands (`get_trend`, `get_suggestions`) now run
+  their SQLite work via `spawn_blocking`, matching the pattern already
+  used for the sibling write path - a stalled disk no longer risks
+  blocking every other in-flight command.
+- Spotify Library tabs (Liked Songs/Playlists/Albums/Artists) now show a
+  note when a fetch comes back with a full page, since each tab silently
+  capped at 50 items with no indication more might exist.
+- Corrected a doc comment on the Pokémon TCG retry logic to match its
+  actual (better) behavior - network errors are retried like 429/5xx, not
+  failed immediately as the comment previously claimed.
+
 ## [0.5.1] - 2026-08-04
 
 ### Fixed

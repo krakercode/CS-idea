@@ -271,6 +271,25 @@ export function LibraryView() {
 
           {!loading && libraryError && <p className="spotify-widget__error">{libraryError}</p>}
 
+          {/* Every sub-tab fetches exactly one page of PAGE_SIZE - getting
+              back a full page is a strong (if not airtight) signal there's
+              more than what's shown, since nothing here paginates further.
+              Silently capping at 50 with no indication otherwise made a
+              large library (common for Liked Songs/playlists/followed
+              artists) look complete when it wasn't. */}
+          {!loading &&
+            !libraryError &&
+            {
+              tracks: tracks,
+              playlists: playlists,
+              albums: albums,
+              artists: artists,
+            }[subTab]?.length === PAGE_SIZE && (
+              <p className="spotify-widget__truncation-note">
+                Showing the first {PAGE_SIZE} - there may be more in your Spotify library.
+              </p>
+            )}
+
           {!loading && !libraryError && subTab === "tracks" && tracks && tracks.length === 0 && (
             <p className="spotify-widget__empty">No saved tracks found.</p>
           )}

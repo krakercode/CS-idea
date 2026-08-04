@@ -257,7 +257,19 @@ pub async fn login(app: &AppHandle, client: &reqwest::Client) -> Result<(), Stri
     save_tokens(app, &tokens)
 }
 
-pub fn logout(app: &AppHandle) -> Result<(), String> {
+/// Takes `refresh_lock` before clearing the store, same as
+/// `ensure_fresh_token` - without it, a background token refresh already
+/// in flight (see `useNowPlaying`'s 5s poll) can finish and write fresh
+/// tokens back *after* this clears them, silently resurrecting a session
+/// the user just disconnected. Serializing on the lock means whichever of
+/// the two actually runs last wins, and "last" is always well-defined
+/// (either the refresh finishes first and this clears it right after, or
+/// this clears first and the refresh - re-checking under the same lock -
+/// sees the refresh token gone and fails instead of saving anything).
+pub async fn logout(app: &AppHandle) -> Result<(), String> {
+    let spotify_state = app.state::<SpotifyState>();
+    let _guard = spotify_state.refresh_lock.lock().await;
+
     let store = app.store(STORE_FILE).map_err(|e| e.to_string())?;
     store.delete("access_token");
     store.delete("refresh_token");

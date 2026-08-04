@@ -28,6 +28,14 @@ export function SpotifyWidget() {
   // Ticks once a second so the progress bar advances between polls, which
   // only happen every few seconds (see useNowPlaying.ts).
   const [, setTick] = useState(0);
+  // A dragged <input type="range"> fires onChange continuously, which
+  // would otherwise call the volume API (and each call's own refresh)
+  // dozens of times per drag, tripping controlPlayback's single-flight
+  // guard into rejecting most of them with a spurious "still working"
+  // error. Track the drag visually via local state and only actually send
+  // the request once the drag/keypress commits; `null` means "not
+  // currently dragging - just show the server's actual volume".
+  const [volumeDraft, setVolumeDraft] = useState<number | null>(null);
 
   useEffect(() => {
     getSpotifyProvider().isConnected().then(setConnected);
@@ -135,9 +143,17 @@ export function SpotifyWidget() {
                   min={0}
                   max={100}
                   step={1}
-                  value={player.state.volumePercent ?? 50}
+                  value={volumeDraft ?? player.state.volumePercent ?? 50}
                   className="spotify-widget__volume"
-                  onChange={(e) => player.setVolume(Number(e.target.value))}
+                  onChange={(e) => setVolumeDraft(Number(e.target.value))}
+                  onPointerUp={(e) => {
+                    player.setVolume(Number(e.currentTarget.value));
+                    setVolumeDraft(null);
+                  }}
+                  onKeyUp={(e) => {
+                    player.setVolume(Number(e.currentTarget.value));
+                    setVolumeDraft(null);
+                  }}
                   aria-label="Volume"
                 />
               </div>

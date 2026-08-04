@@ -187,15 +187,17 @@ fn with_api_key(builder: reqwest::RequestBuilder, api_key: Option<&str>) -> reqw
 const MAX_ATTEMPTS: u32 = 5;
 const RETRY_DELAY_MS: u64 = 250;
 
-/// GETs `url` with up to `MAX_ATTEMPTS` tries, retrying only on the failure
-/// modes that are actually likely to clear up on their own: a 429 (this API
-/// does rate-limit keyless traffic) or a 5xx (see the measurement above). A
-/// network error or a non-retryable status (404, a malformed request, etc.)
-/// fails immediately rather than burning attempts on something a retry
-/// can't fix. Without this, those transient failures were surfacing as "no
-/// results" indistinguishable from a real empty search - which read as
-/// "search is flaky, works after a couple of manual refreshes" - so this
-/// does that retry automatically instead.
+/// GETs `url` with up to `MAX_ATTEMPTS` tries, retrying on the failure modes
+/// that are actually likely to clear up on their own: a network-level error
+/// (DNS hiccup, dropped connection, timeout - just as plausibly transient as
+/// the 500/502s below, so treated the same way), a 429 (this API does
+/// rate-limit keyless traffic), or a 5xx (see the measurement above). Only a
+/// non-retryable HTTP status (404, a malformed request, etc.) fails
+/// immediately, since no amount of retrying changes that response. Without
+/// this, those transient failures were surfacing as "no results"
+/// indistinguishable from a real empty search - which read as "search is
+/// flaky, works after a couple of manual refreshes" - so this does that
+/// retry automatically instead.
 async fn get_with_retry(client: &reqwest::Client, url: &str, api_key: Option<&str>) -> Option<String> {
     for attempt in 0..MAX_ATTEMPTS {
         if attempt > 0 {
