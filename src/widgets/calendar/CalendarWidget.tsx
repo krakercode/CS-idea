@@ -2,9 +2,10 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { usePolling } from "../../shared/hooks/usePolling";
 import { WidgetShell } from "../../shared/WidgetShell";
 import { ExternalLink } from "../../shared/ExternalLink";
-import { getCalendarProvider } from "./calendarService";
+import { getCalendarProvider, listAvailableLeagues } from "./calendarService";
+import { getSelectedLeagueIds, toggleLeagueId } from "./calendarLeaguesStore";
 import { getPandaScoreKey, setPandaScoreKey } from "./pandascoreKeyStore";
-import type { EventCategory } from "./types";
+import type { EventCategory, LeagueOption } from "./types";
 import "./CalendarWidget.css";
 
 const REFRESH_INTERVAL_MS = 30 * 60_000;
@@ -30,6 +31,8 @@ export function CalendarWidget() {
   const [showSettings, setShowSettings] = useState(false);
   const [pandaScoreKey, setPandaScoreKeyState] = useState("");
   const [keyDraft, setKeyDraft] = useState("");
+  const [leagues, setLeagues] = useState<LeagueOption[]>([]);
+  const [selectedLeagueIds, setSelectedLeagueIds] = useState<string[]>(() => getSelectedLeagueIds());
   const { data, loading, error, refresh } = usePolling(
     () => getCalendarProvider().fetchUpcoming(DAYS_AHEAD),
     REFRESH_INTERVAL_MS,
@@ -40,7 +43,23 @@ export function CalendarWidget() {
       setPandaScoreKeyState(key ?? "");
       setKeyDraft(key ?? "");
     });
+    listAvailableLeagues().then(setLeagues);
   }, []);
+
+  function handleToggleLeague(id: string) {
+    setSelectedLeagueIds(toggleLeagueId(id));
+    refresh();
+  }
+
+  const leaguesBySport = useMemo(() => {
+    const groups = new Map<string, LeagueOption[]>();
+    for (const league of leagues) {
+      const group = groups.get(league.sport) ?? [];
+      group.push(league);
+      groups.set(league.sport, group);
+    }
+    return groups;
+  }, [leagues]);
 
   async function handleSaveKey(e: FormEvent) {
     e.preventDefault();
@@ -98,6 +117,25 @@ export function CalendarWidget() {
               placeholder="Paste your API key"
             />
             <button type="submit">Save</button>
+          </div>
+
+          <label className="calendar-widget__leagues-label">Leagues &amp; sports to show</label>
+          <div className="calendar-widget__leagues">
+            {Array.from(leaguesBySport.entries()).map(([sport, sportLeagues]) => (
+              <div key={sport} className="calendar-widget__league-group">
+                <div className="calendar-widget__league-group-title">{sport}</div>
+                {sportLeagues.map((league) => (
+                  <label key={league.id} className="calendar-widget__league-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={selectedLeagueIds.includes(league.id)}
+                      onChange={() => handleToggleLeague(league.id)}
+                    />
+                    {league.label}
+                  </label>
+                ))}
+              </div>
+            ))}
           </div>
         </form>
       )}

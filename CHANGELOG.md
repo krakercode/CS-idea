@@ -3,6 +3,28 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.2] - 2026-08-05
+
+### Added
+
+- **Pokémon TCG "Shopping" tab** - a new 4th view in the Pokémon TCG widget
+  comparing booster/single prices across 1,000+ retailers, embedded from
+  [TCGCompare.com](https://tcgcompare.com) - same embed-the-real-site
+  pattern already used for the CS2 widget's Nade Site tab (csnades.gg),
+  rather than scraping individual retailers (no self-serve API gives true
+  per-named-retailer pricing, and scraping Amazon/Walmart/Target/TCGPlayer
+  etc. directly would violate their terms of service - this codebase
+  already rejected that approach once, when the old HLTV scraper was
+  replaced with the real PandaScore API). Includes an "Open in browser
+  instead ↗" fallback link for sites that block framing.
+- **Calendar league/sport picker** - the Calendar widget's settings panel
+  now lets you choose which leagues and sports show up, instead of the
+  previous hardcoded Premier League + NBA. A curated, live-verified
+  17-league catalog spans 8 sports (soccer, basketball, American football,
+  ice hockey, baseball, motorsport, MMA, golf, rugby) via TheSportsDB's
+  free tier. Selections persist locally and default to the original
+  Premier League + NBA pairing for anyone who hasn't opened the picker yet.
+
 ## [0.6.1] - 2026-08-04
 
 ### Fixed

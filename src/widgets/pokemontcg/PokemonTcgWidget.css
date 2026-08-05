@@ -268,3 +268,40 @@ input.pokemontcg-widget__pull-value-input {
   margin-top: var(--space-2);
   text-align: right;
 }
+
+.pokemontcg-widget__shopping {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  min-height: 320px;
+}
+
+.pokemontcg-widget__shopping-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.pokemontcg-widget__shopping-note {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.pokemontcg-widget__shopping-link {
+  font-size: 11px;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.pokemontcg-widget__shopping-frame {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+}

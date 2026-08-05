@@ -454,9 +454,14 @@ meow.
   correctly-fetched events.
   - *General sports* - [TheSportsDB](https://www.thesportsdb.com/), using
     their long-documented shared free/test key (`"3"`, no signup). A
-    small hard-coded set of leagues for now (Premier League, NBA) - both
-    have real off-seasons, so an empty Calendar for weeks at a stretch can
-    be correct, not broken.
+    curated, live-verified 17-league catalog spanning 8 sports (soccer,
+    basketball, American football, ice hockey, baseball, motorsport, MMA,
+    golf, rugby) - pick which ones show up via the ⚙ button in the
+    widget's header, grouped by sport. Selections persist locally
+    (`calendarLeaguesStore.ts`) and default to the app's original
+    Premier League + NBA pairing until changed. Off-season leagues can
+    still mean an empty Calendar for weeks at a stretch - that's correct,
+    not broken.
   - *CS2/esports* - [PandaScore](https://pandascore.co)
     (`src-tauri/src/pandascore.rs`), a real esports API. Needs a free
     account and API key (pandascore.co), entered via the ⚙ button in the
@@ -532,7 +537,7 @@ meow.
     Profiles/Analysis views are untouched for now; whether to retire the
     homegrown database in favor of this is a call for once it's actually
     been seen working (or not) in the real app.
-- **Pokémon TCG** - three views, cycled with `useWidgetViews`/`ViewSwitcher`:
+- **Pokémon TCG** - four views, cycled with `useWidgetViews`/`ViewSwitcher`:
   - *Prices* - search any card by name against
     [api.pokemontcg.io](https://pokemontcg.io)
     (`src-tauri/src/pokemon_tcg.rs`), a free API that works with no key at
@@ -551,6 +556,13 @@ meow.
     (`spendStore.ts`) - an optional 🔍 lookup reuses the Prices search to
     fill in a pull's value instead of typing it by hand. Running totals
     for spent / pulled value / net gain-or-loss.
+  - *Shopping* - price comparisons for boosters, singles and more across
+    1,000+ retailers, embedded from [TCGCompare.com](https://tcgcompare.com)
+    - same embed-the-real-site pattern as the CS2 widget's Nade Site tab,
+    for the same reason: no self-serve API gives true per-named-retailer
+    pricing, and scraping individual retailers directly would violate
+    their terms of service. A visible "Open in browser instead ↗" link
+    covers sites that block being framed.
 - **Spotify** - a remote control for whatever's already playing on Spotify
   elsewhere (your phone, the real desktop app, spotify.com in a browser
   tab), not a player that outputs audio itself. Auth is entirely on the

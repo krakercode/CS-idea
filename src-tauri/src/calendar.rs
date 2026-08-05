@@ -19,13 +19,49 @@ pub struct CalendarEvent {
 // TheSportsDB - a free, community-run sports database. "3" is their
 // long-documented shared test/free API key (see thesportsdb.com/free_sports_api) -
 // works for hobby-scale traffic like this, no signup needed. League IDs are
-// TheSportsDB's own numeric ids; a handful of well-known leagues are
-// hard-coded below rather than user-configurable for now.
-const SPORTSDB_API_KEY: &str = "3";
-const SPORTSDB_LEAGUES: &[(&str, &str)] = &[
-    ("4328", "English Premier League"), // englist Premier League
-    ("4387", "NBA"),
+// TheSportsDB's own numeric ids.
+//
+// The shared key's `all_leagues.php` (browse-everything) endpoint only
+// returns a 5-league demo subset - but `eventsnextleague.php?id=<id>` (what
+// this module actually calls) works for a much wider set of ids on the same
+// key, confirmed live one by one rather than assumed. This catalog is that
+// confirmed set: every id below was checked against the real API and
+// returned real upcoming fixtures under the label listed. Not
+// "all sports TheSportsDB has" - just a curated, verified-working set for
+// the league picker (see `list_sportsdb_leagues`/`fetch_calendar`).
+pub const SPORTSDB_LEAGUE_CATALOG: &[(&str, &str, &str)] = &[
+    ("4328", "English Premier League", "Soccer"),
+    ("4335", "Spanish La Liga", "Soccer"),
+    ("4331", "German Bundesliga", "Soccer"),
+    ("4332", "Italian Serie A", "Soccer"),
+    ("4334", "French Ligue 1", "Soccer"),
+    ("4344", "Portuguese Primeira Liga", "Soccer"),
+    ("4346", "Major League Soccer", "Soccer"),
+    ("4480", "UEFA Champions League", "Soccer"),
+    ("4481", "UEFA Europa League", "Soccer"),
+    ("4387", "NBA", "Basketball"),
+    ("4391", "NFL", "American Football"),
+    ("4380", "NHL", "Ice Hockey"),
+    ("4424", "MLB", "Baseball"),
+    ("4370", "Formula 1", "Motorsport"),
+    ("4443", "UFC", "MMA"),
+    ("4425", "PGA Tour", "Golf"),
+    ("4414", "English Premiership Rugby", "Rugby"),
 ];
+
+// Preserves pre-existing behavior for anyone who hasn't touched the new
+// league picker yet - same two leagues this app always defaulted to.
+pub const DEFAULT_SPORTSDB_LEAGUE_IDS: &[&str] = &["4328", "4387"];
+
+const SPORTSDB_API_KEY: &str = "3";
+
+fn league_label(league_id: &str) -> &str {
+    SPORTSDB_LEAGUE_CATALOG
+        .iter()
+        .find(|(id, _, _)| *id == league_id)
+        .map(|(_, label, _)| *label)
+        .unwrap_or("League")
+}
 
 #[derive(Debug, Deserialize)]
 struct SportsDbResponse {
@@ -96,7 +132,7 @@ fn parse_sportsdb_response(body: &str, league_label: &str) -> Vec<CalendarEvent>
         .collect()
 }
 
-async fn fetch_sportsdb_league(client: &reqwest::Client, league_id: &str, league_label: &str) -> Vec<CalendarEvent> {
+async fn fetch_sportsdb_league(client: &reqwest::Client, league_id: &str) -> Vec<CalendarEvent> {
     let url = format!(
         "https://www.thesportsdb.com/api/v1/json/{SPORTSDB_API_KEY}/eventsnextleague.php?id={league_id}"
     );
@@ -106,12 +142,37 @@ async fn fetch_sportsdb_league(client: &reqwest::Client, league_id: &str, league
     let Ok(body) = response.text().await else {
         return Vec::new();
     };
-    parse_sportsdb_response(&body, league_label)
+    parse_sportsdb_response(&body, league_label(league_id))
 }
 
-async fn fetch_sportsdb(client: &reqwest::Client) -> Vec<CalendarEvent> {
-    let fetches = SPORTSDB_LEAGUES.iter().map(|(id, label)| fetch_sportsdb_league(client, id, label));
+/// Fetches only the leagues the user has selected (see
+/// `SPORTSDB_LEAGUE_CATALOG`/`list_sportsdb_leagues`) - falls back to the
+/// original default pair if the frontend somehow sends an empty list,
+/// rather than silently showing nothing.
+async fn fetch_sportsdb(client: &reqwest::Client, league_ids: &[String]) -> Vec<CalendarEvent> {
+    let ids: Vec<&str> = if league_ids.is_empty() {
+        DEFAULT_SPORTSDB_LEAGUE_IDS.to_vec()
+    } else {
+        league_ids.iter().map(String::as_str).collect()
+    };
+    let fetches = ids.iter().map(|id| fetch_sportsdb_league(client, id));
     futures::future::join_all(fetches).await.into_iter().flatten().collect()
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct LeagueOption {
+    pub id: String,
+    pub label: String,
+    pub sport: String,
+}
+
+/// The full curated league catalog for the picker UI - static reference
+/// data, not a network call.
+pub fn list_leagues() -> Vec<LeagueOption> {
+    SPORTSDB_LEAGUE_CATALOG
+        .iter()
+        .map(|(id, label, sport)| LeagueOption { id: id.to_string(), label: label.to_string(), sport: sport.to_string() })
+        .collect()
 }
 
 pub(crate) fn urlencoding(input: &str) -> String {
@@ -136,14 +197,18 @@ pub(crate) fn urlencoding(input: &str) -> String {
 /// a key is configured (`pandascore_api_key`), and contributes nothing
 /// rather than erroring without one. Each source degrading independently
 /// matters here since they're on entirely different upstream services.
-pub async fn fetch_all(client: &reqwest::Client, pandascore_api_key: Option<&str>) -> Vec<CalendarEvent> {
+pub async fn fetch_all(
+    client: &reqwest::Client,
+    pandascore_api_key: Option<&str>,
+    sportsdb_league_ids: &[String],
+) -> Vec<CalendarEvent> {
     let pandascore = async {
         match pandascore_api_key {
             Some(key) if !key.is_empty() => crate::pandascore::fetch(client, key).await,
             _ => Vec::new(),
         }
     };
-    let (sportsdb, pandascore) = tokio::join!(fetch_sportsdb(client), pandascore);
+    let (sportsdb, pandascore) = tokio::join!(fetch_sportsdb(client, sportsdb_league_ids), pandascore);
     let mut events: Vec<CalendarEvent> = sportsdb.into_iter().chain(pandascore).collect();
     events.sort_by(|a, b| a.start_time.cmp(&b.start_time));
     events

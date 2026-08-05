@@ -18,3 +18,12 @@ export interface CalendarEvent {
 export interface CalendarProvider {
   fetchUpcoming(daysAhead: number): Promise<CalendarEvent[]>;
 }
+
+/** One entry in the curated TheSportsDB league catalog (see
+ * src-tauri/src/calendar.rs::SPORTSDB_LEAGUE_CATALOG) - static reference
+ * data for the league picker, not itself an upcoming event. */
+export interface LeagueOption {
+  id: string;
+  label: string;
+  sport: string;
+}

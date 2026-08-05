@@ -33,6 +33,7 @@ const VIEWS = [
   { id: "prices", label: "Prices" },
   { id: "collection", label: "Collection" },
   { id: "spend", label: "Spend Tracker" },
+  { id: "shopping", label: "Shopping" },
 ];
 
 interface PullDraft {
@@ -450,6 +451,25 @@ export function PokemonTcgWidget() {
               );
             })}
           </ul>
+        </div>
+      )}
+      {activeId === "shopping" && (
+        <div className="pokemontcg-widget__shopping">
+          <div className="pokemontcg-widget__shopping-bar">
+            <span className="pokemontcg-widget__shopping-note">
+              Embedded from TCGCompare.com - price comparisons across 1,000+ retailers for boosters, singles and
+              more. Some sites block being framed like this, so if nothing loads below, use this instead:
+            </span>
+            <ExternalLink href="https://tcgcompare.com" className="pokemontcg-widget__shopping-link">
+              Open in browser ↗
+            </ExternalLink>
+          </div>
+          <iframe
+            src="https://tcgcompare.com"
+            title="TCGCompare"
+            className="pokemontcg-widget__shopping-frame"
+            referrerPolicy="no-referrer"
+          />
         </div>
       )}
     </WidgetShell>

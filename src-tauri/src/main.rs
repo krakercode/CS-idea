@@ -191,8 +191,14 @@ async fn fetch_quotes(state: tauri::State<'_, HttpState>, symbols: Vec<String>) 
 async fn fetch_calendar(
     state: tauri::State<'_, HttpState>,
     pandascore_api_key: Option<String>,
+    sportsdb_league_ids: Vec<String>,
 ) -> Result<Vec<calendar::CalendarEvent>, ()> {
-    Ok(calendar::fetch_all(&state.client, pandascore_api_key.as_deref()).await)
+    Ok(calendar::fetch_all(&state.client, pandascore_api_key.as_deref(), &sportsdb_league_ids).await)
+}
+
+#[tauri::command]
+fn list_sportsdb_leagues() -> Vec<calendar::LeagueOption> {
+    calendar::list_leagues()
 }
 
 #[derive(Serialize)]
@@ -370,6 +376,7 @@ fn main() {
             fetch_news,
             fetch_quotes,
             fetch_calendar,
+            list_sportsdb_leagues,
             fetch_of_the_day,
             spotify_login,
             spotify_logout,

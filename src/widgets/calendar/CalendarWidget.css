@@ -31,6 +31,46 @@
   gap: var(--space-2);
 }
 
+.calendar-widget__leagues-label {
+  display: block;
+  margin-top: var(--space-3);
+}
+
+.calendar-widget__leagues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.calendar-widget__league-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+}
+
+.calendar-widget__league-group-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.calendar-widget__league-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
 .calendar-widget__hint {
   color: var(--color-text-muted);
   font-size: 12px;
