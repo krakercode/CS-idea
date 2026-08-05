@@ -186,6 +186,16 @@ export type Phase =
   | "coach_feedback"
   | "event"
   | "age_up"
+  | "trial"
+  | "trial_result"
   | "retired";
 
 export type ViewMode = "career" | "stats" | "squad";
+
+/** Outcome of a single pro-trial roll (see `proOfferChance`/`proOfferTier`
+ * in gameLogic.ts) - `club`/`wage` are only set when `offered` is true. */
+export interface TrialResult {
+  offered: boolean;
+  club?: string;
+  wage?: number;
+}

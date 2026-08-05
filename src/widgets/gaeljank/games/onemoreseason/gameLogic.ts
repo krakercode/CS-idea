@@ -251,6 +251,34 @@ export function computeOverall(stats: Stats, positionKey: PositionKey): number {
   return Math.round(clamp(primaryAvg * 0.55 + secondaryAvg * 0.25 + allAvg * 0.2, 1, 99));
 }
 
+/* =========================================================
+   YOUTH ACADEMY -> PRO TRIAL PATHWAY
+   ========================================================= */
+
+// Index 1 in every NATIONS[..].clubs array is that nation's own Youth
+// Academy (e.g. "Italy Youth Academy" for an Italian-born player) - the
+// same index across all five nations, so one constant covers all of them.
+export const ACADEMY_TIER_IDX = 1;
+export const PRO_TRIAL_START_AGE = 18;
+export const PRO_TRIAL_CUTOFF_AGE = 21;
+
+/** Odds of a pro contract offer landing at a given trial - scales with
+ * ability and reputation, same shape as the other chance formulas above
+ * (transfer-interest, contract-renewal, etc). */
+export function proOfferChance(player: Player): number {
+  const overall = computeOverall(player.stats, player.position);
+  return clamp(0.12 + (overall - 45) / 90 + player.reputation / 260, 0.05, 0.85);
+}
+
+// A raw academy graduate doesn't walk straight into an elite club - lands
+// at one of the two lowest pro tiers, with the higher of the two reserved
+// for a genuinely strong trial (tiers above that are earned later via the
+// normal mid-career transfer-interest/overseas-approach events).
+export function proOfferTier(player: Player): number {
+  const overall = computeOverall(player.stats, player.position);
+  return overall >= 62 ? ACADEMY_TIER_IDX + 2 : ACADEMY_TIER_IDX + 1;
+}
+
 export function newPlayer(name: string, positionKey: PositionKey, goal: Goal, nationKey: NationKey): Player {
   const pos = POSITIONS[positionKey];
   const stats: Stats = { pace: 0, shooting: 0, passing: 0, defending: 0, physical: 0, mental: 0 };
@@ -730,6 +758,11 @@ const EVENT_ELIGIBILITY: Partial<Record<string, (player: Player) => boolean>> = 
   "an-old-teammate-lines-up-against-you": (p) => p.seasonsPlayed >= 2,
   "cup-giant-killing-on-the-cards": (p) => p.clubTierIdx <= 3,
   "international-call-up": (p) => p.reputation >= 25,
+  // Both of these can jump a player a whole tier (or country) - reserved
+  // for pro careers so the pro-trial pathway stays the only way out of the
+  // academy, rather than one of these quietly doing it instead.
+  "transfer-interest": (p) => p.clubTierIdx > ACADEMY_TIER_IDX,
+  "overseas-approach": (p) => p.clubTierIdx > ACADEMY_TIER_IDX,
 };
 
 export function eligibleEvents(player: Player): NarrativeEvent[] {
@@ -1006,6 +1039,8 @@ export const PAGES: Record<Phase | "stats" | "squad", [string, string]> = {
   coach_feedback: ["P206", "GAFFER'S VERDICT"],
   event: ["P207", "NEWSFLASH"],
   age_up: ["P299", "SEASON END"],
+  trial: ["P250", "TRIAL WEEK"],
+  trial_result: ["P251", "THE VERDICT"],
   retired: ["P400", "FINAL WHISTLE"],
   stats: ["P300", "DOSSIER"],
   squad: ["P301", "SQUAD ROOM"],

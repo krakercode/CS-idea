@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  ACADEMY_TIER_IDX,
   GOALS,
   NATIONS,
   NATION_KEYS,
   PAGES,
   POSITIONS,
   PRESEASON_CHOICES,
+  PRO_TRIAL_CUTOFF_AGE,
+  PRO_TRIAL_START_AGE,
   STAT_LABELS,
   STAT_MEANING,
   YOUTH_EVENTS,
@@ -20,12 +23,14 @@ import {
   newPlayer,
   ordinalSuffix,
   pick,
+  proOfferChance,
+  proOfferTier,
   repDelta,
   simulateSeason,
   statTier,
   wageMultiplier,
 } from "./gameLogic";
-import type { Choice, Goal, Legacy, NarrativeEvent, NationKey, Phase, Player, Position, PositionKey, SeasonResult, StatKey, TableRow, ViewMode } from "./types";
+import type { Choice, Goal, Legacy, NarrativeEvent, NationKey, Phase, Player, Position, PositionKey, SeasonResult, StatKey, TableRow, TrialResult, ViewMode } from "./types";
 
 /* =========================================================
    THEME - old football vidiprinter / teletext screen
@@ -191,6 +196,7 @@ export function OneMoreSeasonGame({ onExit }: { onExit: () => void }) {
   const [ticker, setTicker] = useState<SeasonResult["ticks"]>([]);
   const [seasonResult, setSeasonResult] = useState<SeasonResult | null>(null);
   const [currentEvent, setCurrentEvent] = useState<NarrativeEvent | null>(null);
+  const [trialResult, setTrialResult] = useState<TrialResult | null>(null);
   const [legacy, setLegacy] = useState<Legacy | null>(null);
   const [view, setView] = useState<ViewMode>("career");
   const tickTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -220,8 +226,13 @@ export function OneMoreSeasonGame({ onExit }: { onExit: () => void }) {
       setPlayer(updated);
       setYouthIdx(youthIdx + 1);
     } else {
-      const signedTier = updated.reputation > 35 ? 1 : 0;
-      const signed = { ...updated, clubTierIdx: signedTier, wage: NATIONS[updated.nation].clubs[signedTier].wage, age: 18 };
+      // Everyone who comes through the youth events earns a place in their
+      // own nation's academy (not a straight-to-pro deal, and not a generic
+      // stand-in - `NATIONS[nation].clubs[ACADEMY_TIER_IDX]` is always that
+      // nation's own youth side, e.g. "Italy Youth Academy" for Italy).
+      // Age stays 16 here - the pro trial pathway below is what decides
+      // when (or whether) that changes.
+      const signed = { ...updated, clubTierIdx: ACADEMY_TIER_IDX, wage: NATIONS[updated.nation].clubs[ACADEMY_TIER_IDX].wage };
       setPlayer({ ...signed, squad: generateSquad(signed) });
       setPhase("preseason");
     }
@@ -302,11 +313,39 @@ export function OneMoreSeasonGame({ onExit }: { onExit: () => void }) {
   function continueCareer() {
     if (!player) return;
     const nextAge = player.age + 1;
+    if (player.clubTierIdx === ACADEMY_TIER_IDX && nextAge >= PRO_TRIAL_START_AGE) {
+      setPlayer({ ...player, age: nextAge });
+      setPhase("trial");
+      return;
+    }
     if (nextAge >= 38) finishCareer({ ...player, age: nextAge });
     else {
       setPlayer({ ...player, age: nextAge });
       setPhase("preseason");
     }
+  }
+
+  function resolveTrial() {
+    if (!player) return;
+    const offered = Math.random() < proOfferChance(player);
+    if (offered) {
+      const tier = proOfferTier(player);
+      const signed = { ...player, clubTierIdx: tier, wage: NATIONS[player.nation].clubs[tier].wage };
+      setPlayer({ ...signed, squad: generateSquad(signed) });
+      setTrialResult({ offered: true, club: NATIONS[player.nation].clubs[tier].name, wage: NATIONS[player.nation].clubs[tier].wage });
+    } else {
+      setTrialResult({ offered: false });
+    }
+    setPhase("trial_result");
+  }
+
+  function endYouthCareer() {
+    if (!player) return;
+    // Deliberately bypasses finishCareer's score-tiered titles ("Hall of
+    // Fame Icon" etc) - those are built for a completed pro career, and
+    // would read strangely for someone who never got one.
+    setLegacy({ score: 0, title: "Never Broke Through", achieved: false });
+    setPhase("retired");
   }
 
   function finishCareer(finalPlayer: Player) {
@@ -333,6 +372,7 @@ export function OneMoreSeasonGame({ onExit }: { onExit: () => void }) {
     setTicker([]);
     setSeasonResult(null);
     setCurrentEvent(null);
+    setTrialResult(null);
     setLegacy(null);
     setView("career");
   }
@@ -413,6 +453,10 @@ export function OneMoreSeasonGame({ onExit }: { onExit: () => void }) {
               )}
 
               {phase === "age_up" && player && <AgeUpScreen player={player} onContinue={continueCareer} onRetire={() => finishCareer(player)} />}
+              {phase === "trial" && player && <TrialScreen player={player} onResolve={resolveTrial} />}
+              {phase === "trial_result" && player && trialResult && (
+                <TrialResultScreen player={player} result={trialResult} onContinue={() => setPhase("preseason")} onGameOver={endYouthCareer} />
+              )}
               {phase === "retired" && player && legacy && <RetiredScreen player={player} legacy={legacy} onReset={resetGame} />}
             </>
           )}
@@ -728,6 +772,60 @@ function AgeUpScreen({ player, onContinue, onRetire }: { player: Player; onConti
           <BigButton onClick={onContinue}>PLAY ON</BigButton>
           {canRetire && <GhostButton onClick={onRetire}>RETIRE NOW</GhostButton>}
         </div>
+      </div>
+      <div>
+        <Dossier player={player} />
+      </div>
+    </div>
+  );
+}
+
+function TrialScreen({ player, onResolve }: { player: Player; onResolve: () => void }) {
+  const club = currentClub(player);
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }} className="oms-layout-grid">
+      <div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 28, color: T.text, marginBottom: 10 }}>Trial week at {club.name}</div>
+        <p style={{ fontFamily: MONO, color: T.dim, marginBottom: 24, fontSize: 14, lineHeight: 1.7 }}>
+          {player.age >= PRO_TRIAL_CUTOFF_AGE
+            ? `This is it. Turn ${player.age} without a professional contract and the academy will have to let ${firstName(player)} go.`
+            : `The first-team scouts are running the rule over the academy squad this week. A professional contract could be one good session away.`}
+        </p>
+        <BigButton onClick={onResolve}>SEE WHAT THEY DECIDE</BigButton>
+      </div>
+      <div>
+        <Dossier player={player} />
+      </div>
+    </div>
+  );
+}
+
+function TrialResultScreen({
+  player,
+  result,
+  onContinue,
+  onGameOver,
+}: {
+  player: Player;
+  result: TrialResult;
+  onContinue: () => void;
+  onGameOver: () => void;
+}) {
+  const isFinalFailure = !result.offered && player.age >= PRO_TRIAL_CUTOFF_AGE;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }} className="oms-layout-grid">
+      <div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 30, color: result.offered ? T.green : T.red, marginBottom: 10 }}>
+          {result.offered ? "PROFESSIONAL CONTRACT OFFERED" : isFinalFailure ? "RELEASED" : "NOT THIS TIME"}
+        </div>
+        <p style={{ fontFamily: MONO, color: T.text, opacity: 0.9, marginBottom: 22, lineHeight: 1.7, fontSize: 14 }}>
+          {result.offered
+            ? `${result.club} have seen enough. ${firstName(player)} is turning professional on £${(result.wage ?? 0).toLocaleString()}/wk.`
+            : isFinalFailure
+              ? `No club came in. At ${player.age}, the academy can't keep ${firstName(player)} on any longer. The dream ends here.`
+              : `Nothing this time - the scouts want to see more. There's still time to make a case before ${firstName(player)} ages out at ${PRO_TRIAL_CUTOFF_AGE}.`}
+        </p>
+        <BigButton onClick={isFinalFailure ? onGameOver : onContinue}>{isFinalFailure ? "ACCEPT YOUR FATE" : "CONTINUE"}</BigButton>
       </div>
       <div>
         <Dossier player={player} />
