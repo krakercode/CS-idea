@@ -138,7 +138,18 @@ export const NATIONS: Record<NationKey, Nation> = {
 };
 
 export function currentClub(player: Player): ClubTier {
-  return NATIONS[player.nation].clubs[player.clubTierIdx];
+  const base = NATIONS[player.nation].clubs[player.clubTierIdx];
+  // While still at the club they were drafted into (academy or, after a
+  // pro-trial promotion, that same club's first team), show the actual
+  // club name from `clubPool` instead of the generic tiered entry - e.g.
+  // "Manchester Reds U21" rather than "England Youth Academy". A later
+  // transfer moves clubTierIdx away from homeClubTierIdx, which lets this
+  // fall straight back to the ordinary tiered names with no extra logic.
+  if (player.homeClubName && player.clubTierIdx === player.homeClubTierIdx) {
+    const suffix = player.clubTierIdx === ACADEMY_TIER_IDX ? " U21" : "";
+    return { ...base, name: `${player.homeClubName}${suffix}` };
+  }
+  return base;
 }
 
 export function generateOpponent(nationKey: NationKey): string {
@@ -255,9 +266,11 @@ export function computeOverall(stats: Stats, positionKey: PositionKey): number {
    YOUTH ACADEMY -> PRO TRIAL PATHWAY
    ========================================================= */
 
-// Index 1 in every NATIONS[..].clubs array is that nation's own Youth
-// Academy (e.g. "Italy Youth Academy" for an Italian-born player) - the
-// same index across all five nations, so one constant covers all of them.
+// Index 1 in every NATIONS[..].clubs array is the "academy" tier's
+// strength/wage baseline - the *name* shown to the player comes from
+// `homeClubName` instead (a real club picked from `clubPool`, e.g. "AC
+// Milan U21"), via `currentClub` above. Same index across all five
+// nations, so one constant covers all of them.
 export const ACADEMY_TIER_IDX = 1;
 export const PRO_TRIAL_START_AGE = 18;
 export const PRO_TRIAL_CUTOFF_AGE = 21;
@@ -298,6 +311,8 @@ export function newPlayer(name: string, positionKey: PositionKey, goal: Goal, na
     reputation: 20,
     wage: 0,
     clubTierIdx: 0,
+    homeClubName: null,
+    homeClubTierIdx: null,
     trophies: [],
     careerTotals: { appearances: 0, goals: 0, assists: 0, cleanSheets: 0, peakOverall: 0 },
     seasonsPlayed: 0,
@@ -338,7 +353,7 @@ export const YOUTH_EVENTS: NarrativeEvent[] = [
   {
     id: "scout-day",
     title: "Scout day",
-    text: (p) => `A scout from ${NATIONS[p.nation].clubs[1].name} is watching from the touchline with a clipboard. This is the trial that decides everything.`,
+    text: () => `A scout from a senior club's academy setup is watching from the touchline with a clipboard. This is the trial that decides everything.`,
     choices: [
       { label: "Play it safe, do the simple things well", detail: "+Reputation, steady", apply: (p) => ({ ...p, reputation: p.reputation + 15 }) },
       {

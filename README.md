@@ -768,17 +768,18 @@ meow.
   catalog file - no changes needed to the widget itself.
   - **One More Season** (`games/onemoreseason/`) - a full football
     career-mode sim: pick a nation, position, and career ambition, work
-    through youth trials, then join your own nation's youth academy at 16
-    (e.g. an Italian-born player signs for "Italy Youth Academy", never a
-    generic stand-in) rather than skipping straight to a first professional
-    contract. From 18 onward, each end-of-season trial has a chance of a
-    professional contract offer, scaling with your stats and reputation -
-    keep playing academy seasons and trying again each year if it doesn't
-    come. Miss out at every trial through 21 and the academy lets you go -
-    a real "didn't make it" ending, distinct from retiring at 38, that
-    still totals up whatever you built during your academy years. Once
-    signed pro, live out real 38-game simulated league seasons (a genuine
-    20-club table, a real
+    through youth trials, then join a real club's academy at 16 (e.g. "AC
+    Milan U21" for a player who chose Italy, drawn from that nation's own
+    club pool - never a generic national-federation stand-in) rather than
+    skipping straight to a first professional contract. From 18 onward,
+    each end-of-season trial has a chance of a professional contract
+    offer - promoting you into that same club's first team - scaling with
+    your stats and reputation. Keep playing academy seasons and trying
+    again each year if it doesn't come. Miss out at every trial through 21
+    and the academy lets you go - a real "didn't make it" ending, distinct
+    from retiring at 38, that still totals up whatever you built during
+    your academy years. Once signed pro, live out real 38-game simulated
+    league seasons (a genuine 20-club table, a real
     schedule, Poisson-sampled goals/assists so a striker's season reads as
     believably streaky rather than a flat average) interspersed with
     narrative events - transfer interest, contract standoffs, international

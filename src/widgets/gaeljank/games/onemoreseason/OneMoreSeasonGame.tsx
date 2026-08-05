@@ -226,13 +226,20 @@ export function OneMoreSeasonGame({ onExit }: { onExit: () => void }) {
       setPlayer(updated);
       setYouthIdx(youthIdx + 1);
     } else {
-      // Everyone who comes through the youth events earns a place in their
-      // own nation's academy (not a straight-to-pro deal, and not a generic
-      // stand-in - `NATIONS[nation].clubs[ACADEMY_TIER_IDX]` is always that
-      // nation's own youth side, e.g. "Italy Youth Academy" for Italy).
-      // Age stays 16 here - the pro trial pathway below is what decides
-      // when (or whether) that changes.
-      const signed = { ...updated, clubTierIdx: ACADEMY_TIER_IDX, wage: NATIONS[updated.nation].clubs[ACADEMY_TIER_IDX].wage };
+      // Everyone who comes through the youth events earns a place in a
+      // real club's academy (not a straight-to-pro deal, and not a
+      // national federation stand-in) - a name drawn from the nation's own
+      // `clubPool`, shown as e.g. "AC Milan U21" via currentClub(). Age
+      // stays 16 here - the pro trial pathway below is what decides when
+      // (or whether) that changes.
+      const homeClubName = pick(NATIONS[updated.nation].clubPool);
+      const signed = {
+        ...updated,
+        clubTierIdx: ACADEMY_TIER_IDX,
+        homeClubName,
+        homeClubTierIdx: ACADEMY_TIER_IDX,
+        wage: NATIONS[updated.nation].clubs[ACADEMY_TIER_IDX].wage,
+      };
       setPlayer({ ...signed, squad: generateSquad(signed) });
       setPhase("preseason");
     }
@@ -330,9 +337,14 @@ export function OneMoreSeasonGame({ onExit }: { onExit: () => void }) {
     const offered = Math.random() < proOfferChance(player);
     if (offered) {
       const tier = proOfferTier(player);
-      const signed = { ...player, clubTierIdx: tier, wage: NATIONS[player.nation].clubs[tier].wage };
-      setPlayer({ ...signed, squad: generateSquad(signed) });
-      setTrialResult({ offered: true, club: NATIONS[player.nation].clubs[tier].name, wage: NATIONS[player.nation].clubs[tier].wage });
+      // Promoted into the SAME club's first team, not shipped off to a
+      // different named club - homeClubTierIdx moving to `tier` alongside
+      // clubTierIdx is what makes currentClub() drop the "U21" suffix.
+      const wage = NATIONS[player.nation].clubs[tier].wage;
+      const signed = { ...player, clubTierIdx: tier, homeClubTierIdx: tier, wage };
+      const withSquad = { ...signed, squad: generateSquad(signed) };
+      setPlayer(withSquad);
+      setTrialResult({ offered: true, club: currentClub(withSquad).name, wage });
     } else {
       setTrialResult({ offered: false });
     }

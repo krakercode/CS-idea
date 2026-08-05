@@ -85,6 +85,16 @@ export interface Player {
   reputation: number;
   wage: number;
   clubTierIdx: number;
+  /** The specific club a player's youth/early-career story is tied to
+   * (e.g. "AC Milan") - drawn from the nation's `clubPool`, not the
+   * generic tiered `clubs` entries, so it reads as a real club's academy
+   * rather than a national federation's. Set once at academy signing and
+   * carried through a pro-trial promotion into the same club's first
+   * team; a later transfer (transfer-interest/overseas-approach) moves
+   * `clubTierIdx` away from `homeClubTierIdx`, which naturally stops
+   * `currentClub` from overriding the name any further. */
+  homeClubName: string | null;
+  homeClubTierIdx: number | null;
   trophies: string[];
   careerTotals: CareerTotals;
   seasonsPlayed: number;

@@ -3,25 +3,6 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.6.3] - 2026-08-05
-
-### Changed
-
-- **One More Season: real youth academy + pro trial pathway** - after the
-  opening youth-trial narrative events, players now sign for their own
-  nation's Youth Academy at age 16 (e.g. an Italian-born player joins
-  "Italy Youth Academy", not a generic placeholder) instead of jumping
-  straight into a "professional" first season. Starting at 18, each
-  end-of-season trial has a chance of a professional contract offer,
-  scaling with stats and reputation - if it doesn't come, you keep playing
-  academy seasons and try again the following year. Miss out on every
-  trial through 21 and the academy releases you: a new "Never Broke
-  Through" ending, distinct from the existing 38-and-out retirement,
-  reachable if you're genuinely not good enough. The mid-career events
-  that can jump a player a tier or move them abroad (transfer interest,
-  overseas approach) are now gated to signed professionals only, so the
-  pro trial stays the one route out of the academy.
-
 ## [0.6.2] - 2026-08-05
 
 ### Added
@@ -43,6 +24,25 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   ice hockey, baseball, motorsport, MMA, golf, rugby) via TheSportsDB's
   free tier. Selections persist locally and default to the original
   Premier League + NBA pairing for anyone who hasn't opened the picker yet.
+
+### Changed
+
+- **One More Season: real club academy + pro trial pathway** - after the
+  opening youth-trial narrative events, players now sign for a real club's
+  academy at age 16 (e.g. "AC Milan U21" for a player who chose Italy) -
+  drawn from that nation's own club pool, not a generic national
+  federation stand-in - instead of jumping straight into a "professional"
+  first season. Starting at 18, each end-of-season trial has a chance of
+  a professional contract offer, promoting the player into that same
+  club's first team; odds scale with stats and reputation, and if it
+  doesn't come, you keep playing academy seasons and try again the
+  following year. Miss out on every trial through 21 and the academy
+  releases you: a new "Never Broke Through" ending, distinct from the
+  existing 38-and-out retirement, reachable if you're genuinely not good
+  enough. The mid-career events that can jump a player a tier or move
+  them abroad (transfer interest, overseas approach) are now gated to
+  signed professionals only, so the pro trial stays the one route out of
+  the academy.
 
 ## [0.6.1] - 2026-08-04
 
