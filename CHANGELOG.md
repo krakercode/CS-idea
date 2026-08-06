@@ -10,14 +10,20 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **GAELJANK SOFTWORKS: DOS Arcade cartridge** - a small cabinet of real,
   playable DOS games running via [js-dos](https://js-dos.com) (DOSBox
   compiled to WebAssembly), self-hosted rather than embedded from a CDN.
-  Opens with **Jetpack** (Adept Software, 1993), verified freeware
-  straight from the original developer's own site, not just an
-  aggregator's tag - see the README for the full paper trail. Adding more
-  freeware/public-domain titles later is just a new `.jsdos` bundle plus a
-  catalog entry. Note: js-dos (and the DOSBox core it wraps) is GPL-2.0,
-  unlike the rest of this MIT-licensed app - bundled unmodified as a
-  normal dependency, called out explicitly in the README rather than left
-  unstated.
+  Ships with four titles, each checked against its own bundled
+  documentation rather than an aggregator site's tag: **Jetpack** (Adept
+  Software, 1993, platformer), **Major Stryker** (Apogee Software, 1993,
+  shoot-'em-up), **Blocks from Hell** (1990, falling-block puzzle), and
+  **Digger** (Windmill Software, 1983, arcade/maze) - see the README for
+  the full paper trail on each. Four other candidates (ZZT, Xargon,
+  Tyrian, One Must Fall 2097) were researched and *not* included: despite
+  being widely reported elsewhere as later freed, the actual files
+  available still ship the original pre-freeware commercial EULA in
+  their own docs. Adding more titles later is just a new confirmed-
+  freeware `.jsdos` bundle plus a catalog entry. Note: js-dos (and the
+  DOSBox core it wraps) is GPL-2.0, unlike the rest of this MIT-licensed
+  app - bundled unmodified as a normal dependency, called out explicitly
+  in the README rather than left unstated.
 - **Pokémon TCG "Shopping" tab** - a new 4th view in the Pokémon TCG widget
   comparing booster/single prices across 1,000+ retailers, embedded from
   [TCGCompare.com](https://tcgcompare.com) - same embed-the-real-site

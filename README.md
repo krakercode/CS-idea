@@ -811,17 +811,48 @@ meow.
     dependency (standard "mere aggregation," same as any other
     differently-licensed npm package), called out explicitly here rather
     than left unstated.
-    - **Jetpack** (Adept Software, 1993) - the opening cartridge. Verified
-      freeware straight from the source, not just an aggregator site's
-      say-so: the game's own bundled `README.TXT` states "they are now
-      released as freeware," and the original developer's own still-live
-      page at
-      [adeptsoftware.com/jetpack](https://www.adeptsoftware.com/jetpack/)
-      labels the download itself "FREEWARE." The bundle ships the
-      original, unmodified game files packaged as a `.jsdos` archive (see
-      `games/dosarcade/bundles/`). More freeware/public-domain titles can
-      be added the same way - a confirmed-freeware `.jsdos` bundle plus an
-      entry in `dosGamesCatalog.ts`.
+      Every title here is checked against its own bundled documentation,
+      not just an aggregator site's category tag - that tag alone isn't
+      reliable (a "public domain" listing for one game turned out to
+      just mean "developer-adjacent," and several other DOS Games
+      Archive downloads for old Epic MegaGames titles - ZZT, Xargon,
+      Tyrian, One Must Fall 2097 - ship the *original pre-freeware
+      commercial EULA* in their own docs despite being widely reported
+      as later freed, so none of those four are bundled here yet pending
+      a source that actually confirms it).
+      - **Jetpack** (Adept Software, 1993) - the opening cartridge.
+        Verified freeware straight from the source: the game's own
+        bundled `README.TXT` states "they are now released as freeware,"
+        and the original developer's own still-live page at
+        [adeptsoftware.com/jetpack](https://www.adeptsoftware.com/jetpack/)
+        labels the download itself "FREEWARE."
+      - **Major Stryker** (Apogee Software, 1993) - a vertical-scrolling
+        shoot-'em-up, all 3 episodes unlocked. Its own bundled
+        `readme.txt` has Apogee's tech support writing in March 2006:
+        "This game is released as freeware... You are free to play the
+        game as we've released it, but not free to... [sell it or] use
+        the materials in other projects" - matches 3D Realms' official
+        site, which carries the same statement. The in-game splash still
+        reads "This game is NOT shareware" - a leftover from the
+        original 1993 build, superseded by the 2006 freeware readme, not
+        a contradiction of it.
+      - **Blocks from Hell** (1990) - a tight, no-frills falling-block
+        puzzler in the Tetris mold (a distinct, non-trademarked name -
+        Tetris itself is still commercially licensed and wasn't a
+        candidate). Its own bundled `.doc` says plainly: "This game is
+        free... You may distribute it freely provided the contents...
+        remain intact."
+      - **Digger** (Windmill Software, 1983) - a Dig Dug-style arcade
+        classic. This is the developer's own public-domain sample
+        release; its bundled `.doc` states "This is a public domain
+        sample program and may be copied and distributed at will."
+      
+      The bundle ships each game's original, unmodified files packaged
+      as a `.jsdos` archive (see `games/dosarcade/bundles/`). More
+      freeware/public-domain titles can be added the same way - a
+      confirmed-freeware `.jsdos` bundle (checked against the game's own
+      docs, not just a listing site's tag) plus an entry in
+      `dosGamesCatalog.ts`.
 
 ## CS2 Analysis backend (Leetify)
 
