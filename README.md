@@ -798,6 +798,30 @@ meow.
     thing it doesn't do yet is persist an in-progress career across closing
     the widget or restarting the app, unlike most of this app's other
     per-widget state.
+  - **DOS Arcade** (`games/dosarcade/`) - a small cabinet of real, playable
+    DOS games running via [js-dos](https://js-dos.com) (DOSBox compiled to
+    WebAssembly), not a native emulator dependency. Self-hosted, not a CDN
+    embed: `scripts/setup-jsdos-assets.mjs` copies the plain-DOSBox backend
+    (skipping the much larger DOSBox-X/Windows-9x backend this app doesn't
+    need) from `node_modules` into `public/js-dos/` on every
+    install/dev/build, so `js-dos` and `emulators` stay ordinary
+    dependencies instead of committed binaries. **Licensing note:** js-dos
+    itself is **GPL-2.0** (so is DOSBox, which it wraps) - unlike the rest
+    of this MIT-licensed app. It's bundled unmodified as a separate
+    dependency (standard "mere aggregation," same as any other
+    differently-licensed npm package), called out explicitly here rather
+    than left unstated.
+    - **Jetpack** (Adept Software, 1993) - the opening cartridge. Verified
+      freeware straight from the source, not just an aggregator site's
+      say-so: the game's own bundled `README.TXT` states "they are now
+      released as freeware," and the original developer's own still-live
+      page at
+      [adeptsoftware.com/jetpack](https://www.adeptsoftware.com/jetpack/)
+      labels the download itself "FREEWARE." The bundle ships the
+      original, unmodified game files packaged as a `.jsdos` archive (see
+      `games/dosarcade/bundles/`). More freeware/public-domain titles can
+      be added the same way - a confirmed-freeware `.jsdos` bundle plus an
+      entry in `dosGamesCatalog.ts`.
 
 ## CS2 Analysis backend (Leetify)
 

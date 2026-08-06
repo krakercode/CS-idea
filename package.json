@@ -5,6 +5,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "postinstall": "node scripts/setup-jsdos-assets.mjs",
+    "predev": "node scripts/setup-jsdos-assets.mjs",
+    "prebuild": "node scripts/setup-jsdos-assets.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
@@ -23,6 +26,8 @@
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-store": "^2.4.4",
     "@tauri-apps/plugin-updater": "^2.10.1",
+    "emulators": "8.4.1",
+    "js-dos": "8.4.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "recharts": "^3.10.1"

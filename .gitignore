@@ -4,6 +4,11 @@ dist-ssr
 *.local
 *.tsbuildinfo
 
+# js-dos engine assets - regenerated from node_modules by
+# scripts/setup-jsdos-assets.mjs (postinstall/predev/prebuild), not
+# committed since they're build artifacts, not authored content.
+public/js-dos
+
 # Editor
 .vscode/*
 !.vscode/extensions.json

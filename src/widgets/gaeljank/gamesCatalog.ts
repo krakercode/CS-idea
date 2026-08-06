@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { OneMoreSeasonGame } from "./games/onemoreseason/OneMoreSeasonGame";
+import { DosArcadeGame } from "./games/dosarcade/DosArcadeGame";
 
 export interface GameEntry {
   id: string;
@@ -21,5 +22,12 @@ export const GAMES: GameEntry[] = [
     tagline: "Career mode",
     blurb: "Sunday league to the very top, if you're good enough - pick an ambition, live with every choice, retire at 38.",
     Component: OneMoreSeasonGame,
+  },
+  {
+    id: "dosarcade",
+    title: "DOS Arcade",
+    tagline: "Freeware cabinet",
+    blurb: "A small cabinet of real, confirmed-freeware DOS games running for real via DOSBox-WASM - starting with Jetpack.",
+    Component: DosArcadeGame,
   },
 ];
