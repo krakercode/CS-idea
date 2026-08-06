@@ -2,6 +2,9 @@ import jetpackBundleUrl from "./bundles/jetpack.jsdos?url";
 import strykerBundleUrl from "./bundles/stryker.jsdos?url";
 import blocksBundleUrl from "./bundles/blocks.jsdos?url";
 import diggerBundleUrl from "./bundles/digger.jsdos?url";
+import zztBundleUrl from "./bundles/zzt.jsdos?url";
+import xargonBundleUrl from "./bundles/xargon.jsdos?url";
+import tyrianBundleUrl from "./bundles/tyrian.jsdos?url";
 
 export interface DosGameEntry {
   id: string;
@@ -58,5 +61,35 @@ export const DOS_GAMES: DosGameEntry[] = [
       "Windmill Software's Dig Dug-style classic - tunnel for gems, dodge (or squash) the nobbins and hobbins chasing you. " +
       "This is the developer's own public-domain sample release.",
     bundleUrl: diggerBundleUrl,
+  },
+  {
+    id: "zzt",
+    title: "ZZT",
+    year: 1991,
+    tagline: "Puzzle / creation system",
+    blurb:
+      "Epic MegaGames' text-mode puzzle-adventure and game-creation system - Tim Sweeney's first hit. Distributed at no " +
+      "cost by Epic since 1997, under Epic's own no-cost license terms (see README for the licensing nuance).",
+    bundleUrl: zztBundleUrl,
+  },
+  {
+    id: "xargon",
+    title: "Xargon",
+    year: 1994,
+    tagline: "Platformer",
+    blurb:
+      "Allen Pilgrim's sprawling platformer, published by Epic MegaGames. Reported freed by the author in 2008 " +
+      "alongside its source code (see README for the sourcing caveat).",
+    bundleUrl: xargonBundleUrl,
+  },
+  {
+    id: "tyrian",
+    title: "Tyrian",
+    year: 1995,
+    tagline: "Shoot 'em up",
+    blurb:
+      "Eclipse/Epic's beloved vertical shooter, later the basis for the open-source OpenTyrian engine. Reported made " +
+      "freeware by Epic in 2004 (see README for the sourcing caveat).",
+    bundleUrl: tyrianBundleUrl,
   },
 ];

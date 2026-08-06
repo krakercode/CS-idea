@@ -814,12 +814,7 @@ meow.
       Every title here is checked against its own bundled documentation,
       not just an aggregator site's category tag - that tag alone isn't
       reliable (a "public domain" listing for one game turned out to
-      just mean "developer-adjacent," and several other DOS Games
-      Archive downloads for old Epic MegaGames titles - ZZT, Xargon,
-      Tyrian, One Must Fall 2097 - ship the *original pre-freeware
-      commercial EULA* in their own docs despite being widely reported
-      as later freed, so none of those four are bundled here yet pending
-      a source that actually confirms it).
+      just mean "developer-adjacent").
       - **Jetpack** (Adept Software, 1993) - the opening cartridge.
         Verified freeware straight from the source: the game's own
         bundled `README.TXT` states "they are now released as freeware,"
@@ -846,7 +841,52 @@ meow.
         classic. This is the developer's own public-domain sample
         release; its bundled `.doc` states "This is a public domain
         sample program and may be copied and distributed at will."
+      - **ZZT** (Epic MegaGames, 1991) - Tim Sweeney's text-mode
+        puzzle-adventure and game-creation system. **A real licensing
+        nuance, not swept under the rug:** Epic's own bundled
+        `license.txt` explicitly states the program is "NOT public
+        domain or free software or 'freeware'" - it's a no-cost but
+        restrictive EULA, not true freeware, and forbids calling it
+        freeware in any redistribution. It does, however, explicitly
+        permit no-charge redistribution (e.g. "distribution by BBS's and
+        online services"). [Museum of ZZT](https://museumofzzt.com), the
+        dedicated ZZT preservation project, serves the identical file
+        under the same terms - there's no cleaner version in
+        circulation. Separately, [Adrian Siekierka's "Reconstruction of
+        ZZT"](https://github.com/asiekierka/reconstruction-of-zzt) is a
+        genuinely MIT-licensed, byte-identical reverse-engineered
+        rebuild made "with Epic's permission" - the actual open-source
+        answer here - but building it requires a Turbo Pascal 5.5-era
+        toolchain this session couldn't assemble, so the bundle here is
+        still Epic's original binary under Epic's own no-cost terms.
+      - **Xargon** (Epic MegaGames / Allen Pilgrim, 1994) - a sprawling
+        platformer. Widely reported as freed by the original developer
+        in 2008 alongside its source code, but the specific freeware
+        announcement text couldn't be located within this session's
+        reach (GitHub's release/API pages weren't reachable from this
+        sandbox); the bundled file itself still carries Epic's original
+        commercial-era license doc.
+      - **Tyrian** (Eclipse/Epic MegaGames, 1995) - a vertical shoot-'em-up,
+        later the basis for the open-source [OpenTyrian](https://github.com/opentyrian/opentyrian)
+        engine reimplementation. Reported made freeware by Epic in 2004;
+        this bundle uses the data files from
+        [camanis.net](https://camanis.net/tyrian/) - the exact source
+        OpenTyrian's own project recommends - but even that most-authoritative
+        available copy still ships Epic's original commercial-era
+        license doc, not updated freeware terms. (OpenTyrian's *engine*
+        is MIT-licensed and open source; it's the original *data files*
+        whose documentation remains unresolved, and the engine can't run
+        without them.)
       
+      One more candidate, **One Must Fall: 2097** (Diversions
+      Entertainment, 1994), was researched but left out this round - not
+      for licensing reasons (it's reported freeware, in the same
+      unresolved-documentation boat as the three above), but because its
+      installer is a genuinely multi-step interactive wizard whose timing
+      proved too fragile to automate reliably in this environment. Its
+      own open-source reimplementation, [OpenOMF](https://openomf.org),
+      remains a real option for a future attempt.
+
       The bundle ships each game's original, unmodified files packaged
       as a `.jsdos` archive (see `games/dosarcade/bundles/`). More
       freeware/public-domain titles can be added the same way - a

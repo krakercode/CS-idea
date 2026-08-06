@@ -10,20 +10,26 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **GAELJANK SOFTWORKS: DOS Arcade cartridge** - a small cabinet of real,
   playable DOS games running via [js-dos](https://js-dos.com) (DOSBox
   compiled to WebAssembly), self-hosted rather than embedded from a CDN.
-  Ships with four titles, each checked against its own bundled
+  Ships with seven titles, each checked against its own bundled
   documentation rather than an aggregator site's tag: **Jetpack** (Adept
   Software, 1993, platformer), **Major Stryker** (Apogee Software, 1993,
-  shoot-'em-up), **Blocks from Hell** (1990, falling-block puzzle), and
-  **Digger** (Windmill Software, 1983, arcade/maze) - see the README for
-  the full paper trail on each. Four other candidates (ZZT, Xargon,
-  Tyrian, One Must Fall 2097) were researched and *not* included: despite
-  being widely reported elsewhere as later freed, the actual files
-  available still ship the original pre-freeware commercial EULA in
-  their own docs. Adding more titles later is just a new confirmed-
-  freeware `.jsdos` bundle plus a catalog entry. Note: js-dos (and the
-  DOSBox core it wraps) is GPL-2.0, unlike the rest of this MIT-licensed
-  app - bundled unmodified as a normal dependency, called out explicitly
-  in the README rather than left unstated.
+  shoot-'em-up), **Blocks from Hell** (1990, falling-block puzzle),
+  **Digger** (Windmill Software, 1983, arcade/maze), **ZZT** (Epic
+  MegaGames, 1991, puzzle/creation system), **Xargon** (Epic MegaGames,
+  1994, platformer), and **Tyrian** (Eclipse/Epic MegaGames, 1995,
+  shoot-'em-up) - see the README for the full paper trail on each,
+  including a real, disclosed licensing nuance for the last three (Epic's
+  own EULA is "no-cost" but explicitly not "freeware," and the most
+  authoritative sources for Xargon/Tyrian still ship Epic's original
+  commercial-era license doc rather than updated freeware terms). One
+  more candidate, One Must Fall: 2097, was researched (reported freeware,
+  same unresolved-documentation category) but left out this round - its
+  installer is a multi-step wizard whose timing proved too fragile to
+  automate reliably here. Adding more titles later is just a new
+  `.jsdos` bundle plus a catalog entry. Note: js-dos (and the DOSBox
+  core it wraps) is GPL-2.0, unlike the rest of this MIT-licensed app -
+  bundled unmodified as a normal dependency, called out explicitly in
+  the README rather than left unstated.
 - **Pokémon TCG "Shopping" tab** - a new 4th view in the Pokémon TCG widget
   comparing booster/single prices across 1,000+ retailers, embedded from
   [TCGCompare.com](https://tcgcompare.com) - same embed-the-real-site
