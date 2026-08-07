@@ -62,6 +62,93 @@
   padding-bottom: 0;
 }
 
+.dashboard-settings__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dashboard-settings__group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.dashboard-settings__group-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}
+
+.dashboard-settings__group-count {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.dashboard-settings__group-rename input {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-accent);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dashboard-settings__group-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.dashboard-settings__group-actions button {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.dashboard-settings__group-actions button:hover {
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+}
+
+.dashboard-settings__new-group {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.dashboard-settings__new-group input {
+  flex: 1;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  font-size: 12px;
+}
+
+.dashboard-settings__new-group button {
+  font-size: 12px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
 .dashboard-settings__widget-name {
   font-size: 13px;
   font-weight: 600;

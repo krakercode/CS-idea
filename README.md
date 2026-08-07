@@ -150,6 +150,7 @@ src/
     Dashboard.tsx             - lays out visible widgets in a CSS grid, minute schedule tick
     widgets.config.ts         - the list of widgets on the dashboard (add one here)
     dashboardSettingsStore.ts - per-widget visibility/schedule/size, persisted to localStorage
+    widgetGroupsStore.ts      - widget groups (built-in + custom) and per-widget group assignment
     DashboardSettings.tsx     - the settings panel (opened via the ⚙ button)
     themeStore.ts             - active theme (preset or custom), persisted to localStorage
     ThemeSettings.tsx         - preset picker + custom color editor, shown in DashboardSettings
@@ -317,6 +318,35 @@ Per widget, you can set:
 - **Size mode** - *Snap to grid* (default) or *Free size*. Grid mode is
   everything below; free size takes a widget out of the CSS Grid entirely
   and floats it at an arbitrary pixel position/size instead (see below).
+- **Group** - which section of the settings panel a widget is filed under
+  (see "Widget groups" below). Purely an organizing device for this panel -
+  it doesn't affect where a widget renders on the dashboard itself.
+
+#### Widget groups
+
+As the widget list grows, the settings panel groups them under headers -
+**Info**, **Games**, **Media**, **System** by default (`BUILTIN_GROUPS` in
+`widgetGroupsStore.ts`), matching each widget's `defaultGroupId` in
+`widgets.config.ts`. Each group header has:
+
+- **Show all / Hide all** - sets every widget in that group to *Always
+  shown* / *Hidden* in one click, for decluttering the dashboard by
+  category instead of one widget at a time.
+- **✎ (rename)** - works on built-in groups too, so "Info" can become
+  whatever fits, without losing its contents or its undeletable status.
+- **✕ (delete)** - custom groups only (built-ins are guarded against
+  deletion, since every widget needs *some* group to resolve to). Deleting
+  a group doesn't delete its widgets - they fall back to their own
+  built-in default group, same as any other reset-to-default.
+
+A **"+ Add group"** field at the bottom of the widget list creates a new
+custom group, which then shows up as just another option in every widget's
+**Group** dropdown - move a widget into it (or into "Ungrouped") the same
+way you'd change its Visibility or Size mode. All of this - custom groups,
+renames, and per-widget group assignments - is local-only,
+`localStorage`-persisted (`dashboard-widget-groups`,
+`dashboard-widget-group-assignments`, `dashboard-widget-group-builtin-names`),
+same as the rest of this panel.
 
 Position/size themselves aren't set from a form - they're mouse-driven,
 directly on the dashboard:
@@ -761,6 +791,18 @@ meow.
     content when checked, an apparent gap on their end - so this is read
     defensively the same way.
 
+- **Time & Weather** - the device's own local time (just `Intl.DateTimeFormat`
+  against `new Date()`, ticking every second - no API, no timezone lookup,
+  it's whatever the OS clock already says) plus current conditions from
+  [Open-Meteo](https://open-meteo.com), free, keyless, and CORS-open like
+  Lichess above, so this is a plain client-side `fetch` too. No location is
+  assumed on first run - search by city name (Open-Meteo's own geocoding
+  endpoint) or "📍 Use my location" (browser geolocation, only ever
+  triggered by that explicit click, never on load). °C/°F is a toggle in
+  the same settings panel. Every request carries a 10s client-side timeout
+  (`fetchWithTimeout` in `weatherService.ts`) - `fetch` has no built-in
+  one, and without it a dropped connection would leave the widget's
+  loading/searching state stuck rather than showing a normal error.
 - **GAELJANK SOFTWORKS** - a small "game label" widget: a launcher listing
   playable games (`src/widgets/gaeljank/gamesCatalog.ts`), each opening
   fullscreen in its own `Overlay` when you hit Play, with a "quit to menu"
@@ -892,7 +934,28 @@ meow.
       freeware/public-domain titles can be added the same way - a
       confirmed-freeware `.jsdos` bundle (checked against the game's own
       docs, not just a listing site's tag) plus an entry in
-      `dosGamesCatalog.ts`.
+      `dosGamesCatalog.ts`. **Note:** each cartridge is started with
+      js-dos's `autoStart` option - without it, js-dos shows its own
+      nearly-blank "click to play" splash first (needed to unlock audio
+      under browsers' autoplay policy), which read as the widget loading a
+      blank screen since nothing about that splash explained what it
+      was waiting for. `autoStart` skips straight to booting, since the
+      widget's own Play click already is the user gesture that policy
+      needs.
+  - **Lichess** (`games/lichess/`) - there's no [Lichess API](https://lichess.org/api)
+    endpoint for embedding an actual playable game (that needs an account
+    and Lichess's own websocket-driven client, which this app doesn't
+    reimplement), so this cartridge instead uses what Lichess *does* offer
+    for free, keyless embedding: its `/training/frame` and `/tv/frame`
+    endpoints (purpose-built for exactly this, unlike the rest of
+    lichess.org, which blocks being framed), showing today's puzzle and a
+    live Lichess TV feed respectively, tabbed between the two. Puzzle
+    rating/themes come from `/api/puzzle/daily` (also keyless, CORS-open).
+    A "Play on Lichess ↗" link (`ExternalLink`, opens in the system
+    browser) covers actually playing a real game. If an iframe hasn't
+    loaded after 6 seconds - a restrictive network, firewall, or blocker -
+    a fallback message with a direct link takes its place instead of
+    leaving the widget looking stuck blank.
 
 ## CS2 Analysis backend (Leetify)
 

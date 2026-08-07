@@ -8,6 +8,11 @@ export interface WidgetDefinition {
   Component: ComponentType;
   defaultColSpan: 1 | 2 | 3;
   defaultRowSpan: 1 | 2;
+  /** Which built-in group (see widgetGroupsStore.ts) this widget starts in -
+   * just the first-run bucket, same relationship to the group a widget ends
+   * up in as defaultColSpan has to its actual on-screen size: the user can
+   * freely move it to a different (or custom) group afterwards. */
+  defaultGroupId: string;
 }
 
 /**
@@ -23,6 +28,7 @@ export interface WidgetDefinition {
 export const WIDGETS: WidgetDefinition[] = [
   {
     id: "news",
+    defaultGroupId: "info",
     label: "News",
     defaultColSpan: 1,
     defaultRowSpan: 1,
@@ -30,6 +36,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "stocks",
+    defaultGroupId: "info",
     label: "Stocks",
     defaultColSpan: 1,
     defaultRowSpan: 1,
@@ -37,6 +44,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "calendar",
+    defaultGroupId: "info",
     label: "Calendar",
     defaultColSpan: 1,
     defaultRowSpan: 1,
@@ -44,6 +52,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "cs2db",
+    defaultGroupId: "games",
     label: "CS2 Database (WIP)",
     defaultColSpan: 2,
     defaultRowSpan: 1,
@@ -53,6 +62,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "spotify",
+    defaultGroupId: "media",
     label: "Spotify",
     defaultColSpan: 1,
     defaultRowSpan: 1,
@@ -60,6 +70,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "systemhealth",
+    defaultGroupId: "system",
     label: "System Health",
     defaultColSpan: 1,
     defaultRowSpan: 1,
@@ -69,6 +80,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "quotes",
+    defaultGroupId: "info",
     label: "Quotes",
     defaultColSpan: 1,
     defaultRowSpan: 1,
@@ -76,6 +88,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "oftheday",
+    defaultGroupId: "info",
     label: "Of the Day",
     defaultColSpan: 1,
     defaultRowSpan: 1,
@@ -83,6 +96,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "shortcuts",
+    defaultGroupId: "system",
     label: "Shortcuts",
     defaultColSpan: 1,
     defaultRowSpan: 1,
@@ -92,6 +106,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "entertainment",
+    defaultGroupId: "media",
     label: "Entertainment Centre",
     defaultColSpan: 1,
     defaultRowSpan: 1,
@@ -103,6 +118,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "habits",
+    defaultGroupId: "info",
     label: "Habits & Reminders",
     defaultColSpan: 1,
     defaultRowSpan: 1,
@@ -110,6 +126,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "pokemontcg",
+    defaultGroupId: "games",
     label: "Pokémon TCG",
     defaultColSpan: 2,
     defaultRowSpan: 2,
@@ -119,6 +136,7 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "transit",
+    defaultGroupId: "info",
     label: "Transit Tracker",
     defaultColSpan: 2,
     defaultRowSpan: 2,
@@ -126,11 +144,22 @@ export const WIDGETS: WidgetDefinition[] = [
   },
   {
     id: "gaeljank",
+    defaultGroupId: "games",
     label: "GAELJANK SOFTWORKS",
     defaultColSpan: 1,
     defaultRowSpan: 1,
     Component: lazy(() =>
       import("../widgets/gaeljank/GaeljankSoftworksWidget").then((m) => ({ default: m.GaeljankSoftworksWidget })),
+    ),
+  },
+  {
+    id: "timeweather",
+    defaultGroupId: "info",
+    label: "Time & Weather",
+    defaultColSpan: 1,
+    defaultRowSpan: 1,
+    Component: lazy(() =>
+      import("../widgets/timeweather/TimeWeatherWidget").then((m) => ({ default: m.TimeWeatherWidget })),
     ),
   },
 ];

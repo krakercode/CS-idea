@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { OneMoreSeasonGame } from "./games/onemoreseason/OneMoreSeasonGame";
 import { DosArcadeGame } from "./games/dosarcade/DosArcadeGame";
+import { LichessGame } from "./games/lichess/LichessGame";
 
 export interface GameEntry {
   id: string;
@@ -29,5 +30,13 @@ export const GAMES: GameEntry[] = [
     tagline: "Freeware cabinet",
     blurb: "A small cabinet of real, confirmed-freeware DOS games running for real via DOSBox-WASM - starting with Jetpack.",
     Component: DosArcadeGame,
+  },
+  {
+    id: "lichess",
+    title: "Lichess",
+    tagline: "Puzzle & TV",
+    blurb:
+      "Today's Lichess puzzle and a live Lichess TV feed, straight from lichess.org's own embeds, plus a link out to play a real game.",
+    Component: LichessGame,
   },
 ];

@@ -12,7 +12,7 @@ import "./DosArcadeGame.css";
 // rest of the app.
 declare global {
   interface Window {
-    Dos?: (container: HTMLElement, options?: { pathPrefix?: string; url?: string }) => unknown;
+    Dos?: (container: HTMLElement, options?: { pathPrefix?: string; url?: string; autoStart?: boolean }) => unknown;
   }
 }
 
@@ -54,8 +54,16 @@ function DosPlayer({ game, onBack }: { game: DosGameEntry; onBack: () => void })
         // state) - passing `url` in the options is what starts the bundle;
         // there's no separate run()/exit() handle to chain or dispose of.
         // Unmounting this component (removing the container from the DOM)
-        // is the documented way to tear it down.
-        window.Dos(containerRef.current, { pathPrefix: EMULATORS_PATH_PREFIX, url: game.bundleUrl });
+        // is the documented way to tear it down. `autoStart` skips js-dos's
+        // own nearly-blank "click to play" splash (needed to unlock audio
+        // autoplay) - our own PLAY button click is already the user gesture
+        // that satisfies the browser's autoplay policy, so without this the
+        // widget looked like it loaded a blank screen.
+        window.Dos(containerRef.current, {
+          pathPrefix: EMULATORS_PATH_PREFIX,
+          url: game.bundleUrl,
+          autoStart: true,
+        });
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to start the emulator.");
