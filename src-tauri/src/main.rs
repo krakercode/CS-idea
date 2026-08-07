@@ -344,7 +344,25 @@ fn main() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_opener::init())
+        // Default init() also injects a click-interceptor script into every
+        // frame in the webview - not just the app's own top-level document,
+        // but every iframe too (GAELJANK SOFTWORKS' Lichess embed, notably),
+        // watching for <a target="_blank"> / Ctrl/Shift-click and routing it
+        // through this same plugin's openUrl(). That's exactly what
+        // ExternalLink.tsx already does explicitly and deliberately itself
+        // (see its own doc comment) - this app never relies on the
+        // automatic version. Left enabled, it ran inside lichess.org's own
+        // iframe, where its IPC call got blocked by *their* CSP - loud
+        // console errors, and very plausibly what was swallowing real
+        // clicks on the embedded puzzle before they could reach Lichess's
+        // own board logic. Disabling it removes an interception nothing
+        // here needs, in a context (third-party embedded content) it was
+        // never meant to run in.
+        .plugin(
+            tauri_plugin_opener::Builder::new()
+                .open_js_links_on_click(false)
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,

@@ -30,6 +30,8 @@ let jsDosLoadPromise: Promise<void> | null = null;
 // executing, so once a load has actually started, it is never abandoned or
 // retried - only a genuine `onerror` (the script never ran at all) is safe
 // to retry from.
+const JS_DOS_SCRIPT_SRC = "/js-dos/js-dos.js";
+
 function loadJsDos(): Promise<void> {
   if (jsDosLoadPromise) return jsDosLoadPromise;
   jsDosLoadPromise = new Promise<void>((resolve, reject) => {
@@ -37,13 +39,28 @@ function loadJsDos(): Promise<void> {
       resolve();
       return;
     }
+
+    // Belt-and-braces on top of the module-level cache above: that guard
+    // only holds within a single evaluation of this module. Check the DOM
+    // itself too - the one place state can't get duplicated no matter how
+    // this module ended up instantiated more than once (e.g. a stale
+    // in-memory copy still running from before an update finished
+    // applying to disk, discovered live after 0.7.2's cache-based guard
+    // alone still weren't enough).
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${JS_DOS_SCRIPT_SRC}"]`);
+    if (existing) {
+      existing.addEventListener("load", () => resolve());
+      existing.addEventListener("error", () => reject(new Error("Failed to load js-dos.")));
+      return;
+    }
+
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = "/js-dos/js-dos.css";
     document.head.appendChild(link);
 
     const script = document.createElement("script");
-    script.src = "/js-dos/js-dos.js";
+    script.src = JS_DOS_SCRIPT_SRC;
     script.onload = () => resolve();
     script.onerror = () => {
       jsDosLoadPromise = null;

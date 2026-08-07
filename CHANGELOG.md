@@ -3,6 +3,33 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.4] - 2026-08-07
+
+### Fixed
+
+- **Lichess puzzle not interactable** - the actual cause: `tauri-plugin-opener`'s
+  default `open_js_links_on_click` behavior injects a click-interceptor
+  script into *every* frame in the webview, not just this app's own
+  document - including third-party iframes like the Lichess puzzle embed.
+  Its attempt to call back into Tauri from inside that iframe was blocked
+  by Lichess's own Content-Security-Policy (visible in the console as a
+  `connect-src` violation on `ipc.localhost`), and very plausibly swallowed
+  real clicks intended for the puzzle board before they ever reached
+  Lichess's own logic. This app never relied on that automatic behavior in
+  the first place - `ExternalLink.tsx` already calls `openUrl()` itself,
+  explicitly, for every outbound link - so `open_js_links_on_click` is now
+  disabled entirely.
+- **DOS Arcade "Identifier already declared" persisting past 0.7.2** -
+  0.7.2's fix only guarded against a second `<script>` tag within a single
+  evaluation of this module; hardened further with a direct DOM check
+  (`document.querySelector` for an existing `js-dos.js` script tag) before
+  ever appending a new one, so the guard holds even if this module somehow
+  ends up evaluated more than once (e.g. a stale in-memory copy still
+  running from before an update finished applying to disk - quitting and
+  fully relaunching the app after an update, not just letting the updater
+  apply in the background, is also worth double-checking against this
+  exact symptom).
+
 ## [0.7.3] - 2026-08-07
 
 ### Added
