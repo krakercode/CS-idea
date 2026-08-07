@@ -3,6 +3,25 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.2] - 2026-08-07
+
+### Fixed
+
+- **DOS Arcade: "Identifier has already been declared" crash** - the actual
+  root cause behind the reported black screen, caught via 0.7.1's new
+  devtools access: `js-dos.js` is a classic (non-module) script with
+  top-level `let`/`const` declarations, which share the page's single
+  global lexical scope across every `<script>` tag - executing it twice
+  throws a `SyntaxError` on the second run. 0.7.1's own load-timeout gave up
+  on a load that was merely slow (not actually failed) and re-appended a
+  fresh `<script>` tag once the timeout fired, which then collided with the
+  original once *it* also finished loading. There is no safe way to cancel
+  a classic script that might already be executing, so a load is no longer
+  ever abandoned or retried once started - only a genuine `onerror` (the
+  script never ran at all) clears the cache for a retry. The "taking a
+  while" notice is now purely informational and no longer suggests
+  Back-then-Play-again, since that was the exact unsafe action.
+
 ## [0.7.1] - 2026-08-07
 
 ### Fixed

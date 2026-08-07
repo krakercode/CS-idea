@@ -2031,7 +2031,7 @@ dependencies = [
 
 [[package]]
 name = "jesspr-east"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "base64 0.23.0",
  "chrono",

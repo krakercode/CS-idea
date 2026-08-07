@@ -17,9 +17,19 @@ declare global {
 }
 
 const EMULATORS_PATH_PREFIX = "/js-dos/emulators/";
-const LOAD_TIMEOUT_MS = 15_000;
 let jsDosLoadPromise: Promise<void> | null = null;
 
+// js-dos.js is a classic (non-module) script with top-level `let`/`const`
+// declarations - those share the page's single global lexical scope across
+// *every* <script> tag, unlike `var`/functions. Loading and executing it a
+// second time throws "Identifier '<x>' has already been declared" - a real
+// bug hit here: an earlier version of this file gave up on a load that was
+// merely slow (timed out, not actually failed) and re-appended a fresh
+// script tag, which then collided with the first one once it also finished.
+// There is no way to safely "cancel" a classic script that might already be
+// executing, so once a load has actually started, it is never abandoned or
+// retried - only a genuine `onerror` (the script never ran at all) is safe
+// to retry from.
 function loadJsDos(): Promise<void> {
   if (jsDosLoadPromise) return jsDosLoadPromise;
   jsDosLoadPromise = new Promise<void>((resolve, reject) => {
@@ -32,59 +42,48 @@ function loadJsDos(): Promise<void> {
     link.href = "/js-dos/js-dos.css";
     document.head.appendChild(link);
 
-    // A network-level failure (404, refused connection) reliably fires
-    // onerror, but a request that just never completes - hangs, or a
-    // dropped connection some environments don't report - fires neither
-    // event, which without a timeout left this promise (and the "Loading…"
-    // state built on it) pending forever with nothing on screen to explain
-    // why. Whichever fires first wins; the other is a no-op since resolve/
-    // reject past the first call is ignored by the Promise spec anyway.
-    const timer = setTimeout(
-      () => reject(new Error("Timed out loading js-dos - check your connection.")),
-      LOAD_TIMEOUT_MS,
-    );
-
     const script = document.createElement("script");
     script.src = "/js-dos/js-dos.js";
-    script.onload = () => {
-      clearTimeout(timer);
-      resolve();
-    };
+    script.onload = () => resolve();
     script.onerror = () => {
-      clearTimeout(timer);
+      jsDosLoadPromise = null;
       reject(new Error("Failed to load js-dos."));
     };
     document.head.appendChild(script);
-  }).catch((err: unknown) => {
-    // A failed load must not stay cached - the module-level promise would
-    // otherwise permanently remember this one failure and never let a
-    // later mount (retry, or just picking a different game) try again.
-    jsDosLoadPromise = null;
-    throw err;
   });
   return jsDosLoadPromise;
 }
 
+const LOAD_STALL_MS = 15_000;
 const RENDER_STALL_MS = 12_000;
 
 function DosPlayer({ game, onBack }: { game: DosGameEntry; onBack: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const [stalled, setStalled] = useState(false);
+  const [stalled, setStalled] = useState<"loading" | "rendering" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setStalled(false);
+    setStalled(null);
+    setError(null);
 
     // Declared here (not inside the .then() below) so the effect's own
     // cleanup can reach them - a cleanup function *returned from* a .then()
     // callback isn't a real effect teardown, nothing ever calls it.
     let observer: MutationObserver | null = null;
-    let stallTimer: ReturnType<typeof setTimeout> | null = null;
+    let renderStallTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Purely a status message, not a cancellation - see loadJsDos's comment
+    // on why a slow load must never be abandoned/retried by this firing.
+    const loadStallTimer = setTimeout(() => {
+      if (!cancelled) setStalled("loading");
+    }, LOAD_STALL_MS);
 
     loadJsDos()
       .then(() => {
+        clearTimeout(loadStallTimer);
         if (cancelled || !containerRef.current || !window.Dos) return;
+        setStalled(null);
         // js-dos.js is the full player app (its own UI, its own internal
         // state) - passing `url` in the options is what starts the bundle;
         // there's no separate run()/exit() handle to chain or dispose of.
@@ -112,23 +111,25 @@ function DosPlayer({ game, onBack }: { game: DosGameEntry; onBack: () => void })
         const container = containerRef.current;
         observer = new MutationObserver(() => {
           if (container.childElementCount > 0) {
-            setStalled(false);
+            setStalled(null);
             observer?.disconnect();
           }
         });
         observer.observe(container, { childList: true });
-        stallTimer = setTimeout(() => {
-          if (!cancelled && container.childElementCount === 0) setStalled(true);
+        renderStallTimer = setTimeout(() => {
+          if (!cancelled && container.childElementCount === 0) setStalled("rendering");
         }, RENDER_STALL_MS);
       })
       .catch((err: unknown) => {
+        clearTimeout(loadStallTimer);
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to start the emulator.");
       });
 
     return () => {
       cancelled = true;
+      clearTimeout(loadStallTimer);
       observer?.disconnect();
-      if (stallTimer) clearTimeout(stallTimer);
+      if (renderStallTimer) clearTimeout(renderStallTimer);
     };
   }, [game]);
 
@@ -141,9 +142,13 @@ function DosPlayer({ game, onBack }: { game: DosGameEntry; onBack: () => void })
         </button>
       </div>
       {stalled && !error && (
-        <p className="dosarcade__error">
-          This is taking much longer than it should and may have failed silently - try Back then Play again, or
-          right-click anywhere and choose Inspect (or press F12) to check the Console for the real error.
+        <p className="dosarcade__stall-notice">
+          {stalled === "loading"
+            ? "Still loading js-dos - this can take a while on a slow disk or first run. Hang tight; going Back " +
+              "now won't speed it up and can cause a worse error if it finishes loading right after."
+            : "js-dos loaded but the game hasn't appeared yet - this may just need more time."}{" "}
+          If it never comes up, right-click anywhere and choose Inspect (or press F12) to check the Console, or
+          restart JESSPR-EAST for a clean retry.
         </p>
       )}
       {error ? (
