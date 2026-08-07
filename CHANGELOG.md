@@ -3,6 +3,28 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.1] - 2026-08-07
+
+### Fixed
+
+- **Diagnostics for the reported DOS Arcade/Lichess playability issues** -
+  post-release reports that DOS Arcade still shows a black screen and
+  Lichess's puzzle renders but isn't interactable couldn't be reproduced
+  against the actual production build (`npm run build` served statically,
+  not the dev server) in a real browser - the asset pipeline, WASM MIME
+  type, CSP (disabled), and Tauri capabilities all check out there, pointing
+  at WebView2-specific runtime behavior on the affected machine rather than
+  a bug reproducible outside it. Shipping two things to actually get to the
+  bottom of it: Tauri's `devtools` Cargo feature is now enabled in release
+  builds (right-click Inspect / F12), since there was previously no way to
+  get a real console error out of the installed app; and DOS Arcade's
+  `loadJsDos()` now times out after 15s instead of hanging forever if
+  neither `onload` nor `onerror` fires (and no longer permanently caches a
+  failed load), with a `MutationObserver` + 12s stall timer surfacing a
+  visible message if `window.Dos()` runs but never paints anything into its
+  container - turning a silent, unexplained black screen into an actionable
+  one.
+
 ## [0.7.0] - 2026-08-07
 
 ### Added
