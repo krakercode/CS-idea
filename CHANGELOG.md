@@ -3,6 +3,16 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.3] - 2026-08-07
+
+### Added
+
+- **"Default" layout preset** - shows every widget, alongside the existing
+  Productivity/Gaming/Background presets. Unlike those, it's a new "show-all"
+  preset kind that doesn't enumerate widget ids, so it stays correct
+  (everything shown, including whatever widget gets added next) without
+  needing maintenance every time the widget list grows.
+
 ## [0.7.2] - 2026-08-07
 
 ### Fixed
