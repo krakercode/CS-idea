@@ -17,11 +17,12 @@ declare global {
 }
 
 const EMULATORS_PATH_PREFIX = "/js-dos/emulators/";
+const LOAD_TIMEOUT_MS = 15_000;
 let jsDosLoadPromise: Promise<void> | null = null;
 
 function loadJsDos(): Promise<void> {
   if (jsDosLoadPromise) return jsDosLoadPromise;
-  jsDosLoadPromise = new Promise((resolve, reject) => {
+  jsDosLoadPromise = new Promise<void>((resolve, reject) => {
     if (window.Dos) {
       resolve();
       return;
@@ -31,21 +32,55 @@ function loadJsDos(): Promise<void> {
     link.href = "/js-dos/js-dos.css";
     document.head.appendChild(link);
 
+    // A network-level failure (404, refused connection) reliably fires
+    // onerror, but a request that just never completes - hangs, or a
+    // dropped connection some environments don't report - fires neither
+    // event, which without a timeout left this promise (and the "Loading…"
+    // state built on it) pending forever with nothing on screen to explain
+    // why. Whichever fires first wins; the other is a no-op since resolve/
+    // reject past the first call is ignored by the Promise spec anyway.
+    const timer = setTimeout(
+      () => reject(new Error("Timed out loading js-dos - check your connection.")),
+      LOAD_TIMEOUT_MS,
+    );
+
     const script = document.createElement("script");
     script.src = "/js-dos/js-dos.js";
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load js-dos."));
+    script.onload = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    script.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error("Failed to load js-dos."));
+    };
     document.head.appendChild(script);
+  }).catch((err: unknown) => {
+    // A failed load must not stay cached - the module-level promise would
+    // otherwise permanently remember this one failure and never let a
+    // later mount (retry, or just picking a different game) try again.
+    jsDosLoadPromise = null;
+    throw err;
   });
   return jsDosLoadPromise;
 }
 
+const RENDER_STALL_MS = 12_000;
+
 function DosPlayer({ game, onBack }: { game: DosGameEntry; onBack: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [stalled, setStalled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setStalled(false);
+
+    // Declared here (not inside the .then() below) so the effect's own
+    // cleanup can reach them - a cleanup function *returned from* a .then()
+    // callback isn't a real effect teardown, nothing ever calls it.
+    let observer: MutationObserver | null = null;
+    let stallTimer: ReturnType<typeof setTimeout> | null = null;
 
     loadJsDos()
       .then(() => {
@@ -64,6 +99,27 @@ function DosPlayer({ game, onBack }: { game: DosGameEntry; onBack: () => void })
           url: game.bundleUrl,
           autoStart: true,
         });
+
+        // window.Dos() doesn't return a promise or fire any callback on
+        // successful startup - the only observable sign the player itself
+        // is alive is that it fills the container with its own DOM (a
+        // canvas, its own UI chrome). A successful call that never paints
+        // anything (e.g. its internal WASM init silently stalls on a given
+        // webview/platform combo) would otherwise look identical to this
+        // component just doing nothing, with no way to tell "still
+        // starting" apart from "broken" - this at least surfaces that
+        // distinction instead of leaving the screen black with no signal.
+        const container = containerRef.current;
+        observer = new MutationObserver(() => {
+          if (container.childElementCount > 0) {
+            setStalled(false);
+            observer?.disconnect();
+          }
+        });
+        observer.observe(container, { childList: true });
+        stallTimer = setTimeout(() => {
+          if (!cancelled && container.childElementCount === 0) setStalled(true);
+        }, RENDER_STALL_MS);
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to start the emulator.");
@@ -71,6 +127,8 @@ function DosPlayer({ game, onBack }: { game: DosGameEntry; onBack: () => void })
 
     return () => {
       cancelled = true;
+      observer?.disconnect();
+      if (stallTimer) clearTimeout(stallTimer);
     };
   }, [game]);
 
@@ -82,6 +140,12 @@ function DosPlayer({ game, onBack }: { game: DosGameEntry; onBack: () => void })
           ← Back to DOS Arcade
         </button>
       </div>
+      {stalled && !error && (
+        <p className="dosarcade__error">
+          This is taking much longer than it should and may have failed silently - try Back then Play again, or
+          right-click anywhere and choose Inspect (or press F12) to check the Console for the real error.
+        </p>
+      )}
       {error ? (
         <p className="dosarcade__error">{error}</p>
       ) : (

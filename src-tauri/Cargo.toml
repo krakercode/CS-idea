@@ -9,7 +9,12 @@ license = "MIT"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# "devtools" keeps the right-click "Inspect Element" / F12 devtools window
+# available in release builds too (Tauri disables it in release by default,
+# same as any browser's prod build) - without it, a bug that only shows up
+# in the installed app rather than `tauri dev` has no way to get a real
+# console error out of a user's machine, only guesswork from here.
+tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-store = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
