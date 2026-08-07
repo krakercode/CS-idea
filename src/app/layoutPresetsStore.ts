@@ -1,8 +1,13 @@
 import type { DashboardSettings, WidgetUserSettings } from "./dashboardSettingsStore";
 
 /**
- * Two different kinds of preset, not one:
+ * Three different kinds of preset, not one:
  *
+ * - "show-all" (built-in only) - every widget, always. Unlike "visibility"
+ *   below, this deliberately doesn't enumerate ids, so a widget added after
+ *   this preset shipped is included automatically instead of needing this
+ *   list maintained forever - the one place "everything" should actually
+ *   mean everything, including whatever gets built next.
  * - "visibility" (built-in only) - just a list of widgets to show; every
  *   other widget on the dashboard, including ones added after this preset
  *   shipped, gets hidden. There's no way to guess a user's preferred
@@ -15,6 +20,7 @@ import type { DashboardSettings, WidgetUserSettings } from "./dashboardSettingsS
  *   real arrangement, since it's built from one that already exists.
  */
 export type LayoutPreset =
+  | { id: string; name: string; builtin: true; kind: "show-all" }
   | { id: string; name: string; builtin: true; kind: "visibility"; showWidgetIds: string[] }
   | { id: string; name: string; builtin: false; kind: "snapshot"; settings: DashboardSettings; order: string[] };
 
@@ -22,6 +28,12 @@ export type LayoutPreset =
  * list - an id here for a widget that no longer exists is simply ignored
  * on apply, same defensive-drop convention as everywhere else. */
 export const BUILTIN_PRESETS: LayoutPreset[] = [
+  {
+    id: "default",
+    name: "Default",
+    builtin: true,
+    kind: "show-all",
+  },
   {
     id: "productivity",
     name: "Productivity",
@@ -144,6 +156,16 @@ export function resolvePresetApplication(
   currentSettings: DashboardSettings,
   allWidgetIds: string[],
 ): { settings: DashboardSettings; order?: string[] } {
+  if (preset.kind === "show-all") {
+    const next: DashboardSettings = {};
+    for (const id of allWidgetIds) {
+      const current = currentSettings[id];
+      if (!current) continue;
+      next[id] = { ...current, visibility: "always" };
+    }
+    return { settings: next };
+  }
+
   if (preset.kind === "visibility") {
     const next: DashboardSettings = {};
     for (const id of allWidgetIds) {
