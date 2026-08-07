@@ -70,6 +70,27 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.dashboard-settings__presets {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dashboard-settings__preset {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.dashboard-settings__preset-name {
+  font-size: 13px;
+}
+
 .dashboard-settings__group-header {
   display: flex;
   align-items: center;

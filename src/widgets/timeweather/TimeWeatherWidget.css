@@ -21,6 +21,17 @@
   margin-top: 2px;
 }
 
+.timeweather__analogue {
+  margin: 0 auto;
+  display: block;
+}
+
+.timeweather__precision-status {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
 .timeweather__weather {
   display: flex;
   flex-direction: column;
@@ -177,4 +188,24 @@
   color: var(--color-bg);
   background: var(--color-accent);
   border-color: var(--color-accent);
+}
+
+.timeweather__settings label.timeweather__inline-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 400;
+}
+
+.timeweather__inline-field select {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 12px;
+}
+
+.timeweather__precision-toggle {
+  line-height: 1.4;
 }

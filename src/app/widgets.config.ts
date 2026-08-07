@@ -162,6 +162,26 @@ export const WIDGETS: WidgetDefinition[] = [
       import("../widgets/timeweather/TimeWeatherWidget").then((m) => ({ default: m.TimeWeatherWidget })),
     ),
   },
+  {
+    id: "situationmonitor",
+    defaultGroupId: "info",
+    label: "Situation Monitor",
+    defaultColSpan: 1,
+    defaultRowSpan: 1,
+    Component: lazy(() =>
+      import("../widgets/situationmonitor/SituationMonitorWidget").then((m) => ({
+        default: m.SituationMonitorWidget,
+      })),
+    ),
+  },
+  {
+    id: "worldmap",
+    defaultGroupId: "info",
+    label: "World Map",
+    defaultColSpan: 2,
+    defaultRowSpan: 2,
+    Component: lazy(() => import("../widgets/worldmap/WorldMapWidget").then((m) => ({ default: m.WorldMapWidget }))),
+  },
 ];
 
 export function getDefaultSettings(): Record<string, WidgetUserSettings> {

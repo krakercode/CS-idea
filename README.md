@@ -248,6 +248,15 @@ button" pattern as Appearance below.
   the full list. It starts from whatever preset was active when you
   switched, so you're tweaking rather than starting blank.
 
+Also in Appearance: a **Font** picker (`src/styles/fonts.ts`, `FONT_OPTIONS`)
+- System Default, Inter, Space Grotesk, plus **Roboto, Open Sans, Lato,
+Montserrat, and Oswald**, the 5 most-used typefaces on Google Fonts by its
+own July 2026 analytics (~50 trillion font views). All self-hosted via
+`@fontsource/*` (SIL Open Font License) rather than loaded from Google's
+CDN, same offline-first reasoning as everything else here - see `main.tsx`'s
+imports. This is the same option list the Time & Weather widget's own
+"Digital font" picker draws from (see "Widget notes" below).
+
 Every widget's CSS is already built entirely on the same 10 CSS custom
 properties (`src/styles/theme.css`), so switching or customizing a theme
 needs no per-widget work - `themeStore.ts`'s `applyTheme` just writes new
@@ -347,6 +356,33 @@ renames, and per-widget group assignments - is local-only,
 `localStorage`-persisted (`dashboard-widget-groups`,
 `dashboard-widget-group-assignments`, `dashboard-widget-group-builtin-names`),
 same as the rest of this panel.
+
+#### Layout presets
+
+A **"Layout…"** dropdown next to the ⚙ button (top-right of the window) lets
+you switch the whole dashboard's arrangement in one click, and the settings
+panel's "Layout presets" section (`layoutPresetsStore.ts`) manages them.
+Two different kinds under one name:
+
+- **Built-in** (Productivity, Gaming, Background) - each just a list of
+  widgets to show; applying one sets those to *Always shown* and everything
+  else to *Hidden*, leaving whatever size/position each widget already had
+  alone. There's no way to guess a good arrangement for "Gaming" ahead of
+  time, so built-ins only ever touch visibility. **Productivity** shows
+  News/Stocks/Calendar/Situation Monitor/Habits/Transit/Time & Weather/
+  Shortcuts/Quotes/Of the Day; **Gaming** shows GAELJANK SOFTWORKS/CS2
+  Database/Pokémon TCG/Spotify/Entertainment Centre/System Health;
+  **Background** shows just Time & Weather/Quotes/Of the Day/System
+  Health, for running the dashboard as ambient background on a second
+  screen.
+- **Custom** - "+ Save layout" captures a full snapshot of the dashboard's
+  *actual current state* - every widget's visibility, size, position, and
+  the grid order - as a new named preset. Applying one restores that exact
+  arrangement, not just a visibility filter. Rename (✎) and delete (✕) work
+  the same way widget groups' do; built-ins can't be deleted.
+
+Custom presets are `localStorage`-persisted (`dashboard-layout-presets`);
+built-ins are hardcoded, not stored, so they can't drift or be corrupted.
 
 Position/size themselves aren't set from a form - they're mouse-driven,
 directly on the dashboard:
@@ -803,6 +839,91 @@ meow.
   (`fetchWithTimeout` in `weatherService.ts`) - `fetch` has no built-in
   one, and without it a dropped connection would leave the widget's
   loading/searching state stuck rather than showing a normal error.
+  The clock itself has three more settings (`clockSettingsStore.ts`):
+  **Digital or Analogue** (the latter an SVG face in the same hollow-line
+  style as the World Map below - `AnalogueClock.tsx`); a **Digital font**
+  picker, the same `FONT_OPTIONS` list Appearance uses; and **Precision
+  Mode**, which syncs a local-clock offset against a keyless, CORS-open
+  network time API (`timeapi.io`, itself NTP-synced) rather than trusting
+  the device's own clock, which can be wrong (unset, drifted, a stalled
+  VM clock) with no way for a browser to query real NTP/an atomic clock
+  directly. `timeSyncService.ts` estimates round-trip latency (splitting
+  it evenly between request and response, same idea NTP itself uses) and
+  re-syncs every 10 minutes while enabled; a failed sync keeps the last
+  good offset rather than silently reverting to the raw device clock.
+- **Situation Monitor** - live coverage of open-ended "watch topics"
+  (`watchTopicsStore.ts`, same editable-tag pattern as News' keywords;
+  defaults to neutral event-type terms - armed conflict, ceasefire,
+  humanitarian crisis, natural disaster - deliberately not named countries
+  or conflicts, since a fixed default list of "the" flashpoints to watch
+  goes stale the moment one ends and a new one starts) via [The GDELT
+  Project](https://www.gdeltproject.org)'s DOC 2.0 API
+  (`gdeltService.ts`) - an open, keyless, CORS-open global news monitoring
+  database (Google Jigsaw-supported, updated every 15 minutes from tens of
+  thousands of outlets) - filtered to English-language sources for
+  readability. Every result keeps its own source domain and link, the same
+  "judge the outlet yourself" attribution News already relies on.
+  Optionally supplemented with official UN/NGO situation reports from
+  [ReliefWeb](https://reliefweb.int) (`reliefwebService.ts`, CC BY 4.0) -
+  unlike GDELT, ReliefWeb needs a registered "appname" (a short manual-
+  approval form, not a secret - their own docs say it's for usage
+  monitoring, not authentication) before it'll answer at all, so this half
+  is opt-in via the ⚙ button, same "paste a free key you had to go get"
+  pattern as Calendar's PandaScore integration. Its field shapes are
+  ReliefWeb API v2's long-documented `profile=list` schema, not
+  re-verified against a live call this round (getting an appname needs an
+  interactive form + manual review this session couldn't complete) - same
+  caveat pandascore.rs/transit.rs already carry for the same reason; read
+  defensively, a shape mismatch drops that one report rather than the
+  widget. The two sources fetch concurrently (`Promise.allSettled`) so one
+  failing - or ReliefWeb simply not being configured - never takes out the
+  other.
+- **World Map** - a fully vectorized (SVG, not raster) world map in the
+  dashboard's hollow-line style (see the CS2 Analysis rating radar for the
+  same "thin stroked lines, no fill" idea) - every country is `fill: none`
+  with just a stroke outline, so it scales to any widget size with zero
+  quality loss, unlike a raster/tile-based map. Click a country for a
+  small anchored panel near the click point (closer to a real right-click
+  context menu than the app's usual centered modal, since that's the
+  natural gesture here) showing its flag, capital, region, UN membership,
+  and a link to its Wikipedia article. Entirely offline and keyless - the
+  whole dataset is bundled, nothing is fetched at runtime:
+  - **Geometry** (`mapData.ts`) - `world-atlas`'s `countries-50m.json`
+    (ISC), TopoJSON derived from [Natural Earth](https://www.naturalearthdata.com)'s
+    public-domain Admin-0 country boundaries at 1:50m scale - not the
+    smaller 110m file, since that drops 4 of the disputed territories
+    below; not the larger 10m file, since its extra coastline detail
+    doesn't resolve into anything visible at the size this widget is
+    actually viewed at. Projected once at module load with d3-geo's
+    Natural Earth projection, fitted to a fixed 960x500 viewBox - the SVG
+    itself renders that viewBox at `width: 100%`, which is what actually
+    keeps the map scaling losslessly (vector coordinates rescaled by the
+    browser, not raster pixels being stretched).
+  - **Country info** (`countryMetadata.ts`) - matched by numeric ISO code
+    (`ccn3`) against [`world-countries`](https://github.com/mledoze/countries)
+    (ODbL-licensed - a share-alike database license, unlike the rest of
+    this MIT-licensed app's dependencies, called out here the same way
+    js-dos's GPL-2.0 is above), which covers ~235 of the topology's 241 features;
+    a handful of contested/unrecognized entities it doesn't carry at all
+    (Kosovo, Northern Cyprus, Somaliland, plus the non-country Siachen
+    Glacier) are filled in by hand in the same file.
+  - **Disputed territories** (`disputedTerritories.ts`) - shaded with a
+    horizontal-line hatch fill (an SVG `<pattern>`) instead of a solid
+    color, so contested status reads as a *texture*, not just another
+    color in the palette. Limited to entities that are *also* their own
+    separately-selectable polygon in this dataset - Crimea, for instance,
+    is drawn as part of Ukraine's outline here, not its own shape, so it
+    isn't (and can't accurately be) called out; Gibraltar, the Kuril
+    Islands, and Ceuta/Melilla are too small to appear as distinct shapes
+    at 1:50m either. The ten covered - **Kosovo**, **Northern Cyprus**,
+    **Somaliland**, **Palestine**, **Taiwan**, **Western Sahara**, the
+    **Siachen Glacier**, the **Chagos Archipelago/British Indian Ocean
+    Territory**, the **Falkland Islands**, and **South Georgia and the
+    South Sandwich Islands** - each get a short, deliberately
+    non-editorializing note (who administers it, who claims it, roughly
+    how many states recognize what) rather than a position on any of them,
+    the same "here's what's reported" stance Situation Monitor takes
+    toward its own sources.
 - **GAELJANK SOFTWORKS** - a small "game label" widget: a launcher listing
   playable games (`src/widgets/gaeljank/gamesCatalog.ts`), each opening
   fullscreen in its own `Overlay` when you hit Play, with a "quit to menu"

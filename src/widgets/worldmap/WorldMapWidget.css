@@ -1,0 +1,142 @@
+.worldmap {
+  position: relative;
+}
+
+.worldmap__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.worldmap__country {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 0.6;
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.worldmap__country:hover {
+  stroke: var(--color-accent);
+  stroke-width: 1;
+}
+
+.worldmap__country--disputed {
+  fill: url(#worldmap-disputed-hatch);
+  fill-opacity: 0.6;
+}
+
+.worldmap__country--selected {
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+}
+
+.worldmap__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.worldmap__legend-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.worldmap__legend-swatch--disputed {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--color-warning) 2px,
+    var(--color-warning) 3px
+  );
+}
+
+.worldmap__popover {
+  position: absolute;
+  z-index: 20;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: var(--space-3);
+  font-size: 12px;
+}
+
+.worldmap__popover-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.worldmap__popover-title {
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.worldmap__popover-close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  padding: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.worldmap__popover-close:hover {
+  color: var(--color-text);
+}
+
+.worldmap__popover-disputed {
+  background: var(--color-surface);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.worldmap__popover-disputed-status {
+  display: block;
+  color: var(--color-warning);
+  font-weight: 600;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.worldmap__popover-disputed p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.worldmap__popover-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px var(--space-2);
+  margin: 0 0 var(--space-2);
+}
+
+.worldmap__popover-facts dt {
+  color: var(--color-text-muted);
+}
+
+.worldmap__popover-facts dd {
+  margin: 0;
+  text-align: right;
+}
+
+.worldmap__popover-link {
+  color: var(--color-accent);
+  font-size: 11px;
+}

@@ -19,6 +19,14 @@ import {
   setWidgetGroup,
   type WidgetGroup,
 } from "./widgetGroupsStore";
+import {
+  deletePreset,
+  getPresets,
+  renamePreset,
+  resolvePresetApplication,
+  savePreset,
+  type LayoutPreset,
+} from "./layoutPresetsStore";
 import { ThemeSettings } from "./ThemeSettings";
 import { UpdateSettings } from "./UpdateSettings";
 import { GeneralSettings } from "./GeneralSettings";
@@ -31,6 +39,8 @@ const UNGROUPED_LABEL = "Ungrouped";
 interface Props {
   settings: SettingsMap;
   onChange: (next: SettingsMap) => void;
+  order: string[];
+  onOrderChange: (next: string[]) => void;
   onClose: () => void;
 }
 
@@ -45,8 +55,9 @@ interface Props {
  * organizing device - grouping doesn't change how the dashboard itself
  * renders, just how this list is browsed, and gives each group a one-click
  * "show all / hide all" for decluttering in bulk. */
-export function DashboardSettings({ settings, onChange, onClose }: Props) {
+export function DashboardSettings({ settings, onChange, order, onOrderChange, onClose }: Props) {
   const defaults = getDefaultSettings();
+  const allWidgetIds = useMemo(() => WIDGETS.map((w) => w.id), []);
   const defaultGroupIds = useMemo(() => {
     const map: Record<string, string> = {};
     for (const widget of WIDGETS) map[widget.id] = widget.defaultGroupId;
@@ -58,6 +69,44 @@ export function DashboardSettings({ settings, onChange, onClose }: Props) {
   const [newGroupName, setNewGroupName] = useState("");
   const [renamingGroupId, setRenamingGroupId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
+
+  const [presets, setPresets] = useState<LayoutPreset[]>(() => getPresets());
+  const [newPresetName, setNewPresetName] = useState("");
+  const [renamingPresetId, setRenamingPresetId] = useState<string | null>(null);
+  const [presetRenameDraft, setPresetRenameDraft] = useState("");
+
+  function handleApplyPreset(presetId: string) {
+    const preset = presets.find((p) => p.id === presetId);
+    if (!preset) return;
+    const { settings: next, order: nextOrder } = resolvePresetApplication(preset, settings, allWidgetIds);
+    onChange(next);
+    if (nextOrder) onOrderChange(nextOrder);
+  }
+
+  function handleSavePreset(e: FormEvent) {
+    e.preventDefault();
+    if (!newPresetName.trim()) return;
+    savePreset(newPresetName, settings, order);
+    setPresets(getPresets());
+    setNewPresetName("");
+  }
+
+  function startRenamePreset(preset: LayoutPreset) {
+    setRenamingPresetId(preset.id);
+    setPresetRenameDraft(preset.name);
+  }
+
+  function commitRenamePreset(e: FormEvent) {
+    e.preventDefault();
+    if (renamingPresetId) renamePreset(renamingPresetId, presetRenameDraft);
+    setPresets(getPresets());
+    setRenamingPresetId(null);
+  }
+
+  function handleDeletePreset(id: string) {
+    deletePreset(id);
+    setPresets(getPresets());
+  }
 
   function patch(id: string, p: Partial<WidgetUserSettings>) {
     onChange(updateWidgetSettings(id, p, defaults));
@@ -156,6 +205,63 @@ export function DashboardSettings({ settings, onChange, onClose }: Props) {
           <div className="dashboard-settings__row">
             <div className="dashboard-settings__widget-name">General</div>
             <GeneralSettings />
+          </div>
+
+          <div className="dashboard-settings__row">
+            <div className="dashboard-settings__widget-name">Layout presets</div>
+            <ul className="dashboard-settings__presets">
+              {presets.map((preset) => (
+                <li key={preset.id} className="dashboard-settings__preset">
+                  {renamingPresetId === preset.id ? (
+                    <form className="dashboard-settings__group-rename" onSubmit={commitRenamePreset}>
+                      <input
+                        autoFocus
+                        type="text"
+                        value={presetRenameDraft}
+                        onChange={(e) => setPresetRenameDraft(e.currentTarget.value)}
+                        onBlur={commitRenamePreset}
+                      />
+                    </form>
+                  ) : (
+                    <span className="dashboard-settings__preset-name">{preset.name}</span>
+                  )}
+                  <div className="dashboard-settings__group-actions">
+                    <button type="button" onClick={() => handleApplyPreset(preset.id)}>
+                      Apply
+                    </button>
+                    {!preset.builtin && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => startRenamePreset(preset)}
+                          title="Rename layout"
+                          aria-label={`Rename ${preset.name}`}
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePreset(preset.id)}
+                          title="Delete layout"
+                          aria-label={`Delete ${preset.name}`}
+                        >
+                          ✕
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <form className="dashboard-settings__new-group" onSubmit={handleSavePreset}>
+              <input
+                type="text"
+                value={newPresetName}
+                onChange={(e) => setNewPresetName(e.currentTarget.value)}
+                placeholder="Save current layout as…"
+              />
+              <button type="submit">+ Save layout</button>
+            </form>
           </div>
 
           {sections.map((section) => (

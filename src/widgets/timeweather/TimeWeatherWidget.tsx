@@ -1,12 +1,30 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { usePolling } from "../../shared/hooks/usePolling";
 import { WidgetShell } from "../../shared/WidgetShell";
+import { FONT_OPTIONS } from "../../styles/fonts";
 import { getLocation, getUnit, setLocation, setUnit } from "./locationStore";
+import {
+  type ClockStyle,
+  getClockFont,
+  getClockStyle,
+  getPrecisionMode,
+  setClockFont,
+  setClockStyle,
+  setPrecisionMode,
+} from "./clockSettingsStore";
+import { fetchNetworkTimeOffsetMs } from "./timeSyncService";
+import { AnalogueClock } from "./AnalogueClock";
 import { describeWeatherCode, detectLocation, fetchWeather, searchLocations } from "./weatherService";
 import type { TemperatureUnit, WeatherLocation } from "./types";
 import "./TimeWeatherWidget.css";
 
 const WEATHER_REFRESH_MS = 15 * 60_000;
+// How often Precision Mode re-syncs against the network time source while
+// it stays enabled - frequent enough to keep the offset fresh (correcting
+// for local clock drift and re-estimating round-trip latency), rare enough
+// not to hammer a free keyless API for a correction that's only ever a
+// handful of milliseconds.
+const PRECISION_RESYNC_MS = 10 * 60_000;
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
 const dateFormatter = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" });
@@ -21,6 +39,13 @@ export function TimeWeatherWidget() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [detecting, setDetecting] = useState(false);
+  const [clockStyle, setClockStyleState] = useState<ClockStyle>(() => getClockStyle());
+  const [clockFont, setClockFontState] = useState<string>(() => getClockFont());
+  const [precisionMode, setPrecisionModeState] = useState<boolean>(() => getPrecisionMode());
+  const [syncOffsetMs, setSyncOffsetMs] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
   const {
     data: weather,
@@ -38,6 +63,40 @@ export function TimeWeatherWidget() {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Precision Mode: sync a local-clock offset against a network time
+  // source on enable, then keep re-syncing on an interval for as long as
+  // it stays on. A failed sync doesn't clear a previously-good offset -
+  // still-a-bit-stale-but-corrected beats silently falling back to
+  // whatever the device clock drifted to.
+  useEffect(() => {
+    if (!precisionMode) return;
+
+    let cancelled = false;
+    function sync() {
+      setSyncing(true);
+      setSyncError(null);
+      fetchNetworkTimeOffsetMs()
+        .then((offsetMs) => {
+          if (cancelled) return;
+          setSyncOffsetMs(offsetMs);
+          setLastSyncedAt(new Date());
+        })
+        .catch((err: unknown) => {
+          if (!cancelled) setSyncError(err instanceof Error ? err.message : "Time sync failed.");
+        })
+        .finally(() => {
+          if (!cancelled) setSyncing(false);
+        });
+    }
+
+    sync();
+    const id = setInterval(sync, PRECISION_RESYNC_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [precisionMode]);
 
   // usePolling only (re)schedules off its own mount/intervalMs - changing
   // which location/unit its fetcher closes over doesn't retrigger a fetch
@@ -92,6 +151,25 @@ export function TimeWeatherWidget() {
     setUnitState(next);
   }
 
+  function handleClockStyleChange(next: ClockStyle) {
+    setClockStyle(next);
+    setClockStyleState(next);
+  }
+
+  function handleClockFontChange(next: string) {
+    setClockFont(next);
+    setClockFontState(next);
+  }
+
+  function handlePrecisionModeChange(next: boolean) {
+    setPrecisionMode(next);
+    setPrecisionModeState(next);
+    if (!next) {
+      setSyncError(null);
+      setSyncOffsetMs(0);
+    }
+  }
+
   const headerActions = (
     <button
       type="button"
@@ -106,17 +184,74 @@ export function TimeWeatherWidget() {
 
   const description = weather ? describeWeatherCode(weather.weatherCode, weather.isDay) : null;
   const unitSymbol = unit === "celsius" ? "°C" : "°F";
+  const displayedNow = precisionMode ? new Date(now.getTime() + syncOffsetMs) : now;
+  const clockFontValue = FONT_OPTIONS.find((f) => f.id === clockFont)?.cssValue;
 
   return (
     <WidgetShell title="Time & Weather" loading={loading && !!location} error={error} onRefresh={refresh} headerActions={headerActions}>
       <div className="timeweather">
         <div className="timeweather__clock">
-          <div className="timeweather__time">{timeFormatter.format(now)}</div>
-          <div className="timeweather__date">{dateFormatter.format(now)}</div>
+          {clockStyle === "analogue" ? (
+            <AnalogueClock now={displayedNow} />
+          ) : (
+            <div className="timeweather__time" style={clockFontValue ? { fontFamily: clockFontValue } : undefined}>
+              {timeFormatter.format(displayedNow)}
+            </div>
+          )}
+          <div className="timeweather__date">{dateFormatter.format(displayedNow)}</div>
+          {precisionMode && (
+            <div className="timeweather__precision-status">
+              {syncing && !lastSyncedAt
+                ? "Syncing…"
+                : syncError && !lastSyncedAt
+                  ? syncError
+                  : `⚛ Precision Mode - synced ${lastSyncedAt ? timeFormatter.format(lastSyncedAt) : ""}${syncError ? ` (last sync failed: ${syncError})` : ""}`}
+            </div>
+          )}
         </div>
 
         {showSettings && (
           <form className="timeweather__settings" onSubmit={handleSearch}>
+            <label>Clock</label>
+            <div className="timeweather__unit-toggle">
+              <button
+                type="button"
+                className={clockStyle === "digital" ? "timeweather__unit--active" : ""}
+                onClick={() => handleClockStyleChange("digital")}
+              >
+                Digital
+              </button>
+              <button
+                type="button"
+                className={clockStyle === "analogue" ? "timeweather__unit--active" : ""}
+                onClick={() => handleClockStyleChange("analogue")}
+              >
+                Analogue
+              </button>
+            </div>
+
+            {clockStyle === "digital" && (
+              <label className="timeweather__inline-field">
+                Digital font
+                <select value={clockFont} onChange={(e) => handleClockFontChange(e.target.value)}>
+                  {FONT_OPTIONS.map((font) => (
+                    <option key={font.id} value={font.id}>
+                      {font.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            <label className="timeweather__inline-field timeweather__precision-toggle">
+              <input
+                type="checkbox"
+                checked={precisionMode}
+                onChange={(e) => handlePrecisionModeChange(e.currentTarget.checked)}
+              />
+              Precision Mode - sync against a network time source instead of the device clock
+            </label>
+
             <label htmlFor="timeweather-location-search">Location</label>
             <div className="timeweather__settings-row">
               <input

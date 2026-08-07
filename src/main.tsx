@@ -11,6 +11,24 @@ import "@fontsource/inter/600.css";
 import "@fontsource/space-grotesk/400.css";
 import "@fontsource/space-grotesk/500.css";
 import "@fontsource/space-grotesk/600.css";
+// Top 5 most-used Google Fonts by their own analytics (Roboto, Open Sans,
+// Lato, Montserrat, Oswald - ~50 trillion font views, per Google Fonts'
+// July 2026 usage data) - self-hosted for the same offline-first reason as
+// everything above, not loaded from Google's CDN.
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
+import "@fontsource/open-sans/400.css";
+import "@fontsource/open-sans/500.css";
+import "@fontsource/open-sans/600.css";
+import "@fontsource/lato/400.css";
+import "@fontsource/lato/700.css";
+import "@fontsource/montserrat/400.css";
+import "@fontsource/montserrat/500.css";
+import "@fontsource/montserrat/600.css";
+import "@fontsource/oswald/400.css";
+import "@fontsource/oswald/500.css";
+import "@fontsource/oswald/600.css";
 // Not in the user-facing font picker - only used by theme-flair.css's
 // "jesspring-io" preset for its widget titles (same pattern as Marathon/
 // Alien/MGSV hardcoding a system monospace font for theirs, except this

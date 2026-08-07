@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WIDGETS, getDefaultSettings, type WidgetDefinition } from "./widgets.config";
 import {
+  applyAllSettings,
   getAllSettings,
   getWidgetOrder,
   isWidgetVisibleNow,
@@ -9,6 +10,7 @@ import {
   updateWidgetSettings,
   type DashboardSettings as SettingsMap,
 } from "./dashboardSettingsStore";
+import { getPresets, resolvePresetApplication } from "./layoutPresetsStore";
 import { DashboardSettings } from "./DashboardSettings";
 import { WidgetCell } from "./WidgetCell";
 import { FreeWidgetCell } from "./FreeWidgetCell";
@@ -141,8 +143,43 @@ export function Dashboard() {
     [draggedId],
   );
 
+  // Presets are one-shot actions ("apply this layout now"), not a
+  // persistent "current mode" - the select resets to its placeholder right
+  // after applying rather than staying pinned on the preset name, since
+  // any later manual tweak would silently make that label a lie.
+  function handleApplyPreset(presetId: string) {
+    const preset = getPresets().find((p) => p.id === presetId);
+    if (!preset) return;
+    const { settings: next, order: nextOrder } = resolvePresetApplication(preset, settings, allIds);
+    setSettings(applyAllSettings(next));
+    if (nextOrder) {
+      setOrder(nextOrder);
+      saveWidgetOrder(nextOrder);
+    }
+  }
+
+  const presets = getPresets();
+
   return (
     <div className="dashboard-root">
+      <select
+        className="dashboard__preset-select"
+        value=""
+        onChange={(e) => {
+          if (e.target.value) handleApplyPreset(e.target.value);
+        }}
+        title="Apply a layout preset"
+        aria-label="Apply a layout preset"
+      >
+        <option value="" disabled>
+          Layout…
+        </option>
+        {presets.map((preset) => (
+          <option key={preset.id} value={preset.id}>
+            {preset.name}
+          </option>
+        ))}
+      </select>
       <button
         type="button"
         className="dashboard__settings-button dashboard__fullscreen-button"
@@ -200,7 +237,16 @@ export function Dashboard() {
       </div>
 
       {settingsOpen && (
-        <DashboardSettings settings={settings} onChange={setSettings} onClose={() => setSettingsOpen(false)} />
+        <DashboardSettings
+          settings={settings}
+          onChange={setSettings}
+          order={order}
+          onOrderChange={(next) => {
+            setOrder(next);
+            saveWidgetOrder(next);
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
       )}
     </div>
   );

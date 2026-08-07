@@ -64,6 +64,14 @@ export function getAllSettings(defaults: Record<string, WidgetUserSettings>): Da
   return merged;
 }
 
+/** Replaces the whole settings map at once - layout presets apply this
+ * way rather than one `updateWidgetSettings` patch per widget, since a
+ * preset switch is one atomic change, not N independent ones. */
+export function applyAllSettings(settings: DashboardSettings): DashboardSettings {
+  writeStored(settings);
+  return settings;
+}
+
 export function updateWidgetSettings(
   id: string,
   patch: Partial<WidgetUserSettings>,

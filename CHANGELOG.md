@@ -3,6 +3,56 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.0] - 2026-08-07
+
+### Added
+
+- **World Map widget** - a fully vectorized (SVG) world map in the
+  dashboard's hollow-line style, real Natural Earth country boundaries via
+  `world-atlas`/d3-geo. Click a country for a context-menu-style panel with
+  its flag, capital, region, UN membership, and a Wikipedia link. Ten
+  disputed/contested territories (Kosovo, Northern Cyprus, Somaliland,
+  Palestine, Taiwan, Western Sahara, the Siachen Glacier, the Chagos
+  Archipelago/BIOT, the Falkland Islands, South Georgia) are shaded with a
+  horizontal-line hatch pattern and a short, neutral status note instead of
+  a solid fill. See the README's "World Map" section for the full sourcing
+  breakdown.
+- **Situation Monitor widget** - live, keyless coverage of user-editable
+  "watch topics" via The GDELT Project's DOC 2.0 API, optionally
+  supplemented with official UN/NGO reports from ReliefWeb (needs a free,
+  manually-approved appname). Same tag-editor UX as News.
+- **Layout presets** - a "Layout…" switcher plus a settings-panel section
+  for saving, applying, renaming, and deleting whole-dashboard
+  arrangements. Ships with three built-ins (Productivity, Gaming,
+  Background) that toggle visibility by category; custom presets capture a
+  full snapshot (visibility, size, position, grid order) of the dashboard
+  exactly as it is when saved.
+- **Clock settings** (Time & Weather widget) - Digital or Analogue display
+  (the latter a new hollow-line SVG clock face), a font picker for the
+  digital readout, and a "Precision Mode" that syncs against a keyless
+  network time source instead of trusting the device's own clock.
+- **5 more self-hosted fonts** - Roboto, Open Sans, Lato, Montserrat, and
+  Oswald, the most-used typefaces on Google Fonts by its own analytics,
+  added to the existing font picker (Appearance settings + the new clock
+  font picker).
+- **Lichess cartridge** (GAELJANK SOFTWORKS) - today's Lichess puzzle and a
+  live Lichess TV feed via Lichess's own keyless embed endpoints (there's
+  no API for embedding actual play), plus a link out to play a real game.
+- **Time & Weather widget** - local clock plus current conditions from
+  Open-Meteo (free, keyless), with searchable location or "use my
+  location" and a °C/°F toggle.
+- **Widget groups** - the settings panel now organizes widgets into
+  groups (Info/Games/Media/System by default, plus custom ones), each with
+  one-click show-all/hide-all, rename, and delete.
+
+### Fixed
+
+- **DOS Arcade cartridges loading a blank screen** - js-dos was stalling on
+  its own nearly-blank "click to play" splash (needed to satisfy browsers'
+  audio-autoplay policy) before it would actually boot. Passing `autoStart`
+  skips straight through, since the widget's own Play click already
+  satisfies that policy.
+
 ## [0.6.2] - 2026-08-05
 
 ### Added
