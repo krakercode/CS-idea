@@ -3,6 +3,29 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.0] - 2026-08-08
+
+### Fixed
+
+- **DOS Arcade "Identifier already declared" persisting past 0.7.4** -
+  0.7.4's `document.querySelector` guard only ever protects a *second* call
+  made by the same copy of this module (or a copy that runs after another
+  one's `<script>` tag already landed in the DOM); it does nothing for the
+  *first* call made by each separate copy, which is exactly what a second
+  evaluation of this module produces - and per the module's own
+  module-scoped `jsDosLoadPromise`, each copy's first call falls straight
+  through to appending its own `<script src="js-dos.js">`, colliding with
+  whichever copy got there first. `window` is the one object guaranteed to
+  be shared no matter how many separate copies of this module end up alive
+  in memory at once, so the load-promise cache now lives on `window`
+  instead of in module scope, closing the gap for good instead of racing
+  it. Also: a script that fails to *parse* (this exact "Identifier already
+  declared" case) still fires the script element's `load` event - only a
+  fetch failure fires `error` - so `loadJsDos()` was resolving
+  "successfully" while `window.Dos` silently never got set, and the caller
+  just as silently gave up, leaving a blank canvas with nothing in the UI
+  to explain why. That case now surfaces a real, visible error instead.
+
 ## [0.7.4] - 2026-08-07
 
 ### Fixed
