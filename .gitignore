@@ -9,6 +9,11 @@ dist-ssr
 # committed since they're build artifacts, not authored content.
 public/js-dos
 
+# Retrocade's libretro cores - downloaded by
+# scripts/setup-nostalgist-assets.mjs (postinstall/predev/prebuild), same
+# reasoning as public/js-dos above.
+public/nostalgist
+
 # Editor
 .vscode/*
 !.vscode/extensions.json

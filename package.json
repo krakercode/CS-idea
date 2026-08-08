@@ -1,13 +1,13 @@
 {
   "name": "jesspr-east",
   "private": true,
-  "version": "0.8.1",
+  "version": "0.9.0",
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "postinstall": "node scripts/setup-jsdos-assets.mjs",
-    "predev": "node scripts/setup-jsdos-assets.mjs",
-    "prebuild": "node scripts/setup-jsdos-assets.mjs",
+    "postinstall": "node scripts/setup-jsdos-assets.mjs && node scripts/setup-nostalgist-assets.mjs",
+    "predev": "node scripts/setup-jsdos-assets.mjs && node scripts/setup-nostalgist-assets.mjs",
+    "prebuild": "node scripts/setup-jsdos-assets.mjs && node scripts/setup-nostalgist-assets.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
@@ -34,6 +34,7 @@
     "d3-geo": "^3.1.1",
     "emulators": "8.4.1",
     "js-dos": "8.4.1",
+    "nostalgist": "^0.21.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "recharts": "^3.10.1",
@@ -49,6 +50,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/topojson-client": "^3.1.5",
     "@vitejs/plugin-react": "^6.0.4",
+    "fflate": "^0.8.3",
     "typescript": "^5.9.3",
     "vite": "^8.1.5"
   }
