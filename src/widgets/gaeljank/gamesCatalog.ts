@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { OneMoreSeasonGame } from "./games/onemoreseason/OneMoreSeasonGame";
 import { DosArcadeGame } from "./games/dosarcade/DosArcadeGame";
 import { LichessGame } from "./games/lichess/LichessGame";
+import { RetrocadeGame } from "./games/retrocade/RetrocadeGame";
 
 export interface GameEntry {
   id: string;
@@ -30,6 +31,15 @@ export const GAMES: GameEntry[] = [
     tagline: "Freeware cabinet",
     blurb: "A small cabinet of real, confirmed-freeware DOS games running for real via DOSBox-WASM - starting with Jetpack.",
     Component: DosArcadeGame,
+  },
+  {
+    id: "retrocade",
+    title: "Retrocade",
+    tagline: "Bring your own ROMs",
+    blurb:
+      "NES, Game Boy/Color, GBA and Genesis, running via open-source libretro cores - Retrocade ships no games of " +
+      "its own, just drop legally-obtained ROMs into its folder (opens right from the widget) and they'll show up here.",
+    Component: RetrocadeGame,
   },
   {
     id: "lichess",

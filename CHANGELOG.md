@@ -3,6 +3,35 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.9.0] - 2026-08-08
+
+### Added
+
+- **Retrocade** (`games/retrocade/`), a new GAELJANK SOFTWORKS cartridge -
+  unlike DOS Arcade, ships no games of its own. Instead it plays NES, Game
+  Boy/Color, GBA, and Genesis/Mega Drive ROMs the user supplies themselves,
+  via [Nostalgist.js](https://nostalgist.js.org) (libretro cores compiled to
+  WebAssembly). A real, user-writable `<app data dir>/roms/` folder is
+  created on first launch (`src-tauri/src/main.rs`), with a new
+  `📂 Open ROMs Folder` button that reveals it directly in the OS file
+  manager (`open_roms_folder`, via the opener plugin already used
+  elsewhere). Only 4 systems/cores are offered - FCEUmm (NES), Gambatte
+  (GB/GBC), mGBA (GBA), and Genesis Plus GX (Genesis) - all confirmed
+  copyleft/permissive-licensed; Snes9x (SNES) was deliberately left out
+  since upstream Snes9x is non-commercial-use-only, not actually
+  redistributable. Fully self-hosted and offline, same as js-dos/DOS Arcade:
+  `scripts/setup-nostalgist-assets.mjs` downloads and unpacks the 4 cores
+  once at install/dev/build time from a version-pinned
+  `retroarch-emscripten-build` release into `public/nostalgist/cores/`
+  (gitignored, regenerated like `public/js-dos/`), instead of Nostalgist's
+  default behavior of fetching cores (and the zip.js library used to unpack
+  them) from jsDelivr's CDN at runtime. ROM bytes cross the Tauri IPC
+  boundary via a raw `tauri::ipc::Response` (resolved by the frontend's
+  `invoke()` into an `ArrayBuffer`) rather than JSON, since a JSON number
+  array would multiply the transfer size of a 32MB GBA ROM for no benefit;
+  `read_rom` also validates the requested filename can't escape the ROM
+  directory. See README's GAELJANK SOFTWORKS section for the full writeup.
+
 ## [0.8.0] - 2026-08-08
 
 ### Fixed

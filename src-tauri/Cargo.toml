@@ -1,6 +1,6 @@
 [package]
 name = "jesspr-east"
-version = "0.8.1"
+version = "0.9.0"
 description = "Always-on second-monitor dashboard: news, stocks, sports/esports calendar, CS2 nade/pro-play database, Spotify."
 edition = "2021"
 license = "MIT"

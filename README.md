@@ -1063,6 +1063,51 @@ meow.
       was waiting for. `autoStart` skips straight to booting, since the
       widget's own Play click already is the user gesture that policy
       needs.
+  - **Retrocade** (`games/retrocade/`) - unlike DOS Arcade, ships no games at
+    all: a NES/Game Boy/Game Boy Color/GBA/Genesis front end for ROMs the
+    user supplies themselves, via
+    [Nostalgist.js](https://nostalgist.js.org) (a wrapper around RetroArch's
+    libretro cores compiled to WebAssembly). The ROM folder is a real,
+    user-writable directory - `<app data dir>/roms/` (created on first
+    launch by `src-tauri/src/main.rs`'s `setup()`, same as the CS2 stats
+    SQLite db's directory) - not anything bundled or embedded, so it
+    survives app updates and reinstalls exactly like the CS2 database does.
+    A "📂 Open ROMs Folder" button reveals it in the OS file manager
+    directly from the widget (`open_roms_folder`, using the opener plugin
+    already in use elsewhere in this app); drop files in and hit the same
+    button in-widget to see them listed, no restart needed.
+      Only 4 systems are offered, each mapped to one libretro core by file
+      extension (`src-tauri/src/roms.rs`'s `SYSTEM_FOR_EXTENSION`, mirrored
+      in `retroSystems.ts` on the frontend) - **NES** (`.nes`, via
+      [FCEUmm](https://github.com/libretro/libretro-fceumm), GPL-2.0),
+      **Game Boy/Color** (`.gb`/`.gbc`, via
+      [Gambatte](https://github.com/libretro/gambatte-libretro), GPL-2.0),
+      **Game Boy Advance** (`.gba`, via
+      [mGBA](https://github.com/libretro/mgba), MPL-2.0), and
+      **Genesis/Mega Drive** (`.md`/`.gen`/`.smd`, via
+      [Genesis Plus GX](https://github.com/libretro/Genesis-Plus-GX),
+      GPL-2.0/3.0). Deliberately not SNES: upstream Snes9x, the only SNES
+      core available from this build repo, is
+      ["non-commercial use only"](https://www.snes9x.com/phpbb3/viewtopic.php?t=4835) -
+      not actually redistributable - so it's excluded, the same kind of
+      licensing check DOS Arcade's own bundle applies to each of its games.
+      Self-hosted, not a CDN embed: by default Nostalgist fetches each core
+      (plus the zip.js library used to unpack it) from jsDelivr's GitHub CDN
+      at runtime; `scripts/setup-nostalgist-assets.mjs` instead downloads
+      and unpacks the 4 cores above once, at install/dev/build time, from a
+      version-pinned [retroarch-emscripten-build](https://github.com/arianrhodsandlot/retroarch-emscripten-build)
+      release into `public/nostalgist/cores/` (gitignored, same reasoning as
+      `public/js-dos/`), and `RetrocadeGame.tsx` points Nostalgist's own
+      `resolveCoreJs`/`resolveCoreWasm` hooks at those local files - no core
+      or zip-library fetch ever happens at runtime, online or off. A ROM
+      itself is read via a `read_rom` Tauri command that returns a raw IPC
+      response rather than JSON (`tauri::ipc::Response`, resolved by
+      `invoke()` straight into an `ArrayBuffer`) - GBA ROMs run up to 32MB,
+      and JSON-encoding that as a number array would multiply the transfer
+      size for no benefit. `read_rom` also rejects any filename containing
+      a path separator and re-checks the canonicalized result still
+      resolves inside the ROM directory, since the filename crosses an IPC
+      boundary from the frontend.
   - **Lichess** (`games/lichess/`) - there's no [Lichess API](https://lichess.org/api)
     endpoint for embedding an actual playable game (that needs an account
     and Lichess's own websocket-driven client, which this app doesn't
