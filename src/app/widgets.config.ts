@@ -153,6 +153,14 @@ export const WIDGETS: WidgetDefinition[] = [
     ),
   },
   {
+    id: "idlegame",
+    defaultGroupId: "games",
+    label: "Incremental Game",
+    defaultColSpan: 1,
+    defaultRowSpan: 1,
+    Component: lazy(() => import("../widgets/idlegame/IdleGameWidget").then((m) => ({ default: m.IdleGameWidget }))),
+  },
+  {
     id: "timeweather",
     defaultGroupId: "info",
     label: "Time & Weather",
