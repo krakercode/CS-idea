@@ -3,6 +3,35 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.9.1] - 2026-08-08
+
+### Added
+
+- **Incremental Game** (`widgets/idlegame/`), a new standalone dashboard
+  widget - a clicker/idle game with its own grid tile, not a GAELJANK
+  SOFTWORKS cartridge, since the point is a glanceable collapsed view
+  (current Resource/Resource 2, live `/s` rates, Prestige Points, and a
+  progress bar to the next one) with a PLAY button opening the full
+  interactive surface in an `Overlay`, same summary-vs-full-view pattern
+  `GaeljankSoftworksWidget.tsx` already established. Two resources with a
+  real dependency - one upgrade converts Resource into Resource 2,
+  throttled to whatever Resource is actually available that tick so it
+  can never go negative or manufacture Resource 2 from nothing - plus a
+  prestige/reset mechanic (`floor(sqrt(lifetime Resource 2 / 1000))`
+  Prestige Points per reset, each a permanent +2% Resource-output
+  multiplier that survives every future reset). The tick loop
+  (`gameLogic.ts`'s `advance()`) always computes from `Date.now()` deltas
+  rather than assuming a fixed step, so the identical function handles
+  both the live 1Hz tick and a one-shot "offline catch-up" bulk-advance
+  the moment the widget next mounts (capped at 14 days) - progress
+  persists and keeps accruing across the whole app being closed and
+  reopened later, not just while the widget is mounted, since state
+  (including the last-tick timestamp) is saved to `localStorage`.
+  Autosaves every ~5s during passive play, immediately on any
+  buy/prestige action, and once more on unmount. Naming is deliberately
+  generic for now (Resource, Upgrade 1-5, Prestige Points) - theming is
+  intentionally deferred, not yet done.
+
 ## [0.9.0] - 2026-08-08
 
 ### Added

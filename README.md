@@ -1122,6 +1122,25 @@ meow.
     loaded after 6 seconds - a restrictive network, firewall, or blocker -
     a fallback message with a direct link takes its place instead of
     leaving the widget looking stuck blank.
+- **Incremental Game** (`widgets/idlegame/`) - a standalone clicker/idle
+  game, unlike the games above: it gets its own dashboard tile rather than
+  living inside GAELJANK SOFTWORKS, since the whole point is a glanceable
+  collapsed view (current Resource/Resource 2 with live `/s` rates, a
+  Prestige Points count, and a progress bar toward the next one) with a
+  PLAY button opening the full interactive surface in an overlay. Two
+  resources with a real production dependency - one upgrade converts
+  Resource into Resource 2, throttled to whatever Resource is actually on
+  hand that tick rather than ever going negative - plus a prestige/reset
+  mechanic (`sqrt(lifetime Resource 2 / 1000)` Prestige Points, each worth
+  a permanent +2% Resource output, survives every reset). Ticks once a
+  second (`gameLogic.ts`'s `advance()`), always from `Date.now()` deltas
+  rather than assuming a fixed step, so the same code path handles both
+  the live tick and a bulk "offline catch-up" the moment the widget
+  next mounts - progress keeps accruing across the whole app being closed
+  and reopened later, not just while it's on screen, since the state
+  (including the last-tick timestamp) is saved to `localStorage`. Naming
+  is intentionally generic for now (Resource, Upgrade 1-5, Prestige
+  Points) - theming is a follow-up, not yet done.
 
 ## CS2 Analysis backend (Leetify)
 
