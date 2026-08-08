@@ -18,67 +18,56 @@ declare global {
 }
 
 const EMULATORS_PATH_PREFIX = "/js-dos/emulators/";
-
-// js-dos.js is a classic (non-module) script with top-level `let`/`const`
-// declarations - those share the page's single global lexical scope across
-// *every* <script> tag, unlike `var`/functions. Loading and executing it a
-// second time throws "Identifier '<x>' has already been declared", which
-// aborts the *entire* second script before any of it runs (including the
-// `window.Dos = ...` assignment) - and since a parse error still fires the
-// script element's `load` event (only a fetch failure fires `error`), the
-// loader below resolves "successfully" while `window.Dos` silently never
-// gets (re)set. That's what made this so easy to misread as a hang.
-//
-// 0.7.2 fixed the original trigger (re-appending a fresh script tag after
-// merely a slow, not actually failed, load) with a module-scoped promise
-// cache. 0.7.4 added a DOM `querySelector` check on top, reasoning that the
-// module-scoped cache "only holds within a single evaluation of this
-// module" - but a *second* `<script>` tag is exactly what a second
-// evaluation of this module produces before that querySelector ever runs:
-// each copy has its own module-scoped `jsDosLoadPromise`, so each copy's
-// *first* call still falls through past its own (empty) cache and creates
-// its own tag. The DOM check only ever protects a copy's *second* call, by
-// which point the damage is already done. `window` is the one object
-// guaranteed to be the same no matter how many separate copies of this
-// module end up alive in memory at once (confirmed happening in practice -
-// see CHANGELOG 0.7.2 through 0.7.4), so the cache lives there instead of
-// in module scope, closing that gap for good rather than racing it.
 const JS_DOS_SCRIPT_SRC = "/js-dos/js-dos.js";
+
+// js-dos.js is a classic (non-module) script - loading it via a plain
+// `<script src>` tag runs its top-level `let`/`const` declarations directly
+// in the page's shared global lexical scope. One of them (a minified name
+// for one of its UI icon constants) happens to be `gc` - which collides
+// with `window.gc`, a *native* V8 binding some environments expose (e.g. a
+// Chromium/WebView2 instance launched with `--js-flags=--expose-gc`, or
+// with DevTools' Memory tooling active): confirmed live in this app's own
+// webview, `gc` evaluated to `ƒ gc() { [native code] }` *before* js-dos.js
+// ever got a chance to run. A classic script's top-level let/const must not
+// collide with *any* pre-existing global binding, native ones included, or
+// the entire script fails to parse with "Identifier 'gc' has already been
+// declared" - this turned out to have nothing to do with the script loading
+// more than once (0.8.0's fix, moving the load-promise cache from module
+// scope onto `window`, addressed a real but different bug and didn't touch
+// this one).
+//
+// Fetching the source ourselves and wrapping it in an IIFE before
+// evaluating it scopes all of its top-level declarations to that function
+// instead of the page's global scope, so nothing in it can collide with an
+// existing global again - `gc` or otherwise. `window.Dos = ...` still
+// reaches `window` fine from inside the wrapper since js-dos.js sets it via
+// an explicit property write, not a bare top-level declaration.
+async function loadJsDosSource(): Promise<void> {
+  if (window.Dos) return;
+
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "/js-dos/js-dos.css";
+  document.head.appendChild(link);
+
+  const response = await fetch(JS_DOS_SCRIPT_SRC);
+  if (!response.ok) throw new Error(`Failed to load js-dos (HTTP ${response.status}).`);
+  const source = await response.text();
+
+  const script = document.createElement("script");
+  script.textContent = `(function(){\n${source}\n})();`;
+  document.head.appendChild(script);
+
+  // Inline scripts run synchronously as soon as they're appended, so
+  // window.Dos is already set (or isn't) by the time we get here.
+  if (!window.Dos) throw new Error("js-dos loaded but didn't initialise.");
+}
 
 function loadJsDos(): Promise<void> {
   if (window.__jsDosLoadPromise) return window.__jsDosLoadPromise;
-  const promise = new Promise<void>((resolve, reject) => {
-    if (window.Dos) {
-      resolve();
-      return;
-    }
-
-    // Belt-and-braces on top of the window-level cache above: covers a
-    // script tag left over from a load this same `window` is no longer
-    // tracking (e.g. a previous attempt's promise was cleared after an
-    // error, but its script tag - now known to have loaded fine, since we
-    // only clear on a genuine fetch `onerror` - is still sitting in the
-    // DOM).
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${JS_DOS_SCRIPT_SRC}"]`);
-    if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("Failed to load js-dos.")));
-      return;
-    }
-
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "/js-dos/js-dos.css";
-    document.head.appendChild(link);
-
-    const script = document.createElement("script");
-    script.src = JS_DOS_SCRIPT_SRC;
-    script.onload = () => resolve();
-    script.onerror = () => {
-      window.__jsDosLoadPromise = undefined;
-      reject(new Error("Failed to load js-dos."));
-    };
-    document.head.appendChild(script);
+  const promise = loadJsDosSource().catch((err: unknown) => {
+    window.__jsDosLoadPromise = undefined;
+    throw err;
   });
   window.__jsDosLoadPromise = promise;
   return promise;
@@ -112,16 +101,7 @@ function DosPlayer({ game, onBack }: { game: DosGameEntry; onBack: () => void })
     loadJsDos()
       .then(() => {
         clearTimeout(loadStallTimer);
-        if (cancelled || !containerRef.current) return;
-        if (!window.Dos) {
-          // js-dos.js fired `load` (a fetch success) but never actually
-          // defined `window.Dos` - the classic symptom of the script
-          // having thrown a parse-time SyntaxError, which loadJsDos()
-          // can't detect from the `load` event alone. Surfacing this
-          // explicitly beats leaving the canvas blank with no signal.
-          setError("js-dos loaded but didn't initialise. Try restarting JESSPR-EAST.");
-          return;
-        }
+        if (cancelled || !containerRef.current || !window.Dos) return;
         setStalled(null);
         // js-dos.js is the full player app (its own UI, its own internal
         // state) - passing `url` in the options is what starts the bundle;

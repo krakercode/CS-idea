@@ -7,24 +7,45 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- **DOS Arcade "Identifier already declared" persisting past 0.7.4** -
-  0.7.4's `document.querySelector` guard only ever protects a *second* call
-  made by the same copy of this module (or a copy that runs after another
-  one's `<script>` tag already landed in the DOM); it does nothing for the
-  *first* call made by each separate copy, which is exactly what a second
-  evaluation of this module produces - and per the module's own
-  module-scoped `jsDosLoadPromise`, each copy's first call falls straight
-  through to appending its own `<script src="js-dos.js">`, colliding with
-  whichever copy got there first. `window` is the one object guaranteed to
-  be shared no matter how many separate copies of this module end up alive
-  in memory at once, so the load-promise cache now lives on `window`
-  instead of in module scope, closing the gap for good instead of racing
-  it. Also: a script that fails to *parse* (this exact "Identifier already
-  declared" case) still fires the script element's `load` event - only a
-  fetch failure fires `error` - so `loadJsDos()` was resolving
-  "successfully" while `window.Dos` silently never got set, and the caller
-  just as silently gave up, leaving a blank canvas with nothing in the UI
-  to explain why. That case now surfaces a real, visible error instead.
+- **DOS Arcade "Identifier already declared", actual root cause found** -
+  0.7.2 through 0.7.4 all treated this as a double-load problem (a second
+  `<script>` tag re-executing js-dos.js) and hardened the loader against
+  that repeatedly. Live console diagnosis (evaluating `gc` directly) showed
+  the real cause: `gc` is a native V8 binding (`ƒ gc() { [native code] }`),
+  exposed by some Chromium/WebView2 launches (e.g. `--js-flags=--expose-gc`,
+  or DevTools' Memory tooling) - present *before* js-dos.js ever loads. One
+  of js-dos.js's own top-level `const` declarations (a minified name for a
+  UI icon constant) happens to also be `gc`. A classic script's top-level
+  `let`/`const` must not collide with *any* pre-existing global binding,
+  native ones included, or the whole script fails to parse - on the very
+  first (and only) load, no second copy required. Every prior fix in this
+  area, including 0.8.0's own initial attempt earlier today (moving the
+  load-promise cache onto `window`, still a reasonable defensive change,
+  kept below), was solving a real but different problem. Actual fix: fetch
+  js-dos.js's source and evaluate it wrapped in an IIFE instead of via a
+  plain `<script src>` tag, so its top-level declarations are scoped to
+  that function instead of the page's global scope - immune to colliding
+  with `gc` or any other pre-existing global. `window.Dos = ...` still
+  reaches `window` fine from inside the wrapper, since js-dos.js sets it
+  via an explicit property write rather than a bare declaration.
+- **DOS Arcade double-load guard moved to `window`** - independent of the
+  above: 0.7.4's `document.querySelector` guard only ever protects a
+  *second* call made by the same copy of this module (or a copy that runs
+  after another one's `<script>` tag already landed in the DOM); it did
+  nothing for the *first* call made by each separate copy, which is exactly
+  what a second evaluation of this module would produce. The load-promise
+  cache now lives on `window` - the one object guaranteed shared no matter
+  how many separate copies of this module might end up alive in memory at
+  once - closing that class of bug for good rather than racing it, even
+  though it turned out not to be what was actually happening here.
+- **DOS Arcade silent failure** - a script that fails to *parse* (as above)
+  still fires the script element's `load` event - only a fetch failure
+  fires `error` - so the old loader was resolving "successfully" while
+  `window.Dos` silently never got set, and the caller just as silently gave
+  up, leaving a blank canvas with nothing in the UI to explain why. The new
+  fetch-and-eval loader checks `window.Dos` directly right after evaluating
+  the script (which, unlike a `src`-loaded script, runs synchronously) and
+  throws a real, visible error if it's still missing.
 
 ## [0.7.4] - 2026-08-07
 
