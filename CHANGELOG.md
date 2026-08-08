@@ -3,6 +3,79 @@
 All notable changes to JESSPR-EAST are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.9.0] - 2026-08-08
+
+### Added
+
+- **Retrocade** (`games/retrocade/`), a new GAELJANK SOFTWORKS cartridge -
+  unlike DOS Arcade, ships no games of its own. Instead it plays NES, Game
+  Boy/Color, GBA, and Genesis/Mega Drive ROMs the user supplies themselves,
+  via [Nostalgist.js](https://nostalgist.js.org) (libretro cores compiled to
+  WebAssembly). A real, user-writable `<app data dir>/roms/` folder is
+  created on first launch (`src-tauri/src/main.rs`), with a new
+  `📂 Open ROMs Folder` button that reveals it directly in the OS file
+  manager (`open_roms_folder`, via the opener plugin already used
+  elsewhere). Only 4 systems/cores are offered - FCEUmm (NES), Gambatte
+  (GB/GBC), mGBA (GBA), and Genesis Plus GX (Genesis) - all confirmed
+  copyleft/permissive-licensed; Snes9x (SNES) was deliberately left out
+  since upstream Snes9x is non-commercial-use-only, not actually
+  redistributable. Fully self-hosted and offline, same as js-dos/DOS Arcade:
+  `scripts/setup-nostalgist-assets.mjs` downloads and unpacks the 4 cores
+  once at install/dev/build time from a version-pinned
+  `retroarch-emscripten-build` release into `public/nostalgist/cores/`
+  (gitignored, regenerated like `public/js-dos/`), instead of Nostalgist's
+  default behavior of fetching cores (and the zip.js library used to unpack
+  them) from jsDelivr's CDN at runtime. ROM bytes cross the Tauri IPC
+  boundary via a raw `tauri::ipc::Response` (resolved by the frontend's
+  `invoke()` into an `ArrayBuffer`) rather than JSON, since a JSON number
+  array would multiply the transfer size of a 32MB GBA ROM for no benefit;
+  `read_rom` also validates the requested filename can't escape the ROM
+  directory. See README's GAELJANK SOFTWORKS section for the full writeup.
+
+## [0.8.0] - 2026-08-08
+
+### Fixed
+
+- **DOS Arcade "Identifier already declared", actual root cause found** -
+  0.7.2 through 0.7.4 all treated this as a double-load problem (a second
+  `<script>` tag re-executing js-dos.js) and hardened the loader against
+  that repeatedly. Live console diagnosis (evaluating `gc` directly) showed
+  the real cause: `gc` is a native V8 binding (`ƒ gc() { [native code] }`),
+  exposed by some Chromium/WebView2 launches (e.g. `--js-flags=--expose-gc`,
+  or DevTools' Memory tooling) - present *before* js-dos.js ever loads. One
+  of js-dos.js's own top-level `const` declarations (a minified name for a
+  UI icon constant) happens to also be `gc`. A classic script's top-level
+  `let`/`const` must not collide with *any* pre-existing global binding,
+  native ones included, or the whole script fails to parse - on the very
+  first (and only) load, no second copy required. Every prior fix in this
+  area, including 0.8.0's own initial attempt earlier today (moving the
+  load-promise cache onto `window`, still a reasonable defensive change,
+  kept below), was solving a real but different problem. Actual fix: fetch
+  js-dos.js's source and evaluate it wrapped in an IIFE instead of via a
+  plain `<script src>` tag, so its top-level declarations are scoped to
+  that function instead of the page's global scope - immune to colliding
+  with `gc` or any other pre-existing global. `window.Dos = ...` still
+  reaches `window` fine from inside the wrapper, since js-dos.js sets it
+  via an explicit property write rather than a bare declaration.
+- **DOS Arcade double-load guard moved to `window`** - independent of the
+  above: 0.7.4's `document.querySelector` guard only ever protects a
+  *second* call made by the same copy of this module (or a copy that runs
+  after another one's `<script>` tag already landed in the DOM); it did
+  nothing for the *first* call made by each separate copy, which is exactly
+  what a second evaluation of this module would produce. The load-promise
+  cache now lives on `window` - the one object guaranteed shared no matter
+  how many separate copies of this module might end up alive in memory at
+  once - closing that class of bug for good rather than racing it, even
+  though it turned out not to be what was actually happening here.
+- **DOS Arcade silent failure** - a script that fails to *parse* (as above)
+  still fires the script element's `load` event - only a fetch failure
+  fires `error` - so the old loader was resolving "successfully" while
+  `window.Dos` silently never got set, and the caller just as silently gave
+  up, leaving a blank canvas with nothing in the UI to explain why. The new
+  fetch-and-eval loader checks `window.Dos` directly right after evaluating
+  the script (which, unlike a `src`-loaded script, runs synchronously) and
+  throws a real, visible error if it's still missing.
+
 ## [0.7.4] - 2026-08-07
 
 ### Fixed

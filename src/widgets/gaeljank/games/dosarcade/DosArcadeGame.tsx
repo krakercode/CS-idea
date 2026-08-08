@@ -13,62 +13,64 @@ import "./DosArcadeGame.css";
 declare global {
   interface Window {
     Dos?: (container: HTMLElement, options?: { pathPrefix?: string; url?: string; autoStart?: boolean }) => unknown;
+    __jsDosLoadPromise?: Promise<void>;
   }
 }
 
 const EMULATORS_PATH_PREFIX = "/js-dos/emulators/";
-let jsDosLoadPromise: Promise<void> | null = null;
-
-// js-dos.js is a classic (non-module) script with top-level `let`/`const`
-// declarations - those share the page's single global lexical scope across
-// *every* <script> tag, unlike `var`/functions. Loading and executing it a
-// second time throws "Identifier '<x>' has already been declared" - a real
-// bug hit here: an earlier version of this file gave up on a load that was
-// merely slow (timed out, not actually failed) and re-appended a fresh
-// script tag, which then collided with the first one once it also finished.
-// There is no way to safely "cancel" a classic script that might already be
-// executing, so once a load has actually started, it is never abandoned or
-// retried - only a genuine `onerror` (the script never ran at all) is safe
-// to retry from.
 const JS_DOS_SCRIPT_SRC = "/js-dos/js-dos.js";
 
+// js-dos.js is a classic (non-module) script - loading it via a plain
+// `<script src>` tag runs its top-level `let`/`const` declarations directly
+// in the page's shared global lexical scope. One of them (a minified name
+// for one of its UI icon constants) happens to be `gc` - which collides
+// with `window.gc`, a *native* V8 binding some environments expose (e.g. a
+// Chromium/WebView2 instance launched with `--js-flags=--expose-gc`, or
+// with DevTools' Memory tooling active): confirmed live in this app's own
+// webview, `gc` evaluated to `ƒ gc() { [native code] }` *before* js-dos.js
+// ever got a chance to run. A classic script's top-level let/const must not
+// collide with *any* pre-existing global binding, native ones included, or
+// the entire script fails to parse with "Identifier 'gc' has already been
+// declared" - this turned out to have nothing to do with the script loading
+// more than once (0.8.0's fix, moving the load-promise cache from module
+// scope onto `window`, addressed a real but different bug and didn't touch
+// this one).
+//
+// Fetching the source ourselves and wrapping it in an IIFE before
+// evaluating it scopes all of its top-level declarations to that function
+// instead of the page's global scope, so nothing in it can collide with an
+// existing global again - `gc` or otherwise. `window.Dos = ...` still
+// reaches `window` fine from inside the wrapper since js-dos.js sets it via
+// an explicit property write, not a bare top-level declaration.
+async function loadJsDosSource(): Promise<void> {
+  if (window.Dos) return;
+
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "/js-dos/js-dos.css";
+  document.head.appendChild(link);
+
+  const response = await fetch(JS_DOS_SCRIPT_SRC);
+  if (!response.ok) throw new Error(`Failed to load js-dos (HTTP ${response.status}).`);
+  const source = await response.text();
+
+  const script = document.createElement("script");
+  script.textContent = `(function(){\n${source}\n})();`;
+  document.head.appendChild(script);
+
+  // Inline scripts run synchronously as soon as they're appended, so
+  // window.Dos is already set (or isn't) by the time we get here.
+  if (!window.Dos) throw new Error("js-dos loaded but didn't initialise.");
+}
+
 function loadJsDos(): Promise<void> {
-  if (jsDosLoadPromise) return jsDosLoadPromise;
-  jsDosLoadPromise = new Promise<void>((resolve, reject) => {
-    if (window.Dos) {
-      resolve();
-      return;
-    }
-
-    // Belt-and-braces on top of the module-level cache above: that guard
-    // only holds within a single evaluation of this module. Check the DOM
-    // itself too - the one place state can't get duplicated no matter how
-    // this module ended up instantiated more than once (e.g. a stale
-    // in-memory copy still running from before an update finished
-    // applying to disk, discovered live after 0.7.2's cache-based guard
-    // alone still weren't enough).
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${JS_DOS_SCRIPT_SRC}"]`);
-    if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("Failed to load js-dos.")));
-      return;
-    }
-
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "/js-dos/js-dos.css";
-    document.head.appendChild(link);
-
-    const script = document.createElement("script");
-    script.src = JS_DOS_SCRIPT_SRC;
-    script.onload = () => resolve();
-    script.onerror = () => {
-      jsDosLoadPromise = null;
-      reject(new Error("Failed to load js-dos."));
-    };
-    document.head.appendChild(script);
+  if (window.__jsDosLoadPromise) return window.__jsDosLoadPromise;
+  const promise = loadJsDosSource().catch((err: unknown) => {
+    window.__jsDosLoadPromise = undefined;
+    throw err;
   });
-  return jsDosLoadPromise;
+  window.__jsDosLoadPromise = promise;
+  return promise;
 }
 
 const LOAD_STALL_MS = 15_000;

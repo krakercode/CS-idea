@@ -10,6 +10,7 @@ mod opensky;
 mod pandascore;
 mod pokemon_tcg;
 mod recipe_of_the_day;
+mod roms;
 mod spotify;
 mod stocks;
 mod suggestions;
@@ -374,6 +375,10 @@ fn main() {
                 .app_data_dir()
                 .expect("failed to resolve app data dir");
             let db = db::open(&data_dir).expect("failed to open local stats db");
+            // Retrocade's ROM folder - created up front so it's there for
+            // the user to find (and drop files into) even before they ever
+            // open the widget. See roms.rs for the read side.
+            std::fs::create_dir_all(data_dir.join("roms")).expect("failed to create roms dir");
             app.manage(AnalysisState {
                 leetify: LeetifyClient::new(),
                 db: std::sync::Arc::new(db),
@@ -407,7 +412,10 @@ fn main() {
             get_transit_departures,
             get_airport_arrivals,
             get_airport_departures,
-            launch_shortcut
+            launch_shortcut,
+            roms::list_roms,
+            roms::read_rom,
+            roms::open_roms_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
